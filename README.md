@@ -1,2 +1,3 @@
-# py-libyang
+# libyang-python
+
 Python CFFI bindings to libyang

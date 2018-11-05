@@ -1,0 +1,14 @@
+graft cffi
+graft clib
+prune clib/tests
+prune clib/swig
+prune clib/tools/lint/examples
+graft libyang
+include setup.py
+include setup.cfg
+include LICENSE
+include README.md
+global-exclude *.py[co]
+global-exclude *.so
+global-exclude *.o
+global-exclude *.a

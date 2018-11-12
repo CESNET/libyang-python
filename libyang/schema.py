@@ -191,8 +191,20 @@ class Node:
     def name(self):
         return c2str(self._node.name)
 
+    def fullname(self):
+        return c2str(ffi.gc(lib.lys_node_fullname(self._node, lib.free)))
+
     def dsc(self):
         return c2str(self._node.dsc)
+
+    def config_set(self):
+        return bool(self._node.flags & lib.LYS_CONFIG_SET)
+
+    def config_false(self):
+        return bool(self._node.flags & lib.LYS_CONFIG_R)
+
+    def mandatory(self):
+        return bool(self._node.flags & lib.LYS_MAND_TRUE)
 
     def module(self):
         module_p = lib.lys_node_module(self._node)
@@ -259,6 +271,9 @@ class LeafList(Node):
     def keyword(self):
         return 'leaf-list'
 
+    def ordered(self):
+        return bool(self.node.flags & lib.LYS_USERORDERED)
+
     def units(self):
         return c2str(self._leaf.units)
 
@@ -299,6 +314,9 @@ class List(Node):
 
     def keyword(self):
         return 'list'
+
+    def ordered(self):
+        return bool(self.node.flags & lib.LYS_USERORDERED)
 
     def __iter__(self):
         return self.children()

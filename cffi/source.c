@@ -118,3 +118,18 @@ cleanup:
 	free(keys);
 	return xpath;
 }
+
+static char *lys_node_fullname(const struct lys_node *node)
+{
+	const struct lys_module *module;
+	char *fullname = NULL;
+
+	module = lys_node_module(node);
+	if (!module)
+		return NULL;
+
+	if (asprintf(&fullname, "%s:%s", module->name, node->name) < 0)
+		return NULL;
+
+	return fullname;
+}

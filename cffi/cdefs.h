@@ -178,10 +178,16 @@ typedef enum lys_nodetype {
 	...
 } LYS_NODE;
 
+#define LYS_CONFIG_W ...
+#define LYS_CONFIG_R ...
+#define LYS_CONFIG_SET ...
+#define LYS_USERORDERED ...
+#define LYS_MAND_TRUE ...
 
 struct lys_node {
 	const char *name;
 	const char *dsc;
+	uint16_t flags;
 	uint8_t ext_size;
 	struct lys_ext_instance **ext;
 	LYS_NODE nodetype;
@@ -216,6 +222,7 @@ struct lys_node_list {
 	uint32_t max;
 	...;
 };
+
 struct lys_node_rpc_action {
 	...;
 };
@@ -263,4 +270,5 @@ const struct lys_ext_instance *lys_find_ext(
 	const struct lys_ext_instance **, uint8_t,
 	const char *, const char *, const char *);
 char *lys_data_path_pattern(const struct lys_node *);
+char *lys_node_fullname(const struct lys_node *);
 void free(void *);

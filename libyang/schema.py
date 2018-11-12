@@ -192,7 +192,7 @@ class Node:
         return c2str(self._node.name)
 
     def fullname(self):
-        return c2str(ffi.gc(lib.lys_node_fullname(self._node, lib.free)))
+        return c2str(ffi.gc(lib.lys_node_fullname(self._node), lib.free))
 
     def dsc(self):
         return c2str(self._node.dsc)
@@ -272,7 +272,7 @@ class LeafList(Node):
         return 'leaf-list'
 
     def ordered(self):
-        return bool(self.node.flags & lib.LYS_USERORDERED)
+        return bool(self._node.flags & lib.LYS_USERORDERED)
 
     def units(self):
         return c2str(self._leaf.units)
@@ -316,7 +316,7 @@ class List(Node):
         return 'list'
 
     def ordered(self):
-        return bool(self.node.flags & lib.LYS_USERORDERED)
+        return bool(self._node.flags & lib.LYS_USERORDERED)
 
     def __iter__(self):
         return self.children()

@@ -154,7 +154,7 @@ def keywords_with_side_effects(argv):
 
 setuptools.setup(
     name='libyang',
-    version='0.16.dev2',
+    version='0.16.dev3',
     description='CFFI bindings to libyang',
     long_description=open('README.md', encoding='utf-8').read(),
     url='https://github.com/rjarry/libyang-python',

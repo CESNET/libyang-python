@@ -209,9 +209,10 @@ struct lys_node_leaf {
 struct lys_node_leaflist {
 	struct lys_type type;
 	const char *units;
-	const char **dflt;
 	uint32_t min;
 	uint32_t max;
+	uint8_t dflt_size;
+	const char **dflt;
 	...;
 };
 

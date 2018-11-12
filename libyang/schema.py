@@ -132,7 +132,7 @@ class Type:
         lib.LY_TYPE_DEC64: 'decimal64',
         lib.LY_TYPE_EMPTY: 'empty',
         lib.LY_TYPE_ENUM: 'enumeration',
-        lib.LY_TYPE_IDENT: 'ident',
+        lib.LY_TYPE_IDENT: 'identityref',
         lib.LY_TYPE_INST: 'instance-id',
         lib.LY_TYPE_LEAFREF: 'leafref',
         lib.LY_TYPE_STRING: 'string',

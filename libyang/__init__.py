@@ -25,26 +25,28 @@ from _libyang import ffi
 from _libyang import lib
 
 from .schema import Module
+from .schema import Node
 from .util import LibyangError
 from .util import str2c
 from .util import c2str
-from libyang.schema import Node
 
 
 #------------------------------------------------------------------------------
 class Context(object):
 
-    def __init__(self, search_dir, options=lib.LY_CTX_DISABLE_SEARCHDIR_CWD):
-        if search_dir and os.path.isdir(search_dir):
-            search_dir = str2c(search_dir)
-        else:
-            search_dir = ffi.NULL
-        self._ctx = ffi.gc(lib.ly_ctx_new(search_dir, options),
+    def __init__(self, search_path=None,
+                 options=lib.LY_CTX_DISABLE_SEARCHDIR_CWD):
+        self._ctx = ffi.gc(lib.ly_ctx_new(ffi.NULL, options),
                            lambda c: lib.ly_ctx_destroy(c, ffi.NULL))
         if not self._ctx:
             raise self.error('cannot create context')
 
-        for path in os.environ.get('YANG_MODPATH', '').split(os.pathsep):
+        if search_path:
+            search_path += ':' + os.environ.get('YANG_MODPATH', '').strip()
+        else:
+            search_path = os.environ.get('YANG_MODPATH', '').strip()
+
+        for path in search_path.split(os.pathsep):
             if not os.path.isdir(path):
                 continue
             if lib.ly_ctx_set_searchdir(self._ctx, str2c(path)) != 0:

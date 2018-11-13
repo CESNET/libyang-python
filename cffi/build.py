@@ -28,7 +28,8 @@ BUILDER = cffi.FFI()
 with open(os.path.join(HERE, 'cdefs.h')) as f:
     BUILDER.cdef(f.read())
 with open(os.path.join(HERE, 'source.c')) as f:
-    BUILDER.set_source('_libyang', f.read(), libraries=['yang'])
+    BUILDER.set_source('_libyang', f.read(), libraries=['yang'],
+                       extra_compile_args=['-Wextra', '-Werror'])
 
 if __name__ == '__main__':
     BUILDER.compile()

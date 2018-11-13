@@ -166,11 +166,11 @@ class Type:
             yield Extension(self.context, self._type.der.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
-        ext = lib.lys_find_ext(
+        ext = lib.lypy_find_ext(
             self._type.ext, self._type.ext_size,
             str2c(name), str2c(prefix), str2c(arg_value))
         if not ext and self._type.parent:
-            ext = lib.lys_find_ext(
+            ext = lib.lypy_find_ext(
                 self._type.parent.ext, self._type.parent.ext_size,
                 str2c(name), str2c(prefix), str2c(arg_value))
         if ext:
@@ -192,7 +192,7 @@ class Node:
         return c2str(self._node.name)
 
     def fullname(self):
-        return c2str(ffi.gc(lib.lys_node_fullname(self._node), lib.free))
+        return c2str(ffi.gc(lib.lypy_node_fullname(self._node), lib.free))
 
     def dsc(self):
         return c2str(self._node.dsc)
@@ -216,14 +216,14 @@ class Node:
         return c2str(ffi.gc(lib.lys_path(self._node, 0), lib.free))
 
     def data_path(self):
-        return c2str(ffi.gc(lib.lys_data_path_pattern(self._node), lib.free))
+        return c2str(ffi.gc(lib.lypy_data_path_pattern(self._node), lib.free))
 
     def extensions(self):
         for i in range(self._node.ext_size):
             yield Extension(self.context, self._node.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
-        ext = lib.lys_find_ext(
+        ext = lib.lypy_find_ext(
             self._node.ext, self._node.ext_size,
             str2c(name), str2c(prefix), str2c(arg_value))
         if ext:

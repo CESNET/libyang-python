@@ -246,7 +246,7 @@ struct ly_set *ly_ctx_find_path(struct ly_ctx *, const char *);
 void ly_set_free(struct ly_set *set);
 const struct lys_node_list *lys_is_key(const struct lys_node_leaf *, uint8_t *);
 const struct lys_node *lys_getnext(const struct lys_node *, const struct lys_node *, const struct lys_module *, int);
-const struct lys_type *lys_getnext_union_type(const struct lys_type *last, const struct lys_type *type);
+const struct lys_type *lys_getnext_union_type(const struct lys_type *, const struct lys_type *);
 char *lys_data_path(const struct lys_node *);
 char *lys_path(const struct lys_node *, int);
 struct lys_module *lys_node_module(const struct lys_node *);
@@ -266,10 +266,12 @@ typedef enum {
 int lys_print_mem(char **, const struct lys_module *, LYS_OUTFORMAT, const char *, int, int);
 int lys_print_fd(int, const struct lys_module *, LYS_OUTFORMAT, const char *, int, int);
 
+/* from libc, needed to free allocated strings */
+void free(void *);
+
 /* extra functions */
-const struct lys_ext_instance *lys_find_ext(
+const struct lys_ext_instance *lypy_find_ext(
 	const struct lys_ext_instance **, uint8_t,
 	const char *, const char *, const char *);
-char *lys_data_path_pattern(const struct lys_node *);
-char *lys_node_fullname(const struct lys_node *);
-void free(void *);
+char *lypy_data_path_pattern(const struct lys_node *);
+char *lypy_node_fullname(const struct lys_node *);

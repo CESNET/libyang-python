@@ -23,7 +23,7 @@
 #include <libyang/libyang.h>
 
 static const struct lys_ext_instance *
-lys_find_ext(const struct lys_ext_instance **ext, uint8_t ext_size,
+lypy_find_ext(const struct lys_ext_instance **ext, uint8_t ext_size,
 	const char *name, const char *prefix, const char *arg_value)
 {
 	const struct lys_ext_instance *inst;
@@ -57,7 +57,7 @@ notfound:
 	return NULL;
 }
 
-static char *lys_data_path_pattern(const struct lys_node *node)
+static char *lypy_data_path_pattern(const struct lys_node *node)
 {
 	const struct lys_module *prev_mod, *mod;
 	char *xpath = NULL, *keys = NULL;
@@ -119,7 +119,7 @@ cleanup:
 	return xpath;
 }
 
-static char *lys_node_fullname(const struct lys_node *node)
+static char *lypy_node_fullname(const struct lys_node *node)
 {
 	const struct lys_module *module;
 	char *fullname = NULL;

@@ -127,7 +127,7 @@ def set_log_level(level):
             return
 
 
-set_log_level(logging.WARNING)
+set_log_level(logging.ERROR)
 lib.ly_set_log_clb(lib.logging_callback, True)
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())

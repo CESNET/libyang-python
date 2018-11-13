@@ -26,7 +26,7 @@ from .util import str2c
 
 
 #------------------------------------------------------------------------------
-class Module:
+class Module(object):
 
     def __init__(self, context, module_p):
         self.context = context
@@ -38,7 +38,7 @@ class Module:
     def prefix(self):
         return c2str(self._module.prefix)
 
-    def dsc(self):
+    def description(self):
         return c2str(self._module.dsc)
 
     def find_path(self, path):
@@ -54,7 +54,7 @@ class Module:
         return self.children()
 
     def children(self, types=None):
-        return iter_children(self.context, module=self._module, types=types)
+        return iter_children(self.context, self._module, types=types)
 
     def __str__(self):
         return self.dump_str()
@@ -74,7 +74,7 @@ class Module:
 
 
 #------------------------------------------------------------------------------
-class Extension:
+class Extension(object):
 
     def __init__(self, context, ext_p):
         self.context = context
@@ -93,9 +93,16 @@ class Extension:
             raise self.context.error('cannot get module')
         return Module(self.context, module_p)
 
+    def __repr__(self):
+        cls = self.__class__
+        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
+
 
 #------------------------------------------------------------------------------
-class Type:
+class Type(object):
 
     DER = lib.LY_TYPE_DER
     BINARY = lib.LY_TYPE_BINARY
@@ -146,19 +153,22 @@ class Type:
 
     def get_bases(self):
         if self._type.base == lib.LY_TYPE_DER:
-            yield from self.parent_type().get_bases()
+            for b in self.parent_type().get_bases():
+                yield b
         elif self._type.base == lib.LY_TYPE_LEAFREF:
-            yield from self.leafref_type().get_bases()
+            for b in self.leafref_type().get_bases():
+                yield b
         elif self._type.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
-                yield from t.get_bases()
+                for b in t.get_bases():
+                    yield b
         else:  # builtin type
             yield self
 
     def name(self):
         return c2str(self._type.der.name)
 
-    def dsc(self):
+    def description(self):
         return c2str(self._type.der.dsc)
 
     def base(self):
@@ -210,9 +220,16 @@ class Type:
             return Extension(self.context, ext)
         return None
 
+    def __repr__(self):
+        cls = self.__class__
+        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
+
 
 #------------------------------------------------------------------------------
-class Node:
+class Node(object):
 
     CONTAINER = lib.LYS_CONTAINER
     LEAF = lib.LYS_LEAF
@@ -243,7 +260,7 @@ class Node:
     def fullname(self):
         return c2str(ffi.gc(lib.lypy_node_fullname(self._node), lib.free))
 
-    def dsc(self):
+    def description(self):
         return c2str(self._node.dsc)
 
     def config_set(self):
@@ -279,6 +296,13 @@ class Node:
             return Extension(self.context, ext)
         return None
 
+    def __repr__(self):
+        cls = self.__class__
+        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
+
     NODETYPE_CLASS = {}
 
     @classmethod
@@ -299,7 +323,7 @@ class Node:
 class Leaf(Node):
 
     def __init__(self, context, node_p):
-        super().__init__(context, node_p)
+        Node.__init__(self, context, node_p)
         self._leaf = ffi.cast('struct lys_node_leaf *', node_p)
 
     def default(self):
@@ -316,13 +340,16 @@ class Leaf(Node):
             return True
         return False
 
+    def __str__(self):
+        return '%s %s' % (self.name(), self.type().name())
+
 
 #------------------------------------------------------------------------------
 @Node.register(Node.LEAFLIST)
 class LeafList(Node):
 
     def __init__(self, context, node_p):
-        super().__init__(context, node_p)
+        Node.__init__(self, context, node_p)
         self._leaflist = ffi.cast('struct lys_node_leaflist *', node_p)
 
     def ordered(self):
@@ -338,13 +365,16 @@ class LeafList(Node):
         for i in range(self._leaflist.dflt_size):
             yield c2str(self._leaflist.dflt[i])
 
+    def __str__(self):
+        return '%s %s' % (self.name(), self.type().name())
+
 
 #------------------------------------------------------------------------------
 @Node.register(Node.CONTAINER)
 class Container(Node):
 
     def __init__(self, context, node_p):
-        super().__init__(context, node_p)
+        Node.__init__(self, context, node_p)
         self._container = ffi.cast('struct lys_node_container *', node_p)
 
     def presence(self):
@@ -354,7 +384,7 @@ class Container(Node):
         return self.children()
 
     def children(self, types=None):
-        return iter_children(self.context, parent=self._node, types=types)
+        return iter_children(self.context, self._node, types=types)
 
 
 #------------------------------------------------------------------------------
@@ -362,7 +392,7 @@ class Container(Node):
 class List(Node):
 
     def __init__(self, context, node_p):
-        super().__init__(context, node_p)
+        Node.__init__(self, context, node_p)
         self._list = ffi.cast('struct lys_node_list *', node_p)
 
     def ordered(self):
@@ -373,12 +403,16 @@ class List(Node):
 
     def children(self, skip_keys=False, types=None):
         return iter_children(
-            self.context, parent=self._node, skip_keys=skip_keys, types=types)
+            self.context, self._node, skip_keys=skip_keys, types=types)
 
     def keys(self):
         for i in range(self._list.keys_size):
             node = ffi.cast('struct lys_node *', self._list.keys[i])
             yield Leaf(self.context, node)
+
+    def __str__(self):
+        return '%s [%s]' % (
+            self.name(), ', '.join(k.name() for k in self.keys()))
 
 
 #------------------------------------------------------------------------------
@@ -386,19 +420,18 @@ class List(Node):
 class Rpc(Node):
 
     def __init__(self, context, node_p):
-        super().__init__(context, node_p)
+        Node.__init__(self, context, node_p)
         self._rpc = ffi.cast('struct lys_node_rpc_action *', node_p)
 
     def __iter__(self):
         return self.children()
 
     def children(self, types=None):
-        return iter_children(self.context, parent=self._node, types=types)
+        return iter_children(self.context, self._node, types=types)
 
 
 #------------------------------------------------------------------------------
-def iter_children(context, parent=ffi.NULL, module=ffi.NULL, *,
-                  skip_keys=False, types=None):
+def iter_children(context, parent, skip_keys=False, types=None):
     if types is None:
         types = (lib.LYS_CONTAINER, lib.LYS_LIST, lib.LYS_RPC,
                  lib.LYS_LEAF, lib.LYS_LEAFLIST)
@@ -414,6 +447,12 @@ def iter_children(context, parent=ffi.NULL, module=ffi.NULL, *,
         if lib.lys_is_key(leaf, ffi.NULL):
             return True
         return False
+
+    if ffi.typeof(parent) == ffi.typeof('struct lys_module *'):
+        module = parent
+        parent = ffi.NULL
+    else:
+        module = ffi.NULL
 
     child = lib.lys_getnext(ffi.NULL, parent, module, 0)
     while child:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright (c) 2018 Robin Jarry
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,7 +43,8 @@ class BuildCLib(build_clib):
             return
         log.info('Building libyang C library ...')
         tmp = os.path.abspath(self.build_temp)
-        os.makedirs(tmp, exist_ok=True)
+        if not os.path.exists(tmp):
+            os.makedirs(tmp)
         commands = [
             [
                 'cmake', os.path.join(HERE, 'clib'),
@@ -74,7 +75,7 @@ class BuildExt(build_ext):
             c = self.get_finalized_command('build_clib')
             self.include_dirs.append(
                 os.path.join(c.build_clib, 'include'))
-        return super().run()
+        return build_ext.run(self)
 
 
 def keywords_with_side_effects(argv):
@@ -152,11 +153,15 @@ def keywords_with_side_effects(argv):
         }
 
 
+with open('README.md', 'r') as f:
+    LONG_DESC = f.read()
+
+
 setuptools.setup(
     name='libyang',
     version='0.16.dev6',
     description='CFFI bindings to libyang',
-    long_description=open('README.md', encoding='utf-8').read(),
+    long_description=LONG_DESC,
     url='https://github.com/rjarry/libyang-python',
     license='MIT',
     author='Robin Jarry',
@@ -168,9 +173,7 @@ setuptools.setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Information Technology',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3 :: Only',
     ],
-    python_requires='>= 3.3',
     install_requires=REQUIREMENTS,
     packages=['libyang'],
     zip_safe=False,

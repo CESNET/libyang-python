@@ -41,12 +41,14 @@ class Context(object):
         if not self._ctx:
             raise self.error('cannot create context')
 
+        search_dirs = []
+        if 'YANG_MODPATH' in os.environ:
+            search_dirs.extend(
+                os.environ['YANG_MODPATH'].strip(': \t\r\n\'"').split(':'))
         if search_path:
-            search_path += ':' + os.environ.get('YANG_MODPATH', '').strip()
-        else:
-            search_path = os.environ.get('YANG_MODPATH', '').strip()
+            search_dirs.extend(search_path.strip(': \t\r\n\'"').split(':'))
 
-        for path in search_path.split(os.pathsep):
+        for path in search_dirs:
             if not os.path.isdir(path):
                 continue
             if lib.ly_ctx_set_searchdir(self._ctx, str2c(path)) != 0:

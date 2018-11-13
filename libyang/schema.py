@@ -97,21 +97,61 @@ class Extension:
 #------------------------------------------------------------------------------
 class Type:
 
+    DER = lib.LY_TYPE_DER
+    BINARY = lib.LY_TYPE_BINARY
+    BITS = lib.LY_TYPE_BITS
+    BOOL = lib.LY_TYPE_BOOL
+    DEC64 = lib.LY_TYPE_DEC64
+    EMPTY = lib.LY_TYPE_EMPTY
+    ENUM = lib.LY_TYPE_ENUM
+    IDENT = lib.LY_TYPE_IDENT
+    INST = lib.LY_TYPE_INST
+    LEAFREF = lib.LY_TYPE_LEAFREF
+    STRING = lib.LY_TYPE_STRING
+    UNION = lib.LY_TYPE_UNION
+    INT8 = lib.LY_TYPE_INT8
+    UINT8 = lib.LY_TYPE_UINT8
+    INT16 = lib.LY_TYPE_INT16
+    UINT16 = lib.LY_TYPE_UINT16
+    INT32 = lib.LY_TYPE_INT32
+    UINT32 = lib.LY_TYPE_UINT32
+    INT64 = lib.LY_TYPE_INT64
+    UINT64 = lib.LY_TYPE_UINT64
+    BASENAMES = {
+        DER: 'derived',
+        BINARY: 'binary',
+        BITS: 'bits',
+        BOOL: 'boolean',
+        DEC64: 'decimal64',
+        EMPTY: 'empty',
+        ENUM: 'enumeration',
+        IDENT: 'identityref',
+        INST: 'instance-id',
+        LEAFREF: 'leafref',
+        STRING: 'string',
+        UNION: 'union',
+        INT8: 'int8',
+        UINT8: 'uint8',
+        INT16: 'int16',
+        UINT16: 'uint16',
+        INT32: 'int32',
+        UINT32: 'uint32',
+        INT64: 'int64',
+        UINT64: 'uint64',
+    }
+
     def __init__(self, context, type_p):
         self.context = context
         self._type = type_p
 
-    def get_builtins(self):
+    def get_bases(self):
         if self._type.base == lib.LY_TYPE_DER:
-            yield from self.parent().get_builtins()
+            yield from self.parent_type().get_bases()
         elif self._type.base == lib.LY_TYPE_LEAFREF:
-            lref = self._type.info.lref
-            yield from Type(self.context, ffi.addressof(lref.target.type)).get_builtins()
+            yield from self.leafref_type().get_bases()
         elif self._type.base == lib.LY_TYPE_UNION:
-            t = lib.lys_getnext_union_type(ffi.NULL, self._type)
-            while t:
-                yield from Type(self.context, t).get_builtins()
-                t = lib.lys_getnext_union_type(t, self._type)
+            for t in self.union_types():
+                yield from t.get_bases()
         else:  # builtin type
             yield self
 
@@ -124,34 +164,27 @@ class Type:
     def base(self):
         return self._type.base
 
-    BASENAMES = {
-        lib.LY_TYPE_DER: 'derived',
-        lib.LY_TYPE_BINARY: 'binary',
-        lib.LY_TYPE_BITS: 'bits',
-        lib.LY_TYPE_BOOL: 'boolean',
-        lib.LY_TYPE_DEC64: 'decimal64',
-        lib.LY_TYPE_EMPTY: 'empty',
-        lib.LY_TYPE_ENUM: 'enumeration',
-        lib.LY_TYPE_IDENT: 'identityref',
-        lib.LY_TYPE_INST: 'instance-id',
-        lib.LY_TYPE_LEAFREF: 'leafref',
-        lib.LY_TYPE_STRING: 'string',
-        lib.LY_TYPE_UNION: 'union',
-        lib.LY_TYPE_INT8: 'int8',
-        lib.LY_TYPE_UINT8: 'uint8',
-        lib.LY_TYPE_INT16: 'int16',
-        lib.LY_TYPE_UINT16: 'uint16',
-        lib.LY_TYPE_INT32: 'int32',
-        lib.LY_TYPE_UINT32: 'uint32',
-        lib.LY_TYPE_INT64: 'int64',
-        lib.LY_TYPE_UINT64: 'uint64',
-    }
-
     def basename(self):
         return self.BASENAMES.get(self._type.base, 'unknown')
 
-    def parent(self):
+    def parent_type(self):
+        if self._type.base != self.DER:
+            raise self.context.error('not a derived type')
         return Type(self.context, ffi.addressof(self._type.parent.type))
+
+    def leafref_type(self):
+        if self._type.base != self.LEAFREF:
+            raise self.context.error('not a leafref type')
+        lref = self._type.info.lref
+        return Type(self.context, ffi.addressof(lref.target.type))
+
+    def union_types(self):
+        if self._type.base != self.UNION:
+            raise self.context.error('not an union type')
+        t = lib.lys_getnext_union_type(ffi.NULL, self._type)
+        while t:
+            yield Type(self.context, t)
+            t = lib.lys_getnext_union_type(t, self._type)
 
     def module(self):
         module_p = lib.lys_main_module(self._type.der.module)

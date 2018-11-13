@@ -153,7 +153,7 @@ def keywords_with_side_effects(argv):
         }
 
 
-with open('README.md', 'r') as f:
+with open('README.rst', 'r') as f:
     LONG_DESC = f.read()
 
 

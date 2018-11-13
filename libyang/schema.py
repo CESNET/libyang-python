@@ -214,12 +214,28 @@ class Type:
 #------------------------------------------------------------------------------
 class Node:
 
+    CONTAINER = lib.LYS_CONTAINER
+    LEAF = lib.LYS_LEAF
+    LEAFLIST = lib.LYS_LEAFLIST
+    LIST = lib.LYS_LIST
+    RPC = lib.LYS_RPC
+    KEYWORDS = {
+        CONTAINER: 'container',
+        LEAF: 'leaf',
+        LEAFLIST: 'leaf-list',
+        LIST: 'list',
+        RPC: 'rpc',
+    }
+
     def __init__(self, context, node_p):
         self.context = context
         self._node = node_p
 
+    def nodetype(self):
+        return self._node.nodetype
+
     def keyword(self):
-        return '???'
+        return self.KEYWORDS.get(self._node.nodetype, '???')
 
     def name(self):
         return c2str(self._node.name)
@@ -263,21 +279,28 @@ class Node:
             return Extension(self.context, ext)
         return None
 
-    @staticmethod
-    def new(context, node_p):
-        nodecls = NODETYPE_CLASS.get(node_p.nodetype, Node)
+    NODETYPE_CLASS = {}
+
+    @classmethod
+    def register(cls, nodetype):
+        def _decorator(nodeclass):
+            cls.NODETYPE_CLASS[nodetype] = nodeclass
+            return nodeclass
+        return _decorator
+
+    @classmethod
+    def new(cls, context, node_p):
+        nodecls = cls.NODETYPE_CLASS.get(node_p.nodetype, Node)
         return nodecls(context, node_p)
 
 
 #------------------------------------------------------------------------------
+@Node.register(Node.LEAF)
 class Leaf(Node):
 
     def __init__(self, context, node_p):
         super().__init__(context, node_p)
         self._leaf = ffi.cast('struct lys_node_leaf *', node_p)
-
-    def keyword(self):
-        return 'leaf'
 
     def default(self):
         return c2str(self._leaf.dflt)
@@ -295,14 +318,12 @@ class Leaf(Node):
 
 
 #------------------------------------------------------------------------------
+@Node.register(Node.LEAFLIST)
 class LeafList(Node):
 
     def __init__(self, context, node_p):
         super().__init__(context, node_p)
         self._leaflist = ffi.cast('struct lys_node_leaflist *', node_p)
-
-    def keyword(self):
-        return 'leaf-list'
 
     def ordered(self):
         return bool(self._node.flags & lib.LYS_USERORDERED)
@@ -319,14 +340,12 @@ class LeafList(Node):
 
 
 #------------------------------------------------------------------------------
+@Node.register(Node.CONTAINER)
 class Container(Node):
 
     def __init__(self, context, node_p):
         super().__init__(context, node_p)
         self._container = ffi.cast('struct lys_node_container *', node_p)
-
-    def keyword(self):
-        return 'container'
 
     def presence(self):
         return c2str(self._container.presence)
@@ -339,14 +358,12 @@ class Container(Node):
 
 
 #------------------------------------------------------------------------------
+@Node.register(Node.LIST)
 class List(Node):
 
     def __init__(self, context, node_p):
         super().__init__(context, node_p)
         self._list = ffi.cast('struct lys_node_list *', node_p)
-
-    def keyword(self):
-        return 'list'
 
     def ordered(self):
         return bool(self._node.flags & lib.LYS_USERORDERED)
@@ -365,14 +382,12 @@ class List(Node):
 
 
 #------------------------------------------------------------------------------
+@Node.register(Node.RPC)
 class Rpc(Node):
 
     def __init__(self, context, node_p):
         super().__init__(context, node_p)
         self._rpc = ffi.cast('struct lys_node_rpc_action *', node_p)
-
-    def keyword(self):
-        return 'rpc'
 
     def __iter__(self):
         return self.children()
@@ -405,13 +420,3 @@ def iter_children(context, parent=ffi.NULL, module=ffi.NULL, *,
         if not _skip(child):
             yield Node.new(context, child)
         child = lib.lys_getnext(child, parent, module, 0)
-
-
-#------------------------------------------------------------------------------
-NODETYPE_CLASS = {
-    lib.LYS_CONTAINER: Container,
-    lib.LYS_LEAF: Leaf,
-    lib.LYS_LEAFLIST: LeafList,
-    lib.LYS_LIST: List,
-    lib.LYS_RPC: Rpc,
-}

@@ -159,7 +159,7 @@ with open('README.rst', 'r') as f:
 
 setuptools.setup(
     name='libyang',
-    version='0.16.65',
+    version='0.16.65.post1',
     description='CFFI bindings to libyang',
     long_description=LONG_DESC,
     url='https://github.com/rjarry/libyang-python',

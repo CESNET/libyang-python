@@ -29,7 +29,7 @@ with open(os.path.join(HERE, 'cdefs.h')) as f:
     BUILDER.cdef(f.read())
 with open(os.path.join(HERE, 'source.c')) as f:
     BUILDER.set_source('_libyang', f.read(), libraries=['yang'],
-                       extra_compile_args=['-Werror'])
+                       extra_compile_args=['-Werror', '-std=c99'])
 
 if __name__ == '__main__':
     BUILDER.compile()

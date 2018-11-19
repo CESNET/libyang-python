@@ -196,6 +196,26 @@ class Type(object):
             yield Type(self.context, t)
             t = lib.lys_getnext_union_type(t, self._type)
 
+    def enums(self):
+        if self._type.base != self.ENUM:
+            return
+        t = self._type
+        while t.info.enums.count == 0:
+            t = ffi.addressof(t.der.type)
+        for i in range(t.info.enums.count):
+            e = t.info.enums.enm[i]
+            yield c2str(e.name), c2str(e.dsc)
+
+    def bits(self):
+        if self._type.base != self.BITS:
+            return
+        t = self._type
+        while t.info.bits.count == 0:
+            t = ffi.addressof(t.der.type)
+        for i in range(t.info.bits.count):
+            b = t.info.bits.bit[i]
+            yield c2str(b.name), c2str(b.dsc)
+
     def module(self):
         module_p = lib.lys_main_module(self._type.der.module)
         if not module_p:

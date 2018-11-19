@@ -256,12 +256,16 @@ class Node(object):
     LEAFLIST = lib.LYS_LEAFLIST
     LIST = lib.LYS_LIST
     RPC = lib.LYS_RPC
+    INPUT = lib.LYS_INPUT
+    OUTPUT = lib.LYS_OUTPUT
     KEYWORDS = {
         CONTAINER: 'container',
         LEAF: 'leaf',
         LEAFLIST: 'leaf-list',
         LIST: 'list',
         RPC: 'rpc',
+        INPUT: 'input',
+        OUTPUT: 'output',
     }
 
     def __init__(self, context, node_p):
@@ -436,12 +440,9 @@ class List(Node):
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.RPC)
-class Rpc(Node):
-
-    def __init__(self, context, node_p):
-        Node.__init__(self, context, node_p)
-        self._rpc = ffi.cast('struct lys_node_rpc_action *', node_p)
+@Node.register(Node.INPUT)
+@Node.register(Node.OUTPUT)
+class RpcInOut(Node):
 
     def __iter__(self):
         return self.children()
@@ -451,7 +452,34 @@ class Rpc(Node):
 
 
 #------------------------------------------------------------------------------
-def iter_children(context, parent, skip_keys=False, types=None):
+@Node.register(Node.RPC)
+class Rpc(Node):
+
+    def input(self):
+        try:
+            return next(iter_children(
+                self.context, self._node, types=(self.INPUT,),
+                options=lib.LYS_GETNEXT_WITHINOUT))
+        except StopIteration:
+            return None
+
+    def output(self):
+        try:
+            return next(iter_children(
+                self.context, self._node, types=(self.OUTPUT,),
+                options=lib.LYS_GETNEXT_WITHINOUT))
+        except StopIteration:
+            return None
+
+    def __iter__(self):
+        return self.children()
+
+    def children(self, types=None):
+        return iter_children(self.context, self._node, types=types)
+
+
+#------------------------------------------------------------------------------
+def iter_children(context, parent, skip_keys=False, types=None, options=0):
     if types is None:
         types = (lib.LYS_CONTAINER, lib.LYS_LIST, lib.LYS_RPC,
                  lib.LYS_LEAF, lib.LYS_LEAFLIST)
@@ -474,8 +502,8 @@ def iter_children(context, parent, skip_keys=False, types=None):
     else:
         module = ffi.NULL
 
-    child = lib.lys_getnext(ffi.NULL, parent, module, 0)
+    child = lib.lys_getnext(ffi.NULL, parent, module, options)
     while child:
         if not _skip(child):
             yield Node.new(context, child)
-        child = lib.lys_getnext(child, parent, module, 0)
+        child = lib.lys_getnext(child, parent, module, options)

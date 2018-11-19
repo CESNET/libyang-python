@@ -2,7 +2,9 @@
 libyang-python
 ==============
 
-Python CFFI bindings to libyang.
+Python CFFI bindings to libyang__.
+
+__ https://github.com/CESNET/libyang/
 
 Installation
 ============
@@ -14,7 +16,7 @@ Installation
 .. note::
 
    By default, the C library will be compiled and statically linked with the
-   python ``.so`` extension.
+   python ``_libyang.so`` extension.
 
    If you already have ``libyang.so`` installed on your system (with the
    development headers), you can link the python extension with it by exporting

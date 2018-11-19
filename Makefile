@@ -17,16 +17,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
-all:
-	python3 ./setup.py build_clib
+
+build: _libyang.abi3.so
+
+_libyang.abi3.so: build/temp.linux-x86_64-3.5/libyang.a $(wildcard cffi/*)
 	python3 ./setup.py build_ext --inplace
 
-dist:
-	rm -rf dist/
+clib/CMakeLists.txt:
+	git submodule update --init
+
+build/temp.linux-x86_64-3.5/libyang.a: clib/CMakeLists.txt
+	python3 ./setup.py build_clib
+
+sdist: clib/CMakeLists.txt
+	rm -f dist/*.tar.gz
 	python3 ./setup.py sdist
 
-upload: dist
-	twine upload dist/*
+wheel: build/temp.linux-x86_64-3.5/libyang.a
+	rm -f dist/*.whl
+	python3 ./setup.py bdist_wheel
 
-.PHONY: all dist upload
+upload: sdist wheel
+	twine upload dist/*.tar.gz dist/*.whl
+
+.PHONY: build sdist wheel upload

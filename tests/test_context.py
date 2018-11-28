@@ -23,8 +23,8 @@ import unittest
 
 from libyang import Context
 from libyang.schema import Module
-from libyang.util import LibyangError
 from libyang.schema import Rpc
+from libyang.util import LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), 'yang')

@@ -22,15 +22,15 @@ import os
 import unittest
 
 from libyang import Context
-from libyang.schema import Module
-from libyang.schema import Rpc
-from libyang.schema import Node
 from libyang.schema import Container
-from libyang.schema import List
 from libyang.schema import Extension
 from libyang.schema import Leaf
-from libyang.schema import Type
 from libyang.schema import LeafList
+from libyang.schema import List
+from libyang.schema import Module
+from libyang.schema import Node
+from libyang.schema import Rpc
+from libyang.schema import Type
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), 'yang')

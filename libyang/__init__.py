@@ -18,8 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import os
 import logging
+import os
 
 from _libyang import ffi
 from _libyang import lib
@@ -27,8 +27,8 @@ from _libyang import lib
 from .schema import Module
 from .schema import Node
 from .util import LibyangError
-from .util import str2c
 from .util import c2str
+from .util import str2c
 
 
 #------------------------------------------------------------------------------

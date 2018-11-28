@@ -1,0 +1,33 @@
+---
+language: python
+dist: xenial
+cache: pip
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - build-essential
+    - cmake
+    - libffi-dev
+    - libpcre3-dev
+    - tox
+
+matrix:
+  include:
+    - env: TOXENV=lint
+      python: 3.6.5
+    - env: TOXENV=py27
+      python: 2.7.15
+    - env: TOXENV=pypy
+      python: pypy2.7-5.10.0
+    - env: TOXENV=py35
+      python: 3.5
+    - env: TOXENV=pypy3
+      python: pypy3.5
+    - env: TOXENV=py36
+      python: 3.6.5
+    - env: TOXENV=py37
+      python: 3.7.1
+
+script: tox -- $(git ls-files '*.py')

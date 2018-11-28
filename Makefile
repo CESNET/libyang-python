@@ -18,32 +18,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-build: _libyang.abi3.so
+PYTHON ?= python3
+define py_extension
+from distutils.sysconfig import get_config_var
+print("_libyang" + (get_config_var("EXT_SUFFIX") or get_config_var("SO")))
+endef
+py_extension := $(shell $(PYTHON) -c '$(py_extension)')
 
-_libyang.abi3.so: build/temp.linux-x86_64-3.5/libyang.a $(wildcard cffi/*)
-	python3 ./setup.py build_ext --inplace
+build: $(py_extension)
+
+$(py_extension): build/clib/libyang.a $(wildcard cffi/*)
+	$(PYTHON) ./setup.py build_ext --inplace
 
 clib/CMakeLists.txt:
 	git submodule update --init
 
-build/temp.linux-x86_64-3.5/libyang.a: clib/CMakeLists.txt
-	python3 ./setup.py build_clib
+build/clib/libyang.a: clib/CMakeLists.txt
+	$(PYTHON) ./setup.py build_clib
 
 sdist: clib/CMakeLists.txt
 	rm -f dist/*.tar.gz
-	python3 ./setup.py sdist
+	$(PYTHON) ./setup.py sdist
 
-wheel: build/temp.linux-x86_64-3.5/libyang.a
+wheel: build/clib/libyang.a
 	rm -f dist/*.whl
-	python3 ./setup.py bdist_wheel
+	$(PYTHON) ./setup.py bdist_wheel
 
-tests: _libyang.abi3.so
-	python3 -m unittest discover -cv -s tests/ -t .
+tests: $(py_extension)
+	$(PYTHON) -m unittest discover -cv -s tests/ -t .
 
-coverage: _libyang.abi3.so
-	python3 -m coverage run -m unittest discover -cv -s tests/ -t .
-	python3 -m coverage html
-	python3 -m coverage report
+coverage: $(py_extension)
+	$(PYTHON) -m coverage run -m unittest discover -cv -s tests/ -t .
+	$(PYTHON) -m coverage html
+	$(PYTHON) -m coverage report
 
 upload: sdist wheel
 	twine upload dist/*.tar.gz dist/*.whl

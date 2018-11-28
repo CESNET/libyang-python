@@ -92,7 +92,7 @@ class Extension(object):
     def __init__(self, context, ext_p):
         self.context = context
         self._ext = ext_p
-        self._def = ext_p['def']
+        self._def = getattr(ext_p, 'def')
 
     def name(self):
         return c2str(self._def.name)

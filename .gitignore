@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+/htmlcov/
 /build/
 /dist/
 /*.egg-info/

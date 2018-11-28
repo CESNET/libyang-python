@@ -1,0 +1,98 @@
+module yolo-system {
+  namespace "urn:yang:yolo:system";
+  prefix sys;
+
+  import omg-extensions { prefix ext; }
+  import wtf-types { prefix types; }
+
+  description
+    "YOLO.";
+
+  feature turbo-boost {
+    description
+      "Goes faster.";
+  }
+
+  grouping tree {
+    leaf hostname {
+      description
+        "The hostname.";
+      type types:host;
+    }
+
+    list url {
+      description
+        "An URL.";
+      key "proto host";
+      leaf proto {
+        type types:protocol;
+      }
+      leaf host {
+        type string;
+      }
+      leaf port {
+        type uint16;
+      }
+      leaf path {
+        type string;
+      }
+    }
+
+    leaf-list number {
+      description
+        "A number.";
+      type types:number;
+    }
+
+    leaf speed {
+      description
+        "The speed.";
+      if-feature turbo-boost;
+      type uint32;
+    }
+  }
+
+  container conf {
+    description
+      "Configuration.";
+    uses tree;
+  }
+
+  container state {
+    description
+      "State.";
+    config false;
+    uses tree;
+  }
+
+  rpc chmod {
+    description
+      "Change permissions on path.";
+    ext:require-admin;
+    input {
+      leaf path {
+        type string;
+      }
+      leaf perms {
+        type types:permissions;
+      }
+    }
+  }
+
+  rpc format-disk {
+    description
+      "Format disk.";
+    ext:require-admin;
+    input {
+      leaf disk {
+        ext:human-name "Disk";
+        type types:str;
+      }
+    }
+    output {
+      leaf duration {
+        type uint32;
+      }
+    }
+  }
+}

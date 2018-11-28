@@ -42,7 +42,10 @@ class Context(object):
             raise self.error('cannot create context')
 
         search_dirs = []
-        if 'YANG_MODPATH' in os.environ:
+        if 'YANGPATH' in os.environ:
+            search_dirs.extend(
+                os.environ['YANGPATH'].strip(': \t\r\n\'"').split(':'))
+        elif 'YANG_MODPATH' in os.environ:
             search_dirs.extend(
                 os.environ['YANG_MODPATH'].strip(': \t\r\n\'"').split(':'))
         if search_path:

@@ -166,7 +166,7 @@ class Type(object):
 
     def get_bases(self):
         if self._type.base == lib.LY_TYPE_DER:
-            for b in self.parent_type().get_bases():
+            for b in self.derived_type().get_bases():
                 yield b
         elif self._type.base == lib.LY_TYPE_LEAFREF:
             for b in self.leafref_type().get_bases():
@@ -179,35 +179,48 @@ class Type(object):
             yield self
 
     def name(self):
-        return c2str(self._type.der.name)
+        if self._type.der:
+            return c2str(self._type.der.name)
+        return self.basename()
 
     def description(self):
-        return c2str(self._type.der.dsc)
+        if self._type.der:
+            return c2str(self._type.der.dsc)
+        return None
 
     def base(self):
         return self._type.base
 
+    def bases(self):
+        for b in self.get_bases():
+            yield b.base()
+
     def basename(self):
         return self.BASENAMES.get(self._type.base, 'unknown')
 
-    def parent_type(self):
-        if self._type.base != self.DER:
-            raise self.context.error('not a derived type')
-        return Type(self.context, ffi.addressof(self._type.parent.type))
+    def basenames(self):
+        for b in self.get_bases():
+            yield b.basename()
+
+    def derived_type(self):
+        if not self._type.der:
+            return None
+        return Type(self.context, ffi.addressof(self._type.der.type))
 
     def leafref_type(self):
         if self._type.base != self.LEAFREF:
-            raise self.context.error('not a leafref type')
+            return None
         lref = self._type.info.lref
         return Type(self.context, ffi.addressof(lref.target.type))
 
     def union_types(self):
         if self._type.base != self.UNION:
-            raise self.context.error('not an union type')
-        t = lib.lys_getnext_union_type(ffi.NULL, self._type)
-        while t:
-            yield Type(self.context, t)
-            t = lib.lys_getnext_union_type(t, self._type)
+            return
+        t = self._type
+        while t.info.uni.count == 0:
+            t = ffi.addressof(t.der.type)
+        for i in range(t.info.uni.count):
+            yield Type(self.context, t.info.uni.types[i])
 
     def enums(self):
         if self._type.base != self.ENUM:
@@ -238,8 +251,9 @@ class Type(object):
     def extensions(self):
         for i in range(self._type.ext_size):
             yield Extension(self.context, self._type.ext[i])
-        for i in range(self._type.der.ext_size):
-            yield Extension(self.context, self._type.der.ext[i])
+        if self._type.parent:
+            for i in range(self._type.parent.ext_size):
+                yield Extension(self.context, self._type.parent.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
         ext = lib.lypy_find_ext(

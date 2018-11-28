@@ -270,7 +270,6 @@ const struct lys_node_list *lys_is_key(const struct lys_node_leaf *, uint8_t *);
 #define LYS_GETNEXT_NOSTATECHECK ...
 
 const struct lys_node *lys_getnext(const struct lys_node *, const struct lys_node *, const struct lys_module *, int);
-const struct lys_type *lys_getnext_union_type(const struct lys_type *, const struct lys_type *);
 char *lys_data_path(const struct lys_node *);
 char *lys_path(const struct lys_node *, int);
 struct lys_module *lys_node_module(const struct lys_node *);

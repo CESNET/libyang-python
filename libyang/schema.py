@@ -41,14 +41,27 @@ class Module(object):
     def description(self):
         return c2str(self._module.dsc)
 
-    def find_path(self, path):
-        node_set = ffi.gc(lib.ly_ctx_find_path(self._ctx, str2c(path)),
-                          lib.ly_set_free)
-        if not node_set:
-            raise self.error('cannot find path')
+    def feature_enable(self, name):
+        ret = lib.lys_features_enable(self._module, str2c(name))
+        if ret != 0:
+            raise self.context.error('no such feature: %r' % name)
 
-        for i in range(node_set.number):
-            yield Node.new(self, node_set.set.s[i])
+    def feature_enable_all(self):
+        self.feature_enable('*')
+
+    def feature_disable(self, name):
+        ret = lib.lys_features_disable(self._module, str2c(name))
+        if ret != 0:
+            raise self.context.error('no such feature: %r' % name)
+
+    def feature_disable_all(self):
+        self.feature_disable('*')
+
+    def feature_state(self, name):
+        ret = lib.lys_features_state(self._module, str2c(name))
+        if ret < 0:
+            raise self.context.error('no such feature: %r' % name)
+        return bool(ret)
 
     def __iter__(self):
         return self.children()

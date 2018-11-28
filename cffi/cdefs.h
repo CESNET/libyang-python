@@ -67,6 +67,10 @@ struct lys_module {
 	...;
 };
 
+int lys_features_enable(const struct lys_module *, const char *);
+int lys_features_disable(const struct lys_module *, const char *);
+int lys_features_state(const struct lys_module *, const char *);
+
 struct lys_ext {
 	const char *name;
 	struct lys_module *module;

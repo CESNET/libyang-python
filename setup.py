@@ -162,7 +162,7 @@ setuptools.setup(
     version='0.16.78',
     description='CFFI bindings to libyang',
     long_description=LONG_DESC,
-    url='https://github.com/rjarry/libyang-python',
+    url='https://github.com/rjarry/libyang-cffi',
     license='MIT',
     author='Robin Jarry',
     author_email='robin@jarry.cc',

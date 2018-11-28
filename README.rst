@@ -1,6 +1,6 @@
-==============
-libyang-python
-==============
+============
+libyang-cffi
+============
 
 Python CFFI bindings to libyang__.
 

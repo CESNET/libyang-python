@@ -55,16 +55,28 @@ class Context(object):
                 raise self.error('cannot set search dir')
 
     def error(self, msg, *args):
-        fmt = msg
-        ly_path = lib.ly_errpath(self._ctx)
-        if ly_path:
-            args += (c2str(ly_path),)
-            fmt += ': %s'
-        ly_msg = lib.ly_errmsg(self._ctx)
-        if ly_msg:
-            args += (c2str(ly_msg),)
-            fmt += ': %s'
-        return LibyangError(fmt % args)
+        errors = []
+        try:
+            err = lib.ly_err_first(self._ctx)
+            while err:
+                e = []
+                if err.path:
+                    e.append(c2str(err.path))
+                if err.msg:
+                    e.append(c2str(err.msg))
+                if err.apptag:
+                    e.append(c2str(err.apptag))
+                if e:
+                    errors.append(': '.join(e))
+                err = err.next
+        finally:
+            lib.ly_err_clean(self._ctx, ffi.NULL)
+
+        msg %= args
+        if errors:
+            msg += ': ' + ' '.join(errors)
+
+        return LibyangError(msg)
 
     def load_module(self, name):
         mod = lib.ly_ctx_load_module(self._ctx, str2c(name), ffi.NULL)
@@ -109,7 +121,7 @@ LOG_LEVELS = {
 }
 
 
-@ffi.def_extern(name='logging_callback')
+@ffi.def_extern(name='lypy_log_cb')
 def libyang_c_logging_callback(level, msg, path):
     args = [c2str(msg)]
     if path:
@@ -128,6 +140,7 @@ def set_log_level(level):
 
 
 set_log_level(logging.ERROR)
-lib.ly_set_log_clb(lib.logging_callback, True)
+lib.ly_set_log_clb(lib.lypy_log_cb, True)
+lib.ly_log_options(lib.LY_LOLOG | lib.LY_LOSTORE)
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())

@@ -41,11 +41,24 @@ typedef enum {
 	...
 } LY_LOG_LEVEL;
 
+struct ly_err_item {
+	char *msg;
+	char *path;
+	char *apptag;
+	struct ly_err_item *next;
+	...;
+};
+
+#define LY_LOLOG ...
+#define LY_LOSTORE ...
+#define LY_LOSTORE_LAST ...
+int ly_log_options(int);
+
 LY_LOG_LEVEL ly_verb(LY_LOG_LEVEL);
-extern "Python" void logging_callback(LY_LOG_LEVEL, const char *, const char *);
+extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *);
 void ly_set_log_clb(void (*)(LY_LOG_LEVEL, const char *, const char *), int);
-const char *ly_errmsg(const struct ly_ctx *);
-const char *ly_errpath(const struct ly_ctx *);
+struct ly_err_item *ly_err_first(const struct ly_ctx *);
+void ly_err_clean(struct ly_ctx *, struct ly_err_item *);
 
 struct lys_module {
 	const char *name;

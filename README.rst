@@ -21,9 +21,20 @@ __ https://github.com/rjarry/libyang-cffi/blob/master/LICENSE
 Installation
 ============
 
-.. code-block:: bash
+::
 
    pip install libyang
+
+You need the following system dependencies installed:
+
+- Python development headers
+- GCC
+- cmake (to build the libyang C code)
+- Lib PCRE development headers (to build the libyang C code)
+
+On a Debian/Ubuntu system::
+
+   sudo apt-get install python3-dev build-essential cmake libpcre3-dev
 
 .. note::
 
@@ -32,9 +43,7 @@ Installation
 
    If you already have ``libyang.so`` installed on your system (with the
    development headers), you can link the python extension with it by exporting
-   the ``LIBYANG_INSTALL=system`` variable when running pip:
-
-   .. code-block:: bash
+   the ``LIBYANG_INSTALL=system`` variable when running pip::
 
       LIBYANG_INSTALL=system pip install libyang
 

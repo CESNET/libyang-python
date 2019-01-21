@@ -63,6 +63,10 @@ class Module(object):
             raise self.context.error('no such feature: %r' % name)
         return bool(ret)
 
+    def revisions(self):
+        for i in range(self._module.rev_size):
+            yield Revision(self.context, self._module.rev[i])
+
     def __iter__(self):
         return self.children()
 
@@ -84,6 +88,42 @@ class Module(object):
             fileobj.fileno(), self._module, fmt, str2c(path), 0, 0)
         if ret != 0:
             raise self.context.error('cannot print module')
+
+
+#------------------------------------------------------------------------------
+class Revision(object):
+
+    def __init__(self, context, rev_p):
+        self.context = context
+        self._rev = rev_p
+
+    def date(self):
+        return c2str(self._rev.date)
+
+    def description(self):
+        return c2str(self._rev.dsc)
+
+    def reference(self):
+        return c2str(self._rev.ref)
+
+    def extensions(self):
+        for i in range(self._rev.ext_size):
+            yield Extension(self.context, self._rev.ext[i])
+
+    def get_extension(self, name, prefix=None, arg_value=None):
+        ext = lib.lypy_find_ext(
+            self._rev.ext, self._rev.ext_size,
+            str2c(name), str2c(prefix), str2c(arg_value))
+        if ext:
+            return Extension(self.context, ext)
+        return None
+
+    def __repr__(self):
+        cls = self.__class__
+        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.date()
 
 
 #------------------------------------------------------------------------------

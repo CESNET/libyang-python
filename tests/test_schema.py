@@ -29,6 +29,7 @@ from libyang.schema import LeafList
 from libyang.schema import List
 from libyang.schema import Module
 from libyang.schema import Node
+from libyang.schema import Revision
 from libyang.schema import Rpc
 from libyang.schema import Type
 
@@ -73,6 +74,43 @@ class ModuleTest(unittest.TestCase):
         self.module.feature_enable_all()
         self.assertTrue(self.module.feature_state('turbo-boost'))
         self.module.feature_disable_all()
+
+    def test_mod_revisions(self):
+        revisions = list(self.module.revisions())
+        self.assertEqual(len(revisions), 2)
+        self.assertIsInstance(revisions[0], Revision)
+        self.assertEqual(revisions[0].date(), '1999-04-01')
+        self.assertEqual(revisions[1].date(), '1990-04-01')
+
+
+#------------------------------------------------------------------------------
+class RevisionTest(unittest.TestCase):
+
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        mod = self.ctx.load_module('yolo-system')
+        revisions = list(mod.revisions())
+        self.revision = revisions[0]
+
+    def tearDown(self):
+        self.revision = None
+        self.ctx = None
+
+    def test_rev_date(self):
+        self.assertEqual(self.revision.date(), '1999-04-01')
+
+    def test_rev_reference(self):
+        self.assertEqual(self.revision.reference(),
+                'RFC 2549 - IP over Avian Carriers with Quality of Service.')
+
+    def test_rev_description(self):
+        self.assertEqual(self.revision.description(), 'Version update.')
+
+    def test_rev_extensions(self):
+        exts = list(self.revision.extensions())
+        self.assertEqual(len(exts), 1)
+        ext = self.revision.get_extension('human-name', prefix='omg-extensions')
+        self.assertIsInstance(ext, Extension)
 
 
 #------------------------------------------------------------------------------

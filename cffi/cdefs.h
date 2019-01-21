@@ -64,7 +64,18 @@ struct lys_module {
 	const char *name;
 	const char *prefix;
 	const char *dsc;
+	uint8_t rev_size;
+	struct lys_revision *rev;
 	...;
+};
+
+#define LY_REV_SIZE 11
+struct lys_revision {
+	char date[LY_REV_SIZE];
+	uint8_t ext_size;
+	struct lys_ext_instance **ext;
+	const char *dsc;
+	const char *ref;
 };
 
 int lys_features_enable(const struct lys_module *, const char *);

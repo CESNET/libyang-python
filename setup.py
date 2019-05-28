@@ -39,7 +39,6 @@ if '_cffi_backend' not in sys.builtin_module_names:
     INSTALL_REQS.append(CFFI_REQ)
     SETUP_REQS.append(CFFI_REQ)
 HERE = os.path.abspath(os.path.dirname(__file__))
-CLIB_PREFIX = os.path.join(HERE, 'build', 'clib')
 
 
 class BuildCLib(build_clib):
@@ -48,25 +47,15 @@ class BuildCLib(build_clib):
         if not self.libraries:
             return
         log.info('Building libyang C library ...')
-        if not os.path.exists(CLIB_PREFIX):
-            os.makedirs(CLIB_PREFIX)
-        commands = [
-            [
-                'cmake', os.path.join(HERE, 'clib'),
-                '-DCMAKE_BUILD_TYPE=release',
-                '-DENABLE_STATIC=ON',
-                '-DCMAKE_C_FLAGS=-fPIC',
-                '-DENABLE_BUILD_TESTS=OFF',
-                '-DENABLE_VALGRIND_TESTS=OFF',
-                '-DCMAKE_INSTALL_PREFIX=%s' % CLIB_PREFIX,
-                '-DGEN_LANGUAGE_BINDINGS=0',
-            ],
-            ['make', '-j%d' % multiprocessing.cpu_count()],
-            ['make', 'install'],
+        cmd = [
+            os.path.join(HERE, 'build-libyang.sh'),
+            '--static',
+            '--src=%s' % os.path.join(HERE, 'clib'),
+            '--build=%s' % os.path.abspath(self.build_temp),
+            '--install=%s' % os.path.abspath(self.build_temp),
         ]
-        for cmd in commands:
-            log.debug('%s$ %s', CLIB_PREFIX, ' '.join(cmd))
-            subprocess.check_call(cmd, cwd=CLIB_PREFIX)
+        log.debug('+ %s' % ' '.join(cmd))
+        subprocess.check_call(cmd)
 
     def get_library_names(self):
         if not self.libraries:
@@ -78,8 +67,10 @@ class BuildExt(build_ext):
 
     def run(self):
         if self.distribution.has_c_libraries():
-            self.include_dirs.append(os.path.join(CLIB_PREFIX, 'include'))
-            self.library_dirs.append(CLIB_PREFIX)
+            tmp = os.path.abspath(
+                self.get_finalized_command('build_clib').build_temp)
+            self.include_dirs.append(os.path.join(tmp, 'include'))
+            self.library_dirs.append(tmp)
         return build_ext.run(self)
 
 

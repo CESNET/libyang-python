@@ -47,6 +47,18 @@ On a Debian/Ubuntu system::
 
       LIBYANG_INSTALL=system pip install libyang
 
+   If libyang headers and libraries are installed in a non-standard location,
+   you can specify them with the ``LIBYANG_HEADERS`` and ``LIBYANG_LIBRARIES``
+   variables. Additionally, for finer control, you may use
+   ``LIBYANG_EXTRA_CFLAGS`` and ``LIBYANG_EXTRA_LDFLAGS``::
+
+      LIBYANG_INSTALL=system \
+      LIBYANG_HEADERS=/home/build/opt/ly/include \
+      LIBYANG_LIBRARIES=/home/build/opt/ly/lib \
+      LIBYANG_EXTRA_CFLAGS="-O3" \
+      LIBYANG_EXTRA_LDFLAGS="-rpath=/opt/ly/lib" \
+             pip install libyang
+
 Examples
 ========
 

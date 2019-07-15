@@ -323,6 +323,12 @@ class Node(object):
     def mandatory(self):
         return bool(self._node.flags & lib.LYS_MAND_TRUE)
 
+    def deprecated(self):
+        return bool(self._node.flags & lib.LYS_STATUS_DEPRC)
+
+    def obsolete(self):
+        return bool(self._node.flags & lib.LYS_STATUS_OBSLT)
+
     def module(self):
         module_p = lib.lys_node_module(self._node)
         if not module_p:

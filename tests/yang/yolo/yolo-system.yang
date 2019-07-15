@@ -20,6 +20,20 @@ module yolo-system {
       type types:host;
     }
 
+    leaf deprecated-leaf {
+      status deprecated;
+      description
+        "A deprecated leaf.";
+      type string;
+    }
+
+    leaf obsolete-leaf {
+      status obsolete;
+      description
+        "An obsolete leaf.";
+      type string;
+    }
+
     list url {
       description
         "An URL.";

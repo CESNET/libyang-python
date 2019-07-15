@@ -105,11 +105,11 @@ class ContainerTest(unittest.TestCase):
 
     def test_cont_iter(self):
         children = list(iter(self.container))
-        self.assertEqual(len(children), 4)
+        self.assertEqual(len(children), 6)
 
     def test_cont_children_leafs(self):
         leafs = list(self.container.children(types=(Node.LEAF,)))
-        self.assertEqual(len(leafs), 2)
+        self.assertEqual(len(leafs), 4)
 
 
 #------------------------------------------------------------------------------
@@ -201,6 +201,20 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(d.name(), 'str')
         dd = d.derived_type()
         self.assertEqual(dd.name(), 'string')
+
+    def test_leaf_type_status(self):
+        leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:hostname'))
+        self.assertIsInstance(leaf, Leaf)
+        self.assertEqual(leaf.deprecated(), False)
+        self.assertEqual(leaf.obsolete(), False)
+        leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:deprecated-leaf'))
+        self.assertIsInstance(leaf, Leaf)
+        self.assertEqual(leaf.deprecated(), True)
+        self.assertEqual(leaf.obsolete(), False)
+        leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:obsolete-leaf'))
+        self.assertIsInstance(leaf, Leaf)
+        self.assertEqual(leaf.deprecated(), False)
+        self.assertEqual(leaf.obsolete(), True)
 
     def test_leaf_type_union(self):
         leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:number'))

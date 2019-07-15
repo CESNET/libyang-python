@@ -407,7 +407,7 @@ class LeafList(Node):
         return bool(self._node.flags & lib.LYS_USERORDERED)
 
     def units(self):
-        return c2str(self._leaf.units)
+        return c2str(self._leaflist.units)
 
     def type(self):
         return Type(self.context, ffi.addressof(self._leaflist.type))

@@ -8,6 +8,7 @@ include setup.py
 include setup.cfg
 include LICENSE
 include README.rst
+include VERSION
 global-exclude *.py[co]
 global-exclude *.so
 global-exclude *.o

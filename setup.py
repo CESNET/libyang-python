@@ -22,6 +22,7 @@
 import datetime
 from distutils import log
 from distutils.command.build_clib import build_clib
+import glob
 import multiprocessing
 import os
 import re
@@ -58,9 +59,14 @@ class BuildCLib(build_clib):
         subprocess.check_call(cmd)
 
     def get_library_names(self):
-        if not self.libraries:
-            return []
-        return ['pcre', 'metadata', 'yangdata', 'nacm', 'user_date_and_time']
+        libs = []
+        if self.libraries:
+            libs.append('pcre')
+            for lib_file in glob.glob(os.path.join(self.build_temp, '*.a')):
+                lib_name = re.sub(r'.*lib([^/]+)\.a$', r'\1', lib_file)
+                if lib_name != 'yang':
+                    libs.append(lib_name)
+        return libs
 
 
 class BuildExt(build_ext):

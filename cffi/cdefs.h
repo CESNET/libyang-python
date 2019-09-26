@@ -65,7 +65,9 @@ struct lys_module {
 	const char *prefix;
 	const char *dsc;
 	uint8_t rev_size;
+	uint8_t features_size;
 	struct lys_revision *rev;
+	struct lys_feature *features;
 	...;
 };
 
@@ -76,6 +78,28 @@ struct lys_revision {
 	struct lys_ext_instance **ext;
 	const char *dsc;
 	const char *ref;
+};
+
+#define LYS_FENABLED ...
+struct lys_feature {
+	const char *name;
+	const char *dsc;
+	const char *ref;
+	uint16_t flags;
+	uint8_t iffeature_size;
+	struct lys_iffeature *iffeature;
+	struct lys_module *module;
+	...;
+};
+
+#define LYS_IFF_NOT ...
+#define LYS_IFF_AND ...
+#define LYS_IFF_OR ...
+#define LYS_IFF_F ...
+struct lys_iffeature {
+	uint8_t *expr;
+	struct lys_feature **features;
+	...;
 };
 
 int lys_features_enable(const struct lys_module *, const char *);
@@ -219,7 +243,9 @@ struct lys_node {
 	const char *dsc;
 	uint16_t flags;
 	uint8_t ext_size;
+	uint8_t iffeature_size;
 	struct lys_ext_instance **ext;
+	struct lys_iffeature *iffeature;
 	LYS_NODE nodetype;
 	...;
 };

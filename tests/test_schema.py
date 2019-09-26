@@ -24,6 +24,8 @@ import unittest
 from libyang import Context
 from libyang.schema import Container
 from libyang.schema import Extension
+from libyang.schema import IfFeature
+from libyang.schema import IfOrFeatures
 from libyang.schema import Leaf
 from libyang.schema import LeafList
 from libyang.schema import List
@@ -32,6 +34,7 @@ from libyang.schema import Node
 from libyang.schema import Revision
 from libyang.schema import Rpc
 from libyang.schema import Type
+from libyang.util import LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), 'yang')
@@ -65,7 +68,7 @@ class ModuleTest(unittest.TestCase):
         rpcs = list(self.module.children(types=(Node.RPC,)))
         self.assertEqual(len(rpcs), 2)
 
-    def test_mod_features(self):
+    def test_mod_enable_features(self):
         self.assertFalse(self.module.feature_state('turbo-boost'))
         self.module.feature_enable('turbo-boost')
         self.assertTrue(self.module.feature_state('turbo-boost'))
@@ -74,6 +77,24 @@ class ModuleTest(unittest.TestCase):
         self.module.feature_enable_all()
         self.assertTrue(self.module.feature_state('turbo-boost'))
         self.module.feature_disable_all()
+
+    def test_mod_features(self):
+        features = list(self.module.features())
+        self.assertEqual(len(features), 2)
+
+    def test_mod_get_feature(self):
+        self.module.feature_enable('turbo-boost')
+        feature = self.module.get_feature('turbo-boost')
+        self.assertEqual(feature.name(), 'turbo-boost')
+        self.assertEqual(feature.description(), 'Goes faster.')
+        self.assertIsNone(feature.reference())
+        self.assertTrue(feature.state())
+        self.assertFalse(feature.deprecated())
+        self.assertFalse(feature.obsolete())
+
+    def test_mod_get_feature_not_found(self):
+        with self.assertRaises(LibyangError):
+            self.module.get_feature('does-not-exist')
 
     def test_mod_revisions(self):
         revisions = list(self.module.revisions())
@@ -114,6 +135,45 @@ class RevisionTest(unittest.TestCase):
 
 
 #------------------------------------------------------------------------------
+class IfFeatureTest(unittest.TestCase):
+
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        mod = self.ctx.load_module('yolo-system')
+        mod.feature_enable_all()
+        self.leaf = next(self.ctx.find_path(
+            '/yolo-system:conf/yolo-system:isolation-level'))
+
+    def tearDown(self):
+        self.container = None
+        self.ctx = None
+
+    def test_iffeatures(self):
+        iffeatures = list(self.leaf.if_features())
+        self.assertEqual(len(iffeatures), 1)
+
+    def test_iffeature_tree(self):
+        iff = next(self.leaf.if_features())
+        tree = iff.tree()
+        self.assertIsInstance(tree, IfOrFeatures)
+        self.assertIsInstance(tree.a, IfFeature)
+        self.assertIsInstance(tree.b, IfFeature)
+        self.assertEqual(tree.a.feature().name(), 'turbo-boost')
+        self.assertEqual(tree.b.feature().name(), 'networking')
+
+    def test_iffeature_str(self):
+        iff = next(self.leaf.if_features())
+        self.assertEqual(str(iff), 'turbo-boost OR networking')
+
+    def test_iffeature_dump(self):
+        iff = next(self.leaf.if_features())
+        self.assertEqual(iff.dump(), '''OR
+ turbo-boost [Goes faster.]
+ networking [Supports networking.]
+''')
+
+
+#------------------------------------------------------------------------------
 class ContainerTest(unittest.TestCase):
 
     def setUp(self):
@@ -143,11 +203,11 @@ class ContainerTest(unittest.TestCase):
 
     def test_cont_iter(self):
         children = list(iter(self.container))
-        self.assertEqual(len(children), 6)
+        self.assertEqual(len(children), 7)
 
     def test_cont_children_leafs(self):
         leafs = list(self.container.children(types=(Node.LEAF,)))
-        self.assertEqual(len(leafs), 4)
+        self.assertEqual(len(leafs), 5)
 
 
 #------------------------------------------------------------------------------

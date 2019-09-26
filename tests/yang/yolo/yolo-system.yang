@@ -1,4 +1,5 @@
 module yolo-system {
+  yang-version 1.1;
   namespace "urn:yang:yolo:system";
   prefix sys;
 
@@ -25,6 +26,11 @@ module yolo-system {
   feature turbo-boost {
     description
       "Goes faster.";
+  }
+
+  feature networking {
+    description
+      "Supports networking.";
   }
 
   grouping tree {
@@ -76,6 +82,13 @@ module yolo-system {
       description
         "The speed.";
       if-feature turbo-boost;
+      type uint32;
+    }
+
+    leaf isolation-level {
+      description
+        "The level of isolation.";
+      if-feature "turbo-boost or networking";
       type uint32;
     }
   }

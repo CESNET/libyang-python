@@ -101,6 +101,11 @@ struct lys_ext_instance {
 	...;
 };
 
+struct lys_restr {
+	const char *expr;
+	...;
+};
+
 typedef enum {
 	LY_TYPE_DER,
 	LY_TYPE_BINARY,
@@ -126,6 +131,10 @@ typedef enum {
 	...
 } LY_DATA_TYPE;
 
+struct lys_type_info_binary {
+	struct lys_restr *length;
+};
+
 struct lys_type_bit {
 	const char *name;
 	const char *dsc;
@@ -136,6 +145,11 @@ struct lys_type_bit {
 struct lys_type_info_bits {
 	struct lys_type_bit *bit;
 	unsigned int count;
+};
+
+struct lys_type_info_dec64 {
+	struct lys_restr *range;
+	...;
 };
 
 struct lys_type_enum {
@@ -149,10 +163,21 @@ struct lys_type_info_enums {
 	unsigned int count;
 };
 
+struct lys_type_info_num {
+	struct lys_restr *range;
+};
+
 struct lys_type_info_lref {
 	const char *path;
 	struct lys_node_leaf* target;
 	int8_t req;
+};
+
+struct lys_type_info_str {
+	struct lys_restr *length;
+	struct lys_restr *patterns;
+	unsigned int pat_count;
+	...;
 };
 
 struct lys_type_info_union {
@@ -162,9 +187,13 @@ struct lys_type_info_union {
 };
 
 union lys_type_info {
+	struct lys_type_info_binary binary;
 	struct lys_type_info_bits bits;
+	struct lys_type_info_dec64 dec64;
 	struct lys_type_info_enums enums;
+	struct lys_type_info_num num;
 	struct lys_type_info_lref lref;
+	struct lys_type_info_str str;
 	struct lys_type_info_union uni;
 	...;
 };
@@ -234,11 +263,15 @@ struct lys_node {
 };
 
 struct lys_node_container {
+	uint8_t must_size;
+	struct lys_restr *must;
 	const char *presence;
 	...;
 };
 
 struct lys_node_leaf {
+	uint8_t must_size;
+	struct lys_restr *must;
 	struct lys_type type;
 	const char *units;
 	const char *dflt;
@@ -246,6 +279,8 @@ struct lys_node_leaf {
 };
 
 struct lys_node_leaflist {
+	uint8_t must_size;
+	struct lys_restr *must;
 	struct lys_type type;
 	const char *units;
 	uint32_t min;
@@ -256,6 +291,8 @@ struct lys_node_leaflist {
 };
 
 struct lys_node_list {
+	uint8_t must_size;
+	struct lys_restr *must;
 	uint8_t keys_size;
 	struct lys_node_leaf **keys;
 	uint32_t min;

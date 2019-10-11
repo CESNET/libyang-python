@@ -275,6 +275,46 @@ class Type(object):
             b = t.info.bits.bit[i]
             yield c2str(b.name), c2str(b.dsc)
 
+    NUM_TYPES = frozenset(
+        (INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
+
+    def range(self):
+        if self._type.base in self.NUM_TYPES and self._type.info.num.range:
+            return c2str(self._type.info.num.range.expr)
+        elif self._type.base == self.DEC64 and self._type.info.dec64.range:
+            return c2str(self._type.info.dec64.range.expr)
+        elif self._type.der:
+            return self.derived_type().range()
+        return None
+
+    def length(self):
+        if self._type.base == self.STRING and self._type.info.str.length:
+            return c2str(self._type.info.str.length.expr)
+        elif self._type.base == self.BINARY and self._type.info.binary.length:
+            return c2str(self._type.info.binary.length.expr)
+        elif self._type.der:
+            return self.derived_type().length()
+        return None
+
+    def patterns(self):
+        if self._type.base != self.STRING:
+            return
+        for i in range(self._type.info.str.pat_count):
+            p = self._type.info.str.patterns[i]
+            if not p:
+                continue
+            # in case of pattern restriction, the first byte has a special
+            # meaning: 0x06 (ACK) for regular match and 0x15 (NACK) for
+            # invert-match
+            invert_match = p.expr[0] == 0x15
+            # yield tuples like:
+            #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
+            #     ('[xX][mM][lL].*', True)
+            yield c2str(p.expr + 1), invert_match
+        if self._type.der:
+            for p in self.derived_type().patterns():
+                yield p
+
     def module(self):
         module_p = lib.lys_main_module(self._type.der.module)
         if not module_p:
@@ -605,6 +645,10 @@ class Leaf(Node):
             return True
         return False
 
+    def must_conditions(self):
+        for i in range(self._leaf.must_size):
+            yield c2str(self._leaf.must[i].expr)
+
     def __str__(self):
         return '%s %s' % (self.name(), self.type().name())
 
@@ -630,6 +674,10 @@ class LeafList(Node):
         for i in range(self._leaflist.dflt_size):
             yield c2str(self._leaflist.dflt[i])
 
+    def must_conditions(self):
+        for i in range(self._leaflist.must_size):
+            yield c2str(self._leaflist.must[i].expr)
+
     def __str__(self):
         return '%s %s' % (self.name(), self.type().name())
 
@@ -644,6 +692,10 @@ class Container(Node):
 
     def presence(self):
         return c2str(self._container.presence)
+
+    def must_conditions(self):
+        for i in range(self._container.must_size):
+            yield c2str(self._container.must[i].expr)
 
     def __iter__(self):
         return self.children()
@@ -675,6 +727,10 @@ class List(Node):
             node = ffi.cast('struct lys_node *', self._list.keys[i])
             yield Leaf(self.context, node)
 
+    def must_conditions(self):
+        for i in range(self._list.must_size):
+            yield c2str(self._list.must[i].expr)
+
     def __str__(self):
         return '%s [%s]' % (
             self.name(), ', '.join(k.name() for k in self.keys()))
@@ -688,6 +744,9 @@ class RpcInOut(Node):
     def __iter__(self):
         return self.children()
 
+    def must_conditions(self):
+        return ()
+
     def children(self, types=None):
         return iter_children(self.context, self._node, types=types)
 
@@ -695,6 +754,9 @@ class RpcInOut(Node):
 #------------------------------------------------------------------------------
 @Node.register(Node.RPC)
 class Rpc(Node):
+
+    def must_conditions(self):
+        return ()
 
     def input(self):
         try:

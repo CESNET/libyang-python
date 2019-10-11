@@ -265,6 +265,11 @@ class Type(object):
             e = t.info.enums.enm[i]
             yield c2str(e.name), c2str(e.dsc)
 
+    def all_enums(self):
+        for b in self.get_bases():
+            for e in b.enums():
+                yield e
+
     def bits(self):
         if self._type.base != self.BITS:
             return
@@ -274,6 +279,11 @@ class Type(object):
         for i in range(t.info.bits.count):
             b = t.info.bits.bit[i]
             yield c2str(b.name), c2str(b.dsc)
+
+    def all_bits(self):
+        for b in self.get_bases():
+            for bb in b.bits():
+                yield bb
 
     NUM_TYPES = frozenset(
         (INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
@@ -287,6 +297,16 @@ class Type(object):
             return self.derived_type().range()
         return None
 
+    def all_ranges(self):
+        if self._type.base == lib.LY_TYPE_UNION:
+            for t in self.union_types():
+                for r in t.all_ranges():
+                    yield r
+        else:
+            rng = self.range()
+            if rng is not None:
+                yield rng
+
     def length(self):
         if self._type.base == self.STRING and self._type.info.str.length:
             return c2str(self._type.info.str.length.expr)
@@ -295,6 +315,16 @@ class Type(object):
         elif self._type.der:
             return self.derived_type().length()
         return None
+
+    def all_lengths(self):
+        if self._type.base == lib.LY_TYPE_UNION:
+            for t in self.union_types():
+                for l in t.all_lengths():
+                    yield l
+        else:
+            length = self.length()
+            if length is not None:
+                yield length
 
     def patterns(self):
         if self._type.base != self.STRING:
@@ -313,6 +343,15 @@ class Type(object):
             yield c2str(p.expr + 1), invert_match
         if self._type.der:
             for p in self.derived_type().patterns():
+                yield p
+
+    def all_patterns(self):
+        if self._type.base == lib.LY_TYPE_UNION:
+            for t in self.union_types():
+                for p in t.all_patterns():
+                    yield p
+        else:
+            for p in self.patterns():
                 yield p
 
     def module(self):
@@ -572,6 +611,13 @@ class Node(object):
 
     def obsolete(self):
         return bool(self._node.flags & lib.LYS_STATUS_OBSLT)
+
+    def status(self):
+        if self._node.flags & lib.LYS_STATUS_DEPRC:
+            return 'deprecated'
+        elif self._node.flags & lib.LYS_STATUS_OBSLT:
+            return 'obsolete'
+        return 'current'
 
     def module(self):
         module_p = lib.lys_node_module(self._node)

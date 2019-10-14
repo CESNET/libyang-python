@@ -73,6 +73,9 @@ class BuildExt(build_ext):
 
     def run(self):
         if self.distribution.has_c_libraries():
+            if 'build_clib' not in self.distribution.have_run or \
+                    not self.distribution.have_run['build_clib']:
+                self.run_command('build_clib')
             tmp = os.path.abspath(
                 self.get_finalized_command('build_clib').build_temp)
             self.include_dirs.append(os.path.join(tmp, 'include'))

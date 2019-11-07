@@ -192,6 +192,9 @@ class ContainerTest(unittest.TestCase):
         leafs = list(self.container.children(types=(Node.LEAF,)))
         self.assertEqual(len(leafs), 5)
 
+    def test_cont_parent(self):
+        self.assertIsNone(self.container.parent())
+
 
 #------------------------------------------------------------------------------
 class ListTest(unittest.TestCase):
@@ -228,6 +231,12 @@ class ListTest(unittest.TestCase):
         children = list(self.list.children(skip_keys=True))
         self.assertEqual(len(children), 2)
 
+    def test_list_parent(self):
+        parent = self.list.parent()
+        self.assertIsNotNone(parent)
+        self.assertIsInstance(parent, Container)
+        self.assertEqual(parent.name(), 'conf')
+
 
 #------------------------------------------------------------------------------
 class RpcTest(unittest.TestCase):
@@ -259,6 +268,9 @@ class RpcTest(unittest.TestCase):
         self.assertEqual(leaf.data_path(), '/yolo-system:format-disk/disk')
         leaf = next(self.rpc.input().children())
         self.assertIsInstance(leaf, Leaf)
+
+    def test_rpc_no_parent(self):
+        self.assertIsNone(self.rpc.parent())
 
 
 #------------------------------------------------------------------------------
@@ -330,3 +342,11 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(t.base(), Type.BITS)
         bits = [b for b, _ in t.bits()]
         self.assertEqual(bits, ['read', 'write', 'execute'])
+
+    def test_leaf_parent(self):
+        leaf = next(self.ctx.find_path(
+            '/yolo-system:conf/yolo-system:url/yolo-system:proto'))
+        parent = leaf.parent()
+        self.assertIsNotNone(parent)
+        self.assertIsInstance(parent, List)
+        self.assertEqual(parent.name(), 'url')

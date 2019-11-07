@@ -647,6 +647,14 @@ class Node(object):
         for i in range(self._node.iffeature_size):
             yield IfFeatureExpr(self.context, self._node.iffeature[i])
 
+    def parent(self):
+        parent_p = lib.lys_parent(self._node)
+        while parent_p and parent_p.nodetype not in Node.NODETYPE_CLASS:
+            parent_p = lib.lys_parent(parent_p)
+        if parent_p:
+            return Node.new(self.context, parent_p)
+        return None
+
     def __repr__(self):
         cls = self.__class__
         return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))

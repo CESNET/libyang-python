@@ -7,7 +7,8 @@ import unittest
 from libyang import Context
 from libyang.diff import BaseTypeAdded
 from libyang.diff import BaseTypeRemoved
-from libyang.diff import StatusChanged
+from libyang.diff import StatusAdded
+from libyang.diff import StatusRemoved
 from libyang.diff import schema_diff
 
 
@@ -23,10 +24,14 @@ class DiffTest(unittest.TestCase):
         (BaseTypeAdded, '/yolo-system:state/yolo-system:speed'),
         (BaseTypeRemoved, '/yolo-system:conf/yolo-system:speed'),
         (BaseTypeRemoved, '/yolo-system:state/yolo-system:speed'),
-        (StatusChanged, '/yolo-system:conf/yolo-system:deprecated-leaf'),
-        (StatusChanged, '/yolo-system:conf/yolo-system:obsolete-leaf'),
-        (StatusChanged, '/yolo-system:state/yolo-system:deprecated-leaf'),
-        (StatusChanged, '/yolo-system:state/yolo-system:obsolete-leaf'),
+        (StatusAdded, '/yolo-system:conf/yolo-system:deprecated-leaf'),
+        (StatusRemoved, '/yolo-system:conf/yolo-system:deprecated-leaf'),
+        (StatusAdded, '/yolo-system:conf/yolo-system:obsolete-leaf'),
+        (StatusRemoved, '/yolo-system:conf/yolo-system:obsolete-leaf'),
+        (StatusAdded, '/yolo-system:state/yolo-system:deprecated-leaf'),
+        (StatusRemoved, '/yolo-system:state/yolo-system:deprecated-leaf'),
+        (StatusAdded, '/yolo-system:state/yolo-system:obsolete-leaf'),
+        (StatusRemoved, '/yolo-system:state/yolo-system:obsolete-leaf'),
     ))
 
     def test_diff(self):

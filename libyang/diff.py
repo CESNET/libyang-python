@@ -76,8 +76,8 @@ class SNodeRemoved(SNodeDiff):
         self.node = node
 
     def __str__(self):
-        return '-%s: removed status=%s node' % (
-            self.node.schema_path(), self.node.status())
+        return '-%s: removed status=%s %s' % (
+            self.node.schema_path(), self.node.status(), self.node.keyword())
 
 
 #------------------------------------------------------------------------------
@@ -87,33 +87,102 @@ class SNodeAdded(SNodeDiff):
         self.node = node
 
     def __str__(self):
-        return '+%s: added node' % self.node.schema_path()
+        return '+%s: added %s' % (self.node.schema_path(), self.node.keyword())
+
+
+#------------------------------------------------------------------------------
+class SNodeAttributeChanged(SNodeDiff):
+
+    def __init__(self, old, new, value=None):
+        self.old = old
+        self.new = new
+        self.value = value
+
+    def __str__(self):
+        if self.__class__.__name__.endswith('Added'):
+            sign = '+'
+        else:
+            sign = '-'
+        s = '%s%s: %s' % (sign, self.new.schema_path(), self.__class__.__name__)
+        if self.value is not None:
+            str_val = str(self.value).replace('"', '\\"').replace('\n', '\\n')
+            s += ' "%s"' % str_val
+        return s
+
+
+#------------------------------------------------------------------------------
+class BaseTypeRemoved(SNodeAttributeChanged): pass
+class BaseTypeAdded(SNodeAttributeChanged): pass
+class BitRemoved(SNodeAttributeChanged): pass
+class BitAdded(SNodeAttributeChanged): pass
+class ConfigFalseRemoved(SNodeAttributeChanged): pass
+class ConfigFalseAdded(SNodeAttributeChanged): pass
+class DefaultRemoved(SNodeAttributeChanged): pass
+class DefaultAdded(SNodeAttributeChanged): pass
+class DescriptionRemoved(SNodeAttributeChanged): pass
+class DescriptionAdded(SNodeAttributeChanged): pass
+class EnumRemoved(SNodeAttributeChanged): pass
+class EnumAdded(SNodeAttributeChanged): pass
+class ExtensionRemoved(SNodeAttributeChanged): pass
+class ExtensionAdded(SNodeAttributeChanged): pass
+class KeyRemoved(SNodeAttributeChanged): pass
+class KeyAdded(SNodeAttributeChanged): pass
+class MandatoryRemoved(SNodeAttributeChanged): pass
+class MandatoryAdded(SNodeAttributeChanged): pass
+class MustRemoved(SNodeAttributeChanged): pass
+class MustAdded(SNodeAttributeChanged): pass
+class RangeRemoved(SNodeAttributeChanged): pass
+class RangeAdded(SNodeAttributeChanged): pass
+class OrderedByUserRemoved(SNodeAttributeChanged): pass
+class OrderedByUserAdded(SNodeAttributeChanged): pass
+class PresenceRemoved(SNodeAttributeChanged): pass
+class PresenceAdded(SNodeAttributeChanged): pass
+class StatusRemoved(SNodeAttributeChanged): pass
+class StatusAdded(SNodeAttributeChanged): pass
+class LengthRemoved(SNodeAttributeChanged): pass
+class LengthAdded(SNodeAttributeChanged): pass
+class PatternRemoved(SNodeAttributeChanged): pass
+class PatternAdded(SNodeAttributeChanged): pass
+class UnitsRemoved(SNodeAttributeChanged): pass
+class UnitsAdded(SNodeAttributeChanged): pass  # noqa: E302, E701
 
 
 #------------------------------------------------------------------------------
 def snode_changes(old, new):
 
     if old.nodetype() != new.nodetype():
-        yield NodetypeChanged(old, new)
+        # Changing node type is almost the same as removing and creating a new
+        # node in the schema.
+        yield SNodeRemoved(old)
+        yield SNodeAdded(new)
+        return
 
     if old.description() != new.description():
-        yield DescriptionChanged(old, new)
+        if old.description() is not None:
+            yield DescriptionRemoved(old, new, old.description())
+        if new.description() is not None:
+            yield DescriptionAdded(old, new, new.description())
 
-    if old.mandatory() != new.mandatory():
-        yield MandatoryChanged(old, new)
+    if old.mandatory() and not new.mandatory():
+        yield MandatoryRemoved(old, new)
+    elif not old.mandatory() and new.mandatory():
+        yield MandatoryAdded(old, new)
 
     if old.status() != new.status():
-        yield StatusChanged(old, new)
+        yield StatusRemoved(old, new, old.status())
+        yield StatusAdded(old, new, new.status())
 
-    if old.config_false() != new.config_false():
-        yield ConfigFalseChanged(old, new)
+    if old.config_false() and not new.config_false():
+        yield ConfigFalseRemoved(old, new)
+    elif not old.config_false() and new.config_false():
+        yield ConfigFalseAdded(old, new)
 
-    old_musts = set(old.must_conditions())
-    new_musts = set(new.must_conditions())
+    old_musts = frozenset(old.must_conditions())
+    new_musts = frozenset(new.must_conditions())
     for m in old_musts - new_musts:
-        yield MustConditionRemoved(old, new, m)
+        yield MustRemoved(old, new, m)
     for m in new_musts - old_musts:
-        yield MustConditionAdded(old, new, m)
+        yield MustAdded(old, new, m)
 
     old_exts = {(e.module().name(), e.name()): e for e in old.extensions()}
     new_exts = {(e.module().name(), e.name()): e for e in new.extensions()}
@@ -126,7 +195,8 @@ def snode_changes(old, new):
         yield ExtensionAdded(old, new, new_exts[k])
     for k in old_ext_keys & new_ext_keys:
         if old_exts[k].argument() != new_exts[k].argument():
-            yield ExtensionChanged(old, new, old_exts[k], new_exts[k])
+            yield ExtensionRemoved(old, new, old_exts[k])
+            yield ExtensionAdded(old, new, new_exts[k])
 
     if (isinstance(old, schema.Leaf) and isinstance(new, schema.Leaf)) or \
             (isinstance(old, schema.LeafList) and isinstance(new, schema.LeafList)):
@@ -139,14 +209,17 @@ def snode_changes(old, new):
             yield BaseTypeAdded(old, new, b)
 
         if old.units() != new.units():
-            yield UnitsChanged(old, new)
+            if old.units() is not None:
+                yield UnitsRemoved(old, new, old.units())
+            if new.units() is not None:
+                yield UnitsAdded(old, new, new.units())
 
         old_lengths = set(old.type().all_lengths())
         new_lengths = set(new.type().all_lengths())
         for l in old_lengths - new_lengths:
-            yield StringLengthRestrictionRemoved(old, new, l)
+            yield LengthRemoved(old, new, l)
         for l in new_lengths - old_lengths:
-            yield StringLengthRestrictionAdded(old, new, l)
+            yield LengthAdded(old, new, l)
 
         # Multiple "pattern" statements on a single type are ANDed together
         # (i.e. they must all match). However, when a leaf type is an union of
@@ -162,16 +235,16 @@ def snode_changes(old, new):
         old_patterns = set(old.type().all_patterns())
         new_patterns = set(new.type().all_patterns())
         for p in old_patterns - new_patterns:
-            yield StringPatternRestrictionRemoved(old, new, p)
+            yield PatternRemoved(old, new, p)
         for p in new_patterns - old_patterns:
-            yield StringPatternRestrictionAdded(old, new, p)
+            yield PatternAdded(old, new, p)
 
         old_ranges = set(old.type().all_ranges())
         new_ranges = set(new.type().all_ranges())
         for r in old_ranges - new_ranges:
-            yield NumRangeRestrictionRemoved(old, new, r)
+            yield RangeRemoved(old, new, r)
         for r in new_ranges - old_ranges:
-            yield NumRangeRestrictionAdded(old, new, r)
+            yield RangeAdded(old, new, r)
 
         old_enums = set(e for e, _ in old.type().all_enums())
         new_enums = set(e for e, _ in new.type().all_enums())
@@ -189,375 +262,38 @@ def snode_changes(old, new):
 
     if isinstance(old, schema.Leaf) and isinstance(new, schema.Leaf):
         if old.default() != new.default():
-            yield DefaultChanged(old, new)
+            if old.default() is not None:
+                yield DefaultRemoved(old, new, old.default())
+            if new.default() is not None:
+                yield DefaultAdded(old, new, new.default())
 
     elif isinstance(old, schema.LeafList) and isinstance(new, schema.LeafList):
-        if tuple(old.defaults()) != tuple(new.defaults()):
-            yield DefaultsChanged(old, new)
-        if old.ordered() != new.ordered():
-            yield OrderedChanged(old, new)
+        old_defaults = frozenset(old.defaults())
+        new_defaults = frozenset(new.defaults())
+        for d in old_defaults - new_defaults:
+            yield DefaultRemoved(old, new, d)
+        for d in new_defaults - old_defaults:
+            yield DefaultAdded(old, new, d)
+        if old.ordered() and not new.ordered():
+            yield OrderedByUserRemoved(old, new)
+        elif not old.ordered() and new.ordered():
+            yield OrderedByUserAdded(old, new)
 
     elif isinstance(old, schema.Container) and isinstance(new, schema.Container):
         if old.presence() != new.presence():
-            yield PresenceChanged(old, new)
+            if old.presence() is not None:
+                yield PresenceRemoved(old, new, old.presence())
+            if new.presence() is not None:
+                yield PresenceAdded(old, new, new.presence())
 
     elif isinstance(old, schema.List) and isinstance(new, schema.List):
-        if {k.name() for k in old.keys()} != {k.name() for k in new.keys()}:
-            yield KeyChanged(old, new)
-        if old.ordered() != new.ordered():
-            yield OrderedChanged(old, new)
-
-
-#------------------------------------------------------------------------------
-class SNodeChange(SNodeDiff):
-
-    def __init__(self, old, new):
-        self.old = old
-        self.new = new
-
-    def attribute_name(self):
-        raise NotImplementedError()
-
-    def attribute_value(self, node):
-        raise NotImplementedError()
-
-    def __str__(self):
-        return '*{path}: {name} "{old_value}" -> "{new_value}"'.format(
-            path=self.new.schema_path(),
-            name=self.attribute_name(),
-            old_value=self.attribute_value(self.old) or '',
-            new_value=self.attribute_value(self.new) or '')
-
-
-#------------------------------------------------------------------------------
-class NodetypeChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'node-type'
-
-    def attribute_value(self, node):
-        return node.keyword()
-
-
-#------------------------------------------------------------------------------
-class DescriptionChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'description'
-
-    def attribute_value(self, node):
-        return node.description()
-
-
-#------------------------------------------------------------------------------
-class MandatoryChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'mandatory'
-
-    def attribute_value(self, node):
-        return 'true' if node.mandatory() else 'false'
-
-
-#------------------------------------------------------------------------------
-class StatusChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'status'
-
-    def attribute_value(self, node):
-        return node.status()
-
-
-#------------------------------------------------------------------------------
-class ConfigFalseChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'config'
-
-    def attribute_value(self, node):
-        if node.config_false():
-            return 'false'
-        return None
-
-
-#------------------------------------------------------------------------------
-class ExtensionRemoved(SNodeDiff):
-
-    def __init__(self, old, new, ext):
-        self.old = old
-        self.new = new
-        self.ext = ext
-
-    def __str__(self):
-        return '-{path}: extension {module}:{name} "{argument}"'.format(
-            path=self.new.schema_path(),
-            module=self.ext.module().name(),
-            name=self.ext.name(),
-            argument=self.ext.argument())
-
-
-#------------------------------------------------------------------------------
-class ExtensionAdded(SNodeDiff):
-
-    def __init__(self, old, new, ext):
-        self.old = old
-        self.new = new
-        self.ext = ext
-
-    def __str__(self):
-        return '+{path}: extension {module}:{name} "{argument}"'.format(
-            path=self.new.schema_path(),
-            module=self.ext.module().name(),
-            name=self.ext.name(),
-            argument=self.ext.argument())
-
-
-#------------------------------------------------------------------------------
-class ExtensionChanged(SNodeDiff):
-
-    def __init__(self, old, new, old_ext, new_ext):
-        self.old = old
-        self.new = new
-        self.old_ext = old_ext
-        self.new_ext = new_ext
-
-    def __str__(self):
-        return '*{path}: extension {module}:{name} "{old}" -> "{new}"'.format(
-            path=self.new.schema_path(),
-            module=self.new_ext.module().name(),
-            name=self.new_ext.name(),
-            old=self.old_ext.argument() or '',
-            new=self.new_ext.argument() or '')
-
-
-#------------------------------------------------------------------------------
-class DefaultChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'default'
-
-    def attribute_value(self, node):
-        return node.default()
-
-
-#------------------------------------------------------------------------------
-class UnitsChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'units'
-
-    def attribute_value(self, node):
-        return node.units()
-
-
-#------------------------------------------------------------------------------
-class KeyChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'key'
-
-    def attribute_value(self, node):
-        return ' '.join(sorted(k.name() for k in node.keys()))
-
-
-#------------------------------------------------------------------------------
-class DefaultsChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'defaults'
-
-    def attribute_value(self, node):
-        return ', '.join(node.defaults())
-
-
-#------------------------------------------------------------------------------
-class OrderedChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'ordered'
-
-    def attribute_value(self, node):
-        return 'true' if node.ordered() else 'false'
-
-
-#------------------------------------------------------------------------------
-class PresenceChanged(SNodeChange):
-
-    def attribute_name(self):
-        return 'presence'
-
-    def attribute_value(self, node):
-        return node.presence()
-
-
-#------------------------------------------------------------------------------
-class SNodeOptionChanged(SNodeDiff):
-
-    def __init__(self, old, new, value):
-        self.old = old
-        self.new = new
-        self.value = value
-
-    def sign(self):
-        raise NotImplementedError()
-
-    def option_name(self):
-        raise NotImplementedError()
-
-    def __str__(self):
-        return '{sign}{path}: {name} "{value}"'.format(
-            sign=self.sign(),
-            path=self.new.schema_path(),
-            name=self.option_name(),
-            value=self.value)
-
-
-#------------------------------------------------------------------------------
-class MustConditionRemoved(SNodeOptionChanged):
-
-    def sign(self):
-        return '-'
-
-    def option_name(self):
-        return 'must'
-
-
-#------------------------------------------------------------------------------
-class MustConditionAdded(SNodeOptionChanged):
-
-    def sign(self):
-        return '+'
-
-    def option_name(self):
-        return 'must'
-
-
-#------------------------------------------------------------------------------
-class BaseTypeRemoved(SNodeOptionChanged):
-
-    def sign(self):
-        return '-'
-
-    def option_name(self):
-        return 'base-type'
-
-
-#------------------------------------------------------------------------------
-class BaseTypeAdded(SNodeOptionChanged):
-
-    def sign(self):
-        return '+'
-
-    def option_name(self):
-        return 'base-type'
-
-
-#------------------------------------------------------------------------------
-class StringLengthRestrictionRemoved(SNodeOptionChanged):
-
-    def sign(self):
-        return '-'
-
-    def option_name(self):
-        return 'length'
-
-
-#------------------------------------------------------------------------------
-class StringLengthRestrictionAdded(SNodeOptionChanged):
-
-    def sign(self):
-        return '+'
-
-    def option_name(self):
-        return 'length'
-
-
-#------------------------------------------------------------------------------
-class NumRangeRestrictionRemoved(SNodeOptionChanged):
-
-    def sign(self):
-        return '-'
-
-    def option_name(self):
-        return 'range'
-
-
-#------------------------------------------------------------------------------
-class NumRangeRestrictionAdded(SNodeOptionChanged):
-
-    def sign(self):
-        return '+'
-
-    def option_name(self):
-        return 'range'
-
-
-#------------------------------------------------------------------------------
-class EnumRemoved(SNodeOptionChanged):
-
-    def sign(self):
-        return '-'
-
-    def option_name(self):
-        return 'enum'
-
-
-#------------------------------------------------------------------------------
-class EnumAdded(SNodeOptionChanged):
-
-    def sign(self):
-        return '+'
-
-    def option_name(self):
-        return 'enum'
-
-
-#------------------------------------------------------------------------------
-class BitRemoved(SNodeOptionChanged):
-
-    def sign(self):
-        return '-'
-
-    def option_name(self):
-        return 'bit'
-
-
-#------------------------------------------------------------------------------
-class BitAdded(SNodeOptionChanged):
-
-    def sign(self):
-        return '+'
-
-    def option_name(self):
-        return 'bit'
-
-
-#------------------------------------------------------------------------------
-class StringPatternRestrictionRemoved(SNodeDiff):
-
-    def __init__(self, old, new, value):
-        self.old = old
-        self.new = new
-        self.pattern, self.invert_match = value
-
-    def __str__(self):
-        return '-{path}: pattern "{pattern}"{invert_match}'.format(
-            path=self.new.schema_path(),
-            pattern=self.pattern,
-            invert_match=' invert-match' if self.invert_match else '')
-
-
-#------------------------------------------------------------------------------
-class StringPatternRestrictionAdded(SNodeOptionChanged):
-
-    def __init__(self, old, new, value):
-        self.old = old
-        self.new = new
-        self.pattern, self.invert_match = value
-
-    def __str__(self):
-        return '+{path}: pattern "{pattern}"{invert_match}'.format(
-            path=self.new.schema_path(),
-            pattern=self.pattern,
-            invert_match=' invert-match' if self.invert_match else '')
+        old_keys = frozenset(k.name() for k in old.keys())
+        new_keys = frozenset(k.name() for k in new.keys())
+        for k in old_keys - new_keys:
+            yield KeyRemoved(old, new, k)
+        for k in new_keys - old_keys:
+            yield KeyAdded(old, new, k)
+        if old.ordered() and not new.ordered():
+            yield OrderedByUserRemoved(old, new)
+        elif not old.ordered() and new.ordered():
+            yield OrderedByUserAdded(old, new)

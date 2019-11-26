@@ -131,6 +131,8 @@ class MandatoryRemoved(SNodeAttributeChanged): pass
 class MandatoryAdded(SNodeAttributeChanged): pass
 class MustRemoved(SNodeAttributeChanged): pass
 class MustAdded(SNodeAttributeChanged): pass
+class NodeTypeAdded(SNodeAttributeChanged): pass
+class NodeTypeRemoved(SNodeAttributeChanged): pass
 class RangeRemoved(SNodeAttributeChanged): pass
 class RangeAdded(SNodeAttributeChanged): pass
 class OrderedByUserRemoved(SNodeAttributeChanged): pass
@@ -151,11 +153,8 @@ class UnitsAdded(SNodeAttributeChanged): pass  # noqa: E302, E701
 def snode_changes(old, new):
 
     if old.nodetype() != new.nodetype():
-        # Changing node type is almost the same as removing and creating a new
-        # node in the schema.
-        yield SNodeRemoved(old)
-        yield SNodeAdded(new)
-        return
+        yield NodeTypeRemoved(old, new, old.keyword())
+        yield NodeTypeAdded(old, new, new.keyword())
 
     if old.description() != new.description():
         if old.description() is not None:

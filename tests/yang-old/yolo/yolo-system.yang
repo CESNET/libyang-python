@@ -70,7 +70,7 @@ module yolo-system {
       }
     }
 
-    leaf-list number {
+    leaf number {
       description
         "A number.";
       type types:number;

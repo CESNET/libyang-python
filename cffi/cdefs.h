@@ -47,6 +47,7 @@ struct lys_module {
 	const char *name;
 	const char *prefix;
 	const char *dsc;
+	const char *filepath;
 	uint8_t rev_size;
 	uint8_t features_size;
 	struct lys_revision *rev;

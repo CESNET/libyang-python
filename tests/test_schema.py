@@ -43,6 +43,10 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(self.module.description(), 'YOLO.')
         self.assertEqual(self.module.prefix(), 'sys')
 
+    def test_mod_filepath(self):
+        self.assertEqual(self.module.filepath(),
+                         os.path.join(YANG_DIR, 'yolo/yolo-system.yang'))
+
     def test_mod_iter(self):
         children = list(iter(self.module))
         self.assertEqual(len(children), 4)

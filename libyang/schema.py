@@ -24,6 +24,9 @@ class Module(object):
     def description(self):
         return c2str(self._module.dsc)
 
+    def filepath(self):
+        return c2str(self._module.filepath)
+
     def feature_enable(self, name):
         ret = lib.lys_features_enable(self._module, str2c(name))
         if ret != 0:

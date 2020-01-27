@@ -18,7 +18,7 @@ from setuptools.command.build_ext import build_ext
 
 CFFI_REQ = 'cffi>=1.7,!=1.11.3'
 INSTALL_REQS = []
-SETUP_REQS = ['wheel']
+SETUP_REQS = []
 if '_cffi_backend' not in sys.builtin_module_names:
     INSTALL_REQS.append(CFFI_REQ)
     SETUP_REQS.append(CFFI_REQ)

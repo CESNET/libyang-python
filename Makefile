@@ -41,7 +41,7 @@ coverage: $(py_extension)
 	$(PYTHON) -m coverage html
 	$(PYTHON) -m coverage report
 
-upload: sdist wheel
-	twine upload dist/*.tar.gz dist/*.whl
+upload: sdist
+	twine upload dist/*.tar.gz
 
 .PHONY: build sdist wheel upload tests

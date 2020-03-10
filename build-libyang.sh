@@ -58,12 +58,12 @@ cmake -DENABLE_STATIC=$enable_static \
 	-DENABLE_BUILD_TESTS=OFF \
 	-DENABLE_VALGRIND_TESTS=OFF \
 	-DENABLE_CALGRIND_TESTS=OFF \
-	-DCMAKE_INSTALL_PREFIX=${install_dir:-/} \
+	-DCMAKE_INSTALL_PREFIX=${install_dir:-/usr} \
 	-DGEN_LANGUAGE_BINDINGS=0 \
 	"$src_dir"
 
 make -j$(nproc)
 
 if [ -n "$install_dir" ]; then
-	make install
+	make install DESTDIR=/
 fi

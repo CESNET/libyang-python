@@ -5,17 +5,17 @@ import os
 import unittest
 
 from libyang import Context
-from libyang.schema import Container
 from libyang.schema import Extension
 from libyang.schema import IfFeature
 from libyang.schema import IfOrFeatures
-from libyang.schema import Leaf
-from libyang.schema import LeafList
-from libyang.schema import List
 from libyang.schema import Module
-from libyang.schema import Node
 from libyang.schema import Revision
-from libyang.schema import Rpc
+from libyang.schema import SContainer
+from libyang.schema import SLeaf
+from libyang.schema import SLeafList
+from libyang.schema import SList
+from libyang.schema import SNode
+from libyang.schema import SRpc
 from libyang.schema import Type
 from libyang.util import LibyangError
 
@@ -52,7 +52,7 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(len(children), 4)
 
     def test_mod_children_rpcs(self):
-        rpcs = list(self.module.children(types=(Node.RPC,)))
+        rpcs = list(self.module.children(types=(SNode.RPC,)))
         self.assertEqual(len(rpcs), 2)
 
     def test_mod_enable_features(self):
@@ -174,8 +174,8 @@ class ContainerTest(unittest.TestCase):
         self.ctx = None
 
     def test_cont_attrs(self):
-        self.assertIsInstance(self.container, Container)
-        self.assertEqual(self.container.nodetype(), Node.CONTAINER)
+        self.assertIsInstance(self.container, SContainer)
+        self.assertEqual(self.container.nodetype(), SNode.CONTAINER)
         self.assertEqual(self.container.keyword(), 'container')
         self.assertEqual(self.container.name(), 'conf')
         self.assertEqual(self.container.fullname(), 'yolo-system:conf')
@@ -193,7 +193,7 @@ class ContainerTest(unittest.TestCase):
         self.assertEqual(len(children), 7)
 
     def test_cont_children_leafs(self):
-        leafs = list(self.container.children(types=(Node.LEAF,)))
+        leafs = list(self.container.children(types=(SNode.LEAF,)))
         self.assertEqual(len(leafs), 5)
 
     def test_cont_parent(self):
@@ -216,8 +216,8 @@ class ListTest(unittest.TestCase):
         self.ctx = None
 
     def test_list_attrs(self):
-        self.assertIsInstance(self.list, List)
-        self.assertEqual(self.list.nodetype(), Node.LIST)
+        self.assertIsInstance(self.list, SList)
+        self.assertEqual(self.list.nodetype(), SNode.LIST)
         self.assertEqual(self.list.keyword(), 'list')
         self.assertEqual(self.list.schema_path(), self.SCHEMA_PATH)
         self.assertEqual(self.list.data_path(), self.DATA_PATH)
@@ -238,7 +238,7 @@ class ListTest(unittest.TestCase):
     def test_list_parent(self):
         parent = self.list.parent()
         self.assertIsNotNone(parent)
-        self.assertIsInstance(parent, Container)
+        self.assertIsInstance(parent, SContainer)
         self.assertEqual(parent.name(), 'conf')
 
 
@@ -255,8 +255,8 @@ class RpcTest(unittest.TestCase):
         self.ctx = None
 
     def test_rpc_attrs(self):
-        self.assertIsInstance(self.rpc, Rpc)
-        self.assertEqual(self.rpc.nodetype(), Node.RPC)
+        self.assertIsInstance(self.rpc, SRpc)
+        self.assertEqual(self.rpc.nodetype(), SNode.RPC)
         self.assertEqual(self.rpc.keyword(), 'rpc')
         self.assertEqual(self.rpc.schema_path(), '/yolo-system:format-disk')
 
@@ -268,10 +268,10 @@ class RpcTest(unittest.TestCase):
 
     def test_rpc_params(self):
         leaf = next(self.rpc.children())
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         self.assertEqual(leaf.data_path(), '/yolo-system:format-disk/disk')
         leaf = next(self.rpc.input().children())
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
 
     def test_rpc_no_parent(self):
         self.assertIsNone(self.rpc.parent())
@@ -289,7 +289,7 @@ class LeafTypeTest(unittest.TestCase):
 
     def test_leaf_type_derived(self):
         leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:hostname'))
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), 'host')
@@ -301,21 +301,21 @@ class LeafTypeTest(unittest.TestCase):
 
     def test_leaf_type_status(self):
         leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:hostname'))
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         self.assertEqual(leaf.deprecated(), False)
         self.assertEqual(leaf.obsolete(), False)
         leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:deprecated-leaf'))
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         self.assertEqual(leaf.deprecated(), True)
         self.assertEqual(leaf.obsolete(), False)
         leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:obsolete-leaf'))
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         self.assertEqual(leaf.deprecated(), False)
         self.assertEqual(leaf.obsolete(), True)
 
     def test_leaf_type_union(self):
         leaf = next(self.ctx.find_path('/yolo-system:conf/yolo-system:number'))
-        self.assertIsInstance(leaf, LeafList)
+        self.assertIsInstance(leaf, SLeafList)
         t = leaf.type()
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), 'number')
@@ -328,7 +328,7 @@ class LeafTypeTest(unittest.TestCase):
     def test_leaf_type_enum(self):
         leaf = next(self.ctx.find_path(
             '/yolo-system:conf/yolo-system:url/yolo-system:proto'))
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), 'protocol')
@@ -339,7 +339,7 @@ class LeafTypeTest(unittest.TestCase):
     def test_leaf_type_bits(self):
         leaf = next(self.ctx.find_path(
             '/yolo-system:chmod/yolo-system:input/yolo-system:perms'))
-        self.assertIsInstance(leaf, Leaf)
+        self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), 'permissions')
@@ -352,5 +352,5 @@ class LeafTypeTest(unittest.TestCase):
             '/yolo-system:conf/yolo-system:url/yolo-system:proto'))
         parent = leaf.parent()
         self.assertIsNotNone(parent)
-        self.assertIsInstance(parent, List)
+        self.assertIsInstance(parent, SList)
         self.assertEqual(parent.name(), 'url')

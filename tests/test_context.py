@@ -6,7 +6,7 @@ import unittest
 
 from libyang import Context
 from libyang.schema import Module
-from libyang.schema import Rpc
+from libyang.schema import SRpc
 from libyang.util import LibyangError
 
 
@@ -72,7 +72,7 @@ class ContextTest(unittest.TestCase):
         ctx = Context(YANG_DIR)
         ctx.load_module('yolo-system')
         node = next(ctx.find_path('/yolo-system:format-disk'))
-        self.assertIsInstance(node, Rpc)
+        self.assertIsInstance(node, SRpc)
 
     def test_ctx_iter_modules(self):
         ctx = Context(YANG_DIR)

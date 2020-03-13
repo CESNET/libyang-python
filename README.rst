@@ -108,7 +108,7 @@ Examples
    >>> xpath = '/ietf-system:system/ietf-system:dns-resolver/ietf-system:server'
    >>> dnsserver = next(ctx.find_path(xpath))
    >>> dnsserver
-   <libyang.schema.List: server [name]>
+   <libyang.schema.SList: server [name]>
    >>> print(dnsserver.description())
    List of the DNS servers that the resolver should query.
 
@@ -129,5 +129,5 @@ Examples
    >>> for node in dnsserver:
    ...     print(repr(node))
    ...
-   <libyang.schema.Leaf: name string>
-   <libyang.schema.Container: udp-and-tcp>
+   <libyang.schema.SLeaf: name string>
+   <libyang.schema.SContainer: udp-and-tcp>

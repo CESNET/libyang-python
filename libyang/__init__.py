@@ -8,7 +8,7 @@ from _libyang import ffi
 from _libyang import lib
 
 from .schema import Module
-from .schema import Node
+from .schema import SNode
 from .util import LibyangError
 from .util import c2str
 from .util import str2c
@@ -85,7 +85,7 @@ class Context(object):
             raise self.error('cannot find path')
 
         for i in range(node_set.number):
-            yield Node.new(self, node_set.set.s[i])
+            yield SNode.new(self, node_set.set.s[i])
 
     def __iter__(self):
         """

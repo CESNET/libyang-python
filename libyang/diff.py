@@ -1,7 +1,12 @@
 # Copyright (c) 2019 6WIND
 # SPDX-License-Identifier: MIT
 
-from . import schema
+from .schema import SContainer
+from .schema import SLeaf
+from .schema import SLeafList
+from .schema import SList
+from .schema import SRpc
+from .schema import SRpcInOut
 
 
 #------------------------------------------------------------------------------
@@ -33,7 +38,7 @@ def schema_diff(ctx_old, ctx_new, exclude_node_cb=None):
         if exclude_node_cb(node):
             return
         dic[node.schema_path()] = node
-        if isinstance(node, (schema.Container, schema.List, schema.Rpc, schema.RpcInOut)):
+        if isinstance(node, (SContainer, SList, SRpc, SRpcInOut)):
             for child in node:
                 flatten(child, dic)
 
@@ -197,8 +202,8 @@ def snode_changes(old, new):
             yield ExtensionRemoved(old, new, old_exts[k])
             yield ExtensionAdded(old, new, new_exts[k])
 
-    if (isinstance(old, schema.Leaf) and isinstance(new, schema.Leaf)) or \
-            (isinstance(old, schema.LeafList) and isinstance(new, schema.LeafList)):
+    if (isinstance(old, SLeaf) and isinstance(new, SLeaf)) or \
+            (isinstance(old, SLeafList) and isinstance(new, SLeafList)):
 
         old_bases = set(old.type().basenames())
         new_bases = set(new.type().basenames())
@@ -259,14 +264,14 @@ def snode_changes(old, new):
         for b in new_bits - old_bits:
             yield BitAdded(old, new, b)
 
-    if isinstance(old, schema.Leaf) and isinstance(new, schema.Leaf):
+    if isinstance(old, SLeaf) and isinstance(new, SLeaf):
         if old.default() != new.default():
             if old.default() is not None:
                 yield DefaultRemoved(old, new, old.default())
             if new.default() is not None:
                 yield DefaultAdded(old, new, new.default())
 
-    elif isinstance(old, schema.LeafList) and isinstance(new, schema.LeafList):
+    elif isinstance(old, SLeafList) and isinstance(new, SLeafList):
         old_defaults = frozenset(old.defaults())
         new_defaults = frozenset(new.defaults())
         for d in old_defaults - new_defaults:
@@ -278,14 +283,14 @@ def snode_changes(old, new):
         elif not old.ordered() and new.ordered():
             yield OrderedByUserAdded(old, new)
 
-    elif isinstance(old, schema.Container) and isinstance(new, schema.Container):
+    elif isinstance(old, SContainer) and isinstance(new, SContainer):
         if old.presence() != new.presence():
             if old.presence() is not None:
                 yield PresenceRemoved(old, new, old.presence())
             if new.presence() is not None:
                 yield PresenceAdded(old, new, new.presence())
 
-    elif isinstance(old, schema.List) and isinstance(new, schema.List):
+    elif isinstance(old, SList) and isinstance(new, SList):
         old_keys = frozenset(k.name() for k in old.keys())
         new_keys = frozenset(k.name() for k in new.keys())
         for k in old_keys - new_keys:

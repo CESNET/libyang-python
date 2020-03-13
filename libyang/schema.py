@@ -562,7 +562,7 @@ class IfOrFeatures(IfFeatureExprTree):
 
 
 #------------------------------------------------------------------------------
-class Node(object):
+class SNode(object):
 
     CONTAINER = lib.LYS_CONTAINER
     LEAF = lib.LYS_LEAF
@@ -652,10 +652,10 @@ class Node(object):
 
     def parent(self):
         parent_p = lib.lys_parent(self._node)
-        while parent_p and parent_p.nodetype not in Node.NODETYPE_CLASS:
+        while parent_p and parent_p.nodetype not in SNode.NODETYPE_CLASS:
             parent_p = lib.lys_parent(parent_p)
         if parent_p:
-            return Node.new(self.context, parent_p)
+            return SNode.new(self.context, parent_p)
         return None
 
     def __repr__(self):
@@ -676,16 +676,16 @@ class Node(object):
 
     @classmethod
     def new(cls, context, node_p):
-        nodecls = cls.NODETYPE_CLASS.get(node_p.nodetype, Node)
+        nodecls = cls.NODETYPE_CLASS.get(node_p.nodetype, SNode)
         return nodecls(context, node_p)
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.LEAF)
-class Leaf(Node):
+@SNode.register(SNode.LEAF)
+class SLeaf(SNode):
 
     def __init__(self, context, node_p):
-        Node.__init__(self, context, node_p)
+        SNode.__init__(self, context, node_p)
         self._leaf = ffi.cast('struct lys_node_leaf *', node_p)
 
     def default(self):
@@ -711,11 +711,11 @@ class Leaf(Node):
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.LEAFLIST)
-class LeafList(Node):
+@SNode.register(SNode.LEAFLIST)
+class SLeafList(SNode):
 
     def __init__(self, context, node_p):
-        Node.__init__(self, context, node_p)
+        SNode.__init__(self, context, node_p)
         self._leaflist = ffi.cast('struct lys_node_leaflist *', node_p)
 
     def ordered(self):
@@ -740,11 +740,11 @@ class LeafList(Node):
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.CONTAINER)
-class Container(Node):
+@SNode.register(SNode.CONTAINER)
+class SContainer(SNode):
 
     def __init__(self, context, node_p):
-        Node.__init__(self, context, node_p)
+        SNode.__init__(self, context, node_p)
         self._container = ffi.cast('struct lys_node_container *', node_p)
 
     def presence(self):
@@ -762,11 +762,11 @@ class Container(Node):
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.LIST)
-class List(Node):
+@SNode.register(SNode.LIST)
+class SList(SNode):
 
     def __init__(self, context, node_p):
-        Node.__init__(self, context, node_p)
+        SNode.__init__(self, context, node_p)
         self._list = ffi.cast('struct lys_node_list *', node_p)
 
     def ordered(self):
@@ -782,7 +782,7 @@ class List(Node):
     def keys(self):
         for i in range(self._list.keys_size):
             node = ffi.cast('struct lys_node *', self._list.keys[i])
-            yield Leaf(self.context, node)
+            yield SLeaf(self.context, node)
 
     def must_conditions(self):
         for i in range(self._list.must_size):
@@ -794,9 +794,9 @@ class List(Node):
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.INPUT)
-@Node.register(Node.OUTPUT)
-class RpcInOut(Node):
+@SNode.register(SNode.INPUT)
+@SNode.register(SNode.OUTPUT)
+class SRpcInOut(SNode):
 
     def __iter__(self):
         return self.children()
@@ -809,8 +809,8 @@ class RpcInOut(Node):
 
 
 #------------------------------------------------------------------------------
-@Node.register(Node.RPC)
-class Rpc(Node):
+@SNode.register(SNode.RPC)
+class SRpc(SNode):
 
     def must_conditions(self):
         return ()
@@ -865,5 +865,16 @@ def iter_children(context, parent, skip_keys=False, types=None, options=0):
     child = lib.lys_getnext(ffi.NULL, parent, module, options)
     while child:
         if not _skip(child):
-            yield Node.new(context, child)
+            yield SNode.new(context, child)
         child = lib.lys_getnext(child, parent, module, options)
+
+
+#------------------------------------------------------------------------------
+# compat
+Container = SContainer
+Leaf = SLeaf
+LeafList = SLeafList
+List = SList
+Node = SNode
+Rpc = SRpc
+RpcInOut = SRpcInOut

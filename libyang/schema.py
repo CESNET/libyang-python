@@ -77,7 +77,10 @@ class Module(object):
         ret = lib.lys_print_mem(buf, self._module, fmt, str2c(path), 0, 0)
         if ret != 0:
             raise self.context.error('cannot print module')
-        return c2str(buf[0])
+        s = c2str(buf[0])
+        if s is not None:
+            lib.free(buf[0])
+        return s
 
     def dump_file(self, fileobj, fmt=lib.LYS_OUT_TREE, path=None):
         ret = lib.lys_print_fd(

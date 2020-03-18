@@ -4,6 +4,8 @@ prune clib/tests
 prune clib/swig
 prune clib/tools/lint/examples
 graft libyang
+prune libyang/_lib
+prune libyang/_include
 include build-libyang.sh
 include setup.py
 include setup.cfg

@@ -16,22 +16,18 @@ buildtemp := $(shell $(PYTHON) -c '$(buildtemp)')
 
 build: $(py_extension)
 
-$(py_extension): $(buildtemp)/libyang.a $(wildcard cffi/*)
+$(py_extension): $(buildtemp)/libyang.so $(wildcard cffi/*)
 	$(PYTHON) ./setup.py build_ext --inplace
 
 clib/CMakeLists.txt:
 	git submodule update --init
 
-$(buildtemp)/libyang.a: clib/CMakeLists.txt
+$(buildtemp)/libyang.so: clib/CMakeLists.txt
 	$(PYTHON) ./setup.py build_clib
 
 sdist: clib/CMakeLists.txt
 	rm -f dist/*.tar.gz
 	$(PYTHON) ./setup.py sdist
-
-wheel: $(buildtemp)/libyang.a
-	rm -f dist/*.whl
-	$(PYTHON) ./setup.py bdist_wheel
 
 tests: $(py_extension)
 	$(PYTHON) -m unittest discover -cv -s tests/ -t .
@@ -44,4 +40,4 @@ coverage: $(py_extension)
 upload: sdist
 	twine upload dist/*.tar.gz
 
-.PHONY: build sdist wheel upload tests
+.PHONY: build sdist upload tests

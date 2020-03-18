@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+from distutils import dir_util
 from distutils import log
 from distutils.command.build_clib import build_clib
 import glob
@@ -31,25 +32,16 @@ class BuildCLib(build_clib):
         if not self.libraries:
             return
         log.info('Building libyang C library ...')
+        tmp = os.path.abspath(self.build_temp)
         cmd = [
             os.path.join(HERE, 'build-libyang.sh'),
-            '--static',
             '--src=%s' % os.path.join(HERE, 'clib'),
-            '--build=%s' % os.path.abspath(self.build_temp),
-            '--install=%s' % os.path.abspath(self.build_temp),
+            '--build=%s' % tmp,
+            '--prefix=%s' % self.get_finalized_command('install').install_base,
+            '--install=%s' % os.path.join(tmp, 'staging'),
         ]
         log.debug('+ %s' % ' '.join(cmd))
         subprocess.check_call(cmd)
-
-    def get_library_names(self):
-        libs = []
-        if self.libraries:
-            libs.append('pcre')
-            for lib_file in glob.glob(os.path.join(self.build_temp, '*.a')):
-                lib_name = re.sub(r'.*lib([^/]+)\.a$', r'\1', lib_file)
-                if lib_name != 'yang':
-                    libs.append(lib_name)
-        return libs
 
 
 class BuildExt(build_ext):
@@ -61,9 +53,28 @@ class BuildExt(build_ext):
                 self.run_command('build_clib')
             tmp = os.path.abspath(
                 self.get_finalized_command('build_clib').build_temp)
-            self.include_dirs.append(os.path.join(tmp, 'include'))
-            self.library_dirs.append(tmp)
-        return build_ext.run(self)
+            self.include_dirs.append(os.path.join(tmp, 'staging/_include'))
+            self.library_dirs.append(os.path.join(tmp, 'staging/_lib'))
+            self.rpath.append('$ORIGIN/libyang/_lib')
+
+        build_ext.run(self)
+
+        if self.distribution.has_c_libraries():
+            if self.inplace:
+                build_py = self.get_finalized_command('build_py')
+                dest = build_py.get_package_dir('libyang')
+            else:
+                dest = os.path.join(self.build_lib, 'libyang')
+            if os.path.isdir(os.path.join(dest, '_lib')):
+                # Work around dir_util.copy_tree() that fails when a symlink
+                # already exists.
+                for f in os.listdir(os.path.join(dest, '_lib')):
+                    if os.path.islink(os.path.join(dest, '_lib', f)):
+                        os.unlink(os.path.join(dest, '_lib', f))
+            tmp = self.get_finalized_command('build_clib').build_temp
+            dir_util.copy_tree(
+                os.path.join(tmp, 'staging'), dest,
+                preserve_symlinks=True, update=True)
 
 
 LIBRARIES = []

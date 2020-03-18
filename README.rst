@@ -38,8 +38,8 @@ On a Debian/Ubuntu system::
 
 .. note::
 
-   By default, the C library will be compiled and statically linked with the
-   python ``_libyang.so`` extension.
+   By default, the C library will be compiled and the python ``_libyang.so``
+   extension will be linked with it (with a custom RPATH).
 
    If you already have ``libyang.so`` installed on your system (with the
    development headers), you can link the python extension with it by exporting

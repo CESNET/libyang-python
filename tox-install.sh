@@ -9,7 +9,7 @@ shift 3
 
 if [ "$LIBYANG_INSTALL" = system ]; then
 	"$(dirname $0)/build-libyang.sh" \
-		--src="$src" --build="$build" --install="$env/opt"
+		--src="$src" --build="$build" --prefix="$env/opt" --install="$env/opt"
 	export LIBYANG_HEADERS=$env/opt/include
 	export LIBYANG_LIBRARIES=$env/opt/lib
 	export LIBYANG_EXTRA_LDFLAGS=-Wl,-rpath=$env/opt/lib

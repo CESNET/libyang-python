@@ -16,30 +16,34 @@ addons:
 matrix:
   include:
     - env: TOXENV=lint
-      python: 3.6.5
-    - env: TOXENV=py27-static
-      python: 2.7.15
-    - env: TOXENV=py27-dynamic
-      python: 2.7.15
-    - env: TOXENV=pypy-static
-      python: pypy2.7-5.10.0
-    - env: TOXENV=pypy-dynamic
-      python: pypy2.7-5.10.0
-    - env: TOXENV=py35-static
-      python: 3.5
-    - env: TOXENV=py35-dynamic
-      python: 3.5
-    - env: TOXENV=pypy3-static
-      python: pypy3.5
-    - env: TOXENV=pypy3-dynamic
-      python: pypy3.5
-    - env: TOXENV=py36-static
-      python: 3.6.5
-    - env: TOXENV=py36-dynamic
-      python: 3.6.5
-    - env: TOXENV=py37-static
-      python: 3.7.1
-    - env: TOXENV=py37-dynamic
-      python: 3.7.1
+      python: 3.7.7
+    - env: TOXENV=py27-ownlib
+      python: 2.7.17
+    - env: TOXENV=py27-systemlib
+      python: 2.7.17
+    - env: TOXENV=pypy-ownlib
+      python: pypy2.7-7.1.1
+    - env: TOXENV=pypy-systemlib
+      python: pypy2.7-7.1.1
+    - env: TOXENV=py35-ownlib
+      python: 3.5.9
+    - env: TOXENV=py35-systemlib
+      python: 3.5.9
+    - env: TOXENV=pypy3-ownlib
+      python: pypy3.6-7.1.1
+    - env: TOXENV=pypy3-systemlib
+      python: pypy3.6-7.1.1
+    - env: TOXENV=py36-ownlib
+      python: 3.6.9
+    - env: TOXENV=py36-systemlib
+      python: 3.6.9
+    - env: TOXENV=py37-ownlib
+      python: 3.7.7
+    - env: TOXENV=py37-systemlib
+      python: 3.7.7
+    - env: TOXENV=py38-ownlib
+      python: 3.8.2
+    - env: TOXENV=py38-systemlib
+      python: 3.8.2
 
 script: tox -- $(git ls-files '*.py')

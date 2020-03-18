@@ -1,8 +1,19 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # SPDX-License-Identifier: MIT
 
+import os  # isort:skip
+
+# Important: the following *must* remain *before* the import of _libyang
+HERE = os.path.dirname(__file__)
+LIBDIR = os.path.join(HERE, '_lib')
+INCLUDEDIR = os.path.join(HERE, '_include')
+if os.path.isdir(LIBDIR):
+    os.environ.setdefault(
+        'LIBYANG_EXTENSIONS_PLUGINS_DIR', os.path.join(LIBDIR, 'extensions'))
+    os.environ.setdefault(
+        'LIBYANG_USER_TYPES_PLUGINS_DIR', os.path.join(LIBDIR, 'user_types'))
+
 import logging
-import os
 
 from _libyang import ffi
 from _libyang import lib
@@ -130,3 +141,19 @@ lib.ly_set_log_clb(lib.lypy_log_cb, True)
 lib.ly_log_options(lib.LY_LOLOG | lib.LY_LOSTORE)
 LOG = logging.getLogger(__name__)
 LOG.addHandler(logging.NullHandler())
+
+
+#------------------------------------------------------------------------------
+def lib_dirs():
+    dirs = []
+    if os.path.isdir(LIBDIR):
+        dirs.append(LIBDIR)
+    return dirs
+
+
+#------------------------------------------------------------------------------
+def include_dirs():
+    dirs = []
+    if os.path.isdir(INCLUDEDIR):
+        dirs.append(INCLUDEDIR)
+    return dirs

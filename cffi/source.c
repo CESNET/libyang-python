@@ -116,3 +116,13 @@ static char *lypy_node_fullname(const struct lys_node *node)
 
 	return fullname;
 }
+
+static LY_ERR lypy_get_errno(void)
+{
+	return ly_errno;
+}
+
+static void lypy_set_errno(LY_ERR err)
+{
+	ly_errno = err;
+}

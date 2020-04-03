@@ -7,7 +7,9 @@ module wtf-types {
   }
 
   typedef host {
-    type str;
+    type str {
+      pattern "[a-z]+";
+    }
   }
 
   typedef unsigned {

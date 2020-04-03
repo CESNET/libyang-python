@@ -17,6 +17,11 @@ int ly_ctx_set_searchdir(struct ly_ctx *, const char *);
 void ly_ctx_destroy(struct ly_ctx *, void *);
 
 typedef enum {
+	LY_SUCCESS,
+	...
+} LY_ERR;
+
+typedef enum {
 	LY_LLERR,
 	LY_LLWRN,
 	LY_LLVRB,
@@ -349,6 +354,69 @@ typedef enum {
 int lys_print_mem(char **, const struct lys_module *, LYS_OUTFORMAT, const char *, int, int);
 int lys_print_fd(int, const struct lys_module *, LYS_OUTFORMAT, const char *, int, int);
 
+typedef enum {
+	LYD_XML,
+	LYD_JSON,
+	LYD_LYB,
+	...
+} LYD_FORMAT;
+
+typedef enum {
+	...
+} LYD_ANYDATA_VALUETYPE;
+
+#define LYP_FORMAT ...
+
+#define LYD_ANYDATA_CONSTSTRING ...
+
+#define LYD_PATH_OPT_UPDATE ...
+#define LYD_PATH_OPT_NOPARENTRET ...
+#define LYD_PATH_OPT_OUTPUT ...
+
+#define LYD_OPT_DATA ...
+#define LYD_OPT_CONFIG ...
+#define LYD_OPT_STRICT ...
+#define LYD_OPT_TRUSTED ...
+#define LYD_OPT_DATA_NO_YANGLIB ...
+
+typedef union lyd_value_u {
+	int8_t bln;
+	struct lyd_node *leafref;
+	...;
+} lyd_val;
+
+struct lyd_node {
+	struct lys_node *schema;
+	struct lyd_node *next;
+	struct lyd_node *child;
+	struct lyd_node *parent;
+	...;
+};
+
+struct lyd_node_leaf_list {
+	struct lys_node *schema;
+	struct lyd_node *next;
+	struct lyd_node *parent;
+	const char *value_str;
+	lyd_val value;
+	LY_DATA_TYPE value_type;
+	...;
+};
+
+struct ly_set *lyd_find_instance(const struct lyd_node *, const struct lys_node *);
+struct ly_set *lyd_find_path(const struct lyd_node *, const char *);
+struct lyd_node *lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, void *, LYD_ANYDATA_VALUETYPE, int);
+char *lyd_path(const struct lyd_node *);
+struct lys_module *lyd_node_module(struct lyd_node *);
+struct lyd_node *lyd_parse_mem(struct ly_ctx *, const char *, LYD_FORMAT, int);
+struct lyd_node *lyd_parse_fd(struct ly_ctx *, int, LYD_FORMAT, int);
+int lyd_print_fd(int, const struct lyd_node *, LYD_FORMAT, int);
+int lyd_print_mem(char **, const struct lyd_node *, LYD_FORMAT, int);
+double lyd_dec64_to_double(const struct lyd_node *);
+void lyd_free(struct lyd_node *);
+void lyd_free_withsiblings(struct lyd_node *);
+int lyd_validate(struct lyd_node **, int, void *);
+
 /* from libc, needed to free allocated strings */
 void free(void *);
 
@@ -358,3 +426,5 @@ const struct lys_ext_instance *lypy_find_ext(
 	const char *, const char *, const char *);
 char *lypy_data_path_pattern(const struct lys_node *);
 char *lypy_node_fullname(const struct lys_node *);
+LY_ERR lypy_get_errno(void);
+void lypy_set_errno(LY_ERR);

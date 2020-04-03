@@ -1,4 +1,5 @@
 # Copyright (c) 2018-2019 Robin Jarry
+# Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
 import os  # isort:skip
@@ -18,6 +19,8 @@ import logging
 from _libyang import ffi
 from _libyang import lib
 
+from .data import DNode
+from .data import PathOpt
 from .schema import Module
 from .schema import SNode
 from .util import LibyangError
@@ -103,6 +106,46 @@ class Context(object):
                 yield SNode.new(self, node_set.set.s[i])
         finally:
             lib.ly_set_free(node_set)
+
+    def create_data_path(self, path, parent=None, value=None, flags=0):
+        lib.lypy_set_errno(0)
+        if value is not None and not isinstance(value, str):
+            value = str(value)
+        dnode = lib.lyd_new_path(
+            parent._node if parent else ffi.NULL,
+            self._ctx, str2c(path), str2c(value), 0,
+            PathOpt.UPDATE | PathOpt.NOPARENTRET | flags)
+        if lib.lypy_get_errno() != 0:
+            raise self.error('cannot create data path: %s', path)
+
+        if not dnode and parent:
+            # This can happen when path points to an already created leaf and
+            # its value does not change.
+            # In that case, lookup the existing leaf and return it.
+            node_set = lib.lyd_find_path(parent._node, str2c(path))
+            try:
+                if not node_set or not node_set.number:
+                    raise self.error('cannot find path')
+                dnode = node_set.set.s[0]
+            finally:
+                lib.ly_set_free(node_set)
+
+        if not dnode:
+            raise self.error('cannot find created path')
+
+        return DNode.new(self, dnode)
+
+    def parse_data_str(self, s, fmt, flags=0):
+        dnode = lib.lyd_parse_mem(self._ctx, str2c(s), fmt, flags)
+        if not dnode:
+            raise self.error('failed to parse data tree')
+        return DNode.new(self, dnode)
+
+    def parse_data_file(self, fileobj, fmt, flags=0):
+        dnode = lib.lyd_parse_fd(self._ctx, fileobj.fileno(), fmt, flags)
+        if not dnode:
+            raise self.error('failed to parse data tree')
+        return DNode.new(self, dnode)
 
     def __iter__(self):
         """

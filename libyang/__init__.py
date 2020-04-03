@@ -29,7 +29,12 @@ from .util import str2c
 class Context(object):
 
     def __init__(self, search_path=None,
-                 options=lib.LY_CTX_DISABLE_SEARCHDIR_CWD):
+                 options=lib.LY_CTX_DISABLE_SEARCHDIR_CWD,
+                 pointer=None):
+        if pointer is not None:
+            self._ctx = ffi.cast('struct ly_ctx *', pointer)
+            return  # already initialized
+
         self._ctx = ffi.gc(lib.ly_ctx_new(ffi.NULL, options),
                            lambda c: lib.ly_ctx_destroy(c, ffi.NULL))
         if not self._ctx:

@@ -95,13 +95,14 @@ class Context(object):
         return Module(self, mod)
 
     def find_path(self, path):
-        node_set = ffi.gc(lib.ly_ctx_find_path(self._ctx, str2c(path)),
-                          lib.ly_set_free)
+        node_set = lib.ly_ctx_find_path(self._ctx, str2c(path))
         if not node_set:
             raise self.error('cannot find path')
-
-        for i in range(node_set.number):
-            yield SNode.new(self, node_set.set.s[i])
+        try:
+            for i in range(node_set.number):
+                yield SNode.new(self, node_set.set.s[i])
+        finally:
+            lib.ly_set_free(node_set)
 
     def __iter__(self):
         """

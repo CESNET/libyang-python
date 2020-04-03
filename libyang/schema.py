@@ -77,10 +77,10 @@ class Module(object):
         ret = lib.lys_print_mem(buf, self._module, fmt, str2c(path), 0, 0)
         if ret != 0:
             raise self.context.error('cannot print module')
-        s = c2str(buf[0])
-        if s is not None:
+        try:
+            return c2str(buf[0])
+        finally:
             lib.free(buf[0])
-        return s
 
     def dump_file(self, fileobj, fmt=lib.LYS_OUT_TREE, path=None):
         ret = lib.lys_print_fd(
@@ -598,7 +598,11 @@ class SNode(object):
         return c2str(self._node.name)
 
     def fullname(self):
-        return c2str(ffi.gc(lib.lypy_node_fullname(self._node), lib.free))
+        try:
+            s = lib.lypy_node_fullname(self._node)
+            return c2str(s)
+        finally:
+            lib.free(s)
 
     def description(self):
         return c2str(self._node.dsc)
@@ -632,10 +636,18 @@ class SNode(object):
         return Module(self.context, module_p)
 
     def schema_path(self):
-        return c2str(ffi.gc(lib.lys_path(self._node, 0), lib.free))
+        try:
+            s = lib.lys_path(self._node, 0)
+            return c2str(s)
+        finally:
+            lib.free(s)
 
     def data_path(self):
-        return c2str(ffi.gc(lib.lypy_data_path_pattern(self._node), lib.free))
+        try:
+            s = lib.lypy_data_path_pattern(self._node)
+            return c2str(s)
+        finally:
+            lib.free(s)
 
     def extensions(self):
         for i in range(self._node.ext_size):

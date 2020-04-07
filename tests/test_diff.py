@@ -9,6 +9,8 @@ from libyang.diff import BaseTypeAdded
 from libyang.diff import BaseTypeRemoved
 from libyang.diff import NodeTypeAdded
 from libyang.diff import NodeTypeRemoved
+from libyang.diff import SNodeAdded
+from libyang.diff import SNodeRemoved
 from libyang.diff import StatusAdded
 from libyang.diff import StatusRemoved
 from libyang.diff import schema_diff
@@ -30,6 +32,8 @@ class DiffTest(unittest.TestCase):
         (NodeTypeAdded, '/yolo-system:state/yolo-system:number'),
         (NodeTypeRemoved, '/yolo-system:conf/yolo-system:number'),
         (NodeTypeRemoved, '/yolo-system:state/yolo-system:number'),
+        (SNodeAdded, '/yolo-system:conf/yolo-system:url/yolo-system:enabled'),
+        (SNodeAdded, '/yolo-system:state/yolo-system:url/yolo-system:enabled'),
         (StatusAdded, '/yolo-system:conf/yolo-system:deprecated-leaf'),
         (StatusAdded, '/yolo-system:conf/yolo-system:obsolete-leaf'),
         (StatusAdded, '/yolo-system:state/yolo-system:deprecated-leaf'),
@@ -47,6 +51,10 @@ class DiffTest(unittest.TestCase):
         ctx_new = Context(NEW_YANG_DIR)
         mod = ctx_new.load_module('yolo-system')
         mod.feature_enable_all()
-        diffs = frozenset((d.__class__, d.new.schema_path())
-                          for d in schema_diff(ctx_old, ctx_new))
-        self.assertEqual(diffs, self.expected_diffs)
+        diffs = []
+        for d in schema_diff(ctx_old, ctx_new):
+            if isinstance(d, (SNodeAdded, SNodeRemoved)):
+                diffs.append((d.__class__, d.node.schema_path()))
+            else:
+                diffs.append((d.__class__, d.new.schema_path()))
+        self.assertEqual(frozenset(diffs), self.expected_diffs)

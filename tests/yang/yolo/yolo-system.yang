@@ -70,6 +70,9 @@ module yolo-system {
       leaf path {
         type string;
       }
+      leaf enabled {
+        type boolean;
+      }
     }
 
     leaf-list number {

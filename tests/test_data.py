@@ -42,13 +42,15 @@ class DataTest(unittest.TestCase):
       {
         "proto": "https",
         "host": "github.com",
-        "path": "/rjarry/libyang-cffi"
+        "path": "/rjarry/libyang-cffi",
+        "enabled": false
       },
       {
         "proto": "http",
         "host": "foobar.com",
         "port": 8080,
-        "path": "/index.html"
+        "path": "/index.html",
+        "enabled": true
       }
     ]
   }
@@ -76,13 +78,15 @@ class DataTest(unittest.TestCase):
       {
         "proto": "https",
         "host": "github.com",
-        "path": "/rjarry/libyang-cffi"
+        "path": "/rjarry/libyang-cffi",
+        "enabled": false
       },
       {
         "proto": "http",
         "host": "foobar.com",
         "port": 8080,
-        "path": "/index.html"
+        "path": "/index.html",
+        "enabled": true
       }
     ]
   }
@@ -108,12 +112,14 @@ class DataTest(unittest.TestCase):
     <proto>https</proto>
     <host>github.com</host>
     <path>/rjarry/libyang-cffi</path>
+    <enabled>false</enabled>
   </url>
   <url>
     <proto>http</proto>
     <host>foobar.com</host>
     <port>8080</port>
     <path>/index.html</path>
+    <enabled>true</enabled>
   </url>
 </conf>
 '''
@@ -136,12 +142,14 @@ class DataTest(unittest.TestCase):
     <proto>https</proto>
     <host>github.com</host>
     <path>/rjarry/libyang-cffi</path>
+    <enabled>false</enabled>
   </url>
   <url>
     <proto>http</proto>
     <host>foobar.com</host>
     <port>8080</port>
     <path>/index.html</path>
+    <enabled>true</enabled>
   </url>
 </state>
 '''
@@ -164,9 +172,11 @@ class DataTest(unittest.TestCase):
         state.create_path('number', 3000)
         u = state.create_path('url[proto="https"][host="github.com"]')
         u.create_path('path', '/rjarry/libyang-cffi')
+        u.create_path('enabled', False)
         u = state.create_path('url[proto="http"][host="foobar.com"]')
         u.create_path('port', 8080)
         u.create_path('path', '/index.html')
+        u.create_path('enabled', True)
         state.validate(ParserOpt.STRICT)
         self.assertEqual(state.dump_str(PrintFmt.JSON, PrintOpt.PRETTY), self.JSON_STATE)
         state.free()
@@ -193,12 +203,14 @@ class DataTest(unittest.TestCase):
                     'proto': 'https',
                     'host': 'github.com',
                     'path': '/rjarry/libyang-cffi',
+                    'enabled': False,
                 },
                 {
                     'proto': 'http',
                     'host': 'foobar.com',
                     'port': 8080,
                     'path': '/index.html',
+                    'enabled': True,
                 },
             ],
         },

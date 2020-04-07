@@ -109,8 +109,11 @@ class Context(object):
 
     def create_data_path(self, path, parent=None, value=None, flags=0):
         lib.lypy_set_errno(0)
-        if value is not None and not isinstance(value, str):
-            value = str(value)
+        if value is not None:
+            if isinstance(value, bool):
+                value = str(value).lower()
+            elif not isinstance(value, str):
+                value = str(value)
         dnode = lib.lyd_new_path(
             parent._node if parent else ffi.NULL,
             self._ctx, str2c(path), str2c(value), 0,

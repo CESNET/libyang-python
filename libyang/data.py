@@ -297,6 +297,9 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
     if not dic:
         return parent
 
+    if not isinstance(dic, dict):
+        raise TypeError('dic argument must be a python dict')
+
     flags = 0
     if rpc_output:
         flags |= PathOpt.OUTPUT
@@ -322,6 +325,9 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
                     continue
             d = _dic[name]
             if isinstance(s, SContainer):
+                if not isinstance(d, dict):
+                    raise TypeError('%s: python value is not a dict: %r'
+                                    % (s.schema_path(), d))
                 if s.presence():
                     dnode = s.context.create_data_path(
                         s.data_path() % key, parent=_parent[0], flags=flags)
@@ -329,12 +335,32 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
                         _parent[0] = dnode
                 _to_dnode(d, s, key)
             elif isinstance(s, SList):
+                if not isinstance(d, (list, tuple)):
+                    raise TypeError('%s: python value is not a list/tuple: %r'
+                                    % (s.schema_path(), d))
                 for element in d:
-                    next_key = tuple(
-                        element.get(k.name(), element.get(k.fullname()))
-                        for k in s.keys())
-                    _to_dnode(element, s, key + next_key)
+                    if not isinstance(element, dict):
+                        raise TypeError('%s: list element is not a dict: %r'
+                                        % (s.schema_path(), element))
+                    try:
+                        next_key = []
+                        for k in s.keys():
+                            try:
+                                next_key.append(element[k.name()])
+                            except KeyError as _e:
+                                try:
+                                    next_key.append(element[k.fullname()])
+                                except KeyError:
+                                    raise _e
+                    except KeyError as e:
+                        raise KeyError(
+                            "%s: key '%s' not present in list element: %r"
+                            % (s.schema_path(), e, element))
+                    _to_dnode(element, s, key + tuple(next_key))
             elif isinstance(s, SLeafList):
+                if not isinstance(d, (list, tuple)):
+                    raise TypeError('%s: python value is not a list/tuple: %r'
+                                    % (s.schema_path(), d))
                 for element in d:
                     dnode = s.context.create_data_path(
                         s.data_path() % key, parent=_parent[0],

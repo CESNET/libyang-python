@@ -28,6 +28,10 @@ from .util import c2str
 from .util import str2c
 
 
+LOG = logging.getLogger(__name__)
+LOG.addHandler(logging.NullHandler())
+
+
 #------------------------------------------------------------------------------
 class Context(object):
 
@@ -60,26 +64,15 @@ class Context(object):
                 raise self.error('cannot set search dir')
 
     def error(self, msg, *args):
-        errors = []
-        try:
-            err = lib.ly_err_first(self._ctx)
-            while err:
-                e = []
-                if err.path:
-                    e.append(c2str(err.path))
-                if err.msg:
-                    e.append(c2str(err.msg))
-                if err.apptag:
-                    e.append(c2str(err.apptag))
-                if e:
-                    errors.append(': '.join(e))
-                err = err.next
-        finally:
-            lib.ly_err_clean(self._ctx, ffi.NULL)
-
         msg %= args
-        if errors:
-            msg += ': ' + ' '.join(errors)
+
+        err = lib.ly_err_first(self._ctx)
+        if err:
+            if err.msg:
+                msg += ': %s' % c2str(err.msg)
+            if err.path:
+                msg += ': %s' % c2str(err.path)
+        lib.ly_err_clean(self._ctx, ffi.NULL)
 
         return LibyangError(msg)
 
@@ -181,18 +174,36 @@ def libyang_c_logging_callback(level, msg, path):
     LOG.log(LOG_LEVELS.get(level, logging.NOTSET), fmt, *args)
 
 
-def set_log_level(level):
+def configure_logging(enable_py_logger, level=logging.ERROR):
+    """
+    Configure libyang logging behaviour.
+
+    :arg bool enable_py_logger:
+        If False, configure libyang to store the errors in the context until
+        they are consumed when Context.error() is called. This is the default
+        behaviour.
+
+        If True, libyang log messages will be sent to the python 'libyang'
+        logger and will be processed according to the python logging
+        configuration. Note that by default, the 'libyang' python logger is
+        created with a NullHandler() which means that all messages are lost
+        until another handler is configured for that logger.
+    :arg int level:
+        Python logging level. By default only ERROR messages are stored/logged.
+    """
     for ly_lvl, py_lvl in LOG_LEVELS.items():
         if py_lvl == level:
             lib.ly_verb(ly_lvl)
-            return
+            break
+    if enable_py_logger:
+        lib.ly_log_options(lib.LY_LOLOG |lib.LY_LOSTORE)
+        lib.ly_set_log_clb(lib.lypy_log_cb, True)
+    else:
+        lib.ly_log_options(lib.LY_LOSTORE)
+        lib.ly_set_log_clb(ffi.NULL, False)
 
 
-set_log_level(logging.ERROR)
-lib.ly_set_log_clb(lib.lypy_log_cb, True)
-lib.ly_log_options(lib.LY_LOLOG | lib.LY_LOSTORE)
-LOG = logging.getLogger(__name__)
-LOG.addHandler(logging.NullHandler())
+configure_logging(False, logging.ERROR)
 
 
 #------------------------------------------------------------------------------

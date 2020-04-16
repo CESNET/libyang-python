@@ -51,6 +51,9 @@ class Module(object):
     def filepath(self):
         return c2str(self._module.filepath)
 
+    def implemented(self):
+        return bool(lib.lypy_module_implemented(self._module))
+
     def feature_enable(self, name):
         ret = lib.lys_features_enable(self._module, str2c(name))
         if ret != 0:

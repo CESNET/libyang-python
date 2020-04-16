@@ -294,3 +294,10 @@ lyd_toprint(const struct lyd_node *node, int options)
 
     return 1;
 }
+
+static uint8_t lypy_module_implemented(const struct lys_module *module)
+{
+	if (module)
+		return module->implemented;
+	return 0;
+}

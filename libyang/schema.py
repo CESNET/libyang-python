@@ -9,6 +9,30 @@ from .util import str2c
 
 
 #------------------------------------------------------------------------------
+def schema_in_format(fmt_string):
+    if fmt_string == 'yang':
+        return lib.LYS_IN_YANG
+    if fmt_string == 'yin':
+        return lib.LYS_IN_YIN
+    raise ValueError('unknown schema input format: %r' % fmt_string)
+
+
+#------------------------------------------------------------------------------
+def schema_out_format(fmt_string):
+    if fmt_string == 'yang':
+        return lib.LYS_OUT_YANG
+    if fmt_string == 'yin':
+        return lib.LYS_OUT_YIN
+    if fmt_string == 'tree':
+        return lib.LYS_OUT_TREE
+    if fmt_string == 'info':
+        return lib.LYS_OUT_INFO
+    if fmt_string == 'json':
+        return lib.LYS_OUT_JSON
+    raise ValueError('unknown schema output format: %r' % fmt_string)
+
+
+#------------------------------------------------------------------------------
 class Module(object):
 
     def __init__(self, context, module_p):
@@ -72,7 +96,8 @@ class Module(object):
     def __str__(self):
         return self.dump_str()
 
-    def dump_str(self, fmt=lib.LYS_OUT_TREE, path=None):
+    def dump_str(self, fmt='tree', path=None):
+        fmt = schema_out_format(fmt)
         buf = ffi.new('char **')
         ret = lib.lys_print_mem(buf, self._module, fmt, str2c(path), 0, 0)
         if ret != 0:
@@ -82,7 +107,8 @@ class Module(object):
         finally:
             lib.free(buf[0])
 
-    def dump_file(self, fileobj, fmt=lib.LYS_OUT_TREE, path=None):
+    def dump_file(self, fileobj, fmt='tree', path=None):
+        fmt = schema_out_format(fmt)
         ret = lib.lys_print_fd(
             fileobj.fileno(), self._module, fmt, str2c(path), 0, 0)
         if ret != 0:

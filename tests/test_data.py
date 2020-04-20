@@ -8,9 +8,6 @@ import unittest
 from libyang import Context
 from libyang import LibyangError
 from libyang.data import DContainer
-from libyang.data import ParserOpt
-from libyang.data import PrintFmt
-from libyang.data import PrintOpt
 from libyang.data import dict_to_dnode
 from libyang.data import dnode_to_dict
 
@@ -58,11 +55,10 @@ class DataTest(unittest.TestCase):
 '''
 
     def test_data_parse_config_json(self):
-        dnode = self.ctx.parse_data_str(
-            self.JSON_CONFIG, PrintFmt.JSON, ParserOpt.CONFIG)
+        dnode = self.ctx.parse_data_str(self.JSON_CONFIG, 'json', config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
+            j = dnode.dump_str('json', pretty=True)
             self.assertEqual(j, self.JSON_CONFIG)
         finally:
             dnode.free()
@@ -97,11 +93,10 @@ class DataTest(unittest.TestCase):
 
     def test_data_parse_state_json(self):
         dnode = self.ctx.parse_data_str(
-            self.JSON_STATE, PrintFmt.JSON,
-            ParserOpt.DATA | ParserOpt.NO_YANGLIB)
+            self.JSON_STATE, 'json', data=True, no_yanglib=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
+            j = dnode.dump_str('json', pretty=True)
             self.assertEqual(j, self.JSON_STATE)
         finally:
             dnode.free()
@@ -129,11 +124,10 @@ class DataTest(unittest.TestCase):
 '''
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_str(
-            self.XML_CONFIG, PrintFmt.XML, ParserOpt.CONFIG)
+        dnode = self.ctx.parse_data_str(self.XML_CONFIG, 'xml', config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.dump_str(PrintFmt.XML, PrintOpt.PRETTY)
+            xml = dnode.dump_str('xml', pretty=True)
             self.assertEqual(xml, self.XML_CONFIG)
         finally:
             dnode.free()
@@ -162,11 +156,10 @@ class DataTest(unittest.TestCase):
 
     def test_data_parse_data_xml(self):
         dnode = self.ctx.parse_data_str(
-            self.XML_STATE, PrintFmt.XML,
-            ParserOpt.DATA | ParserOpt.NO_YANGLIB)
+            self.XML_STATE, 'xml', data=True, no_yanglib=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.dump_str(PrintFmt.XML, PrintOpt.PRETTY)
+            xml = dnode.dump_str('xml', pretty=True)
             self.assertEqual(xml, self.XML_STATE)
         finally:
             dnode.free()
@@ -187,7 +180,7 @@ class DataTest(unittest.TestCase):
             u.create_path('path', '/index.html')
             u.create_path('enabled', True)
             state.validate(strict=True)
-            self.assertEqual(state.dump_str(PrintFmt.JSON, PrintOpt.PRETTY), self.JSON_STATE)
+            self.assertEqual(state.dump_str('json', pretty=True), self.JSON_STATE)
         finally:
             state.free()
 
@@ -231,8 +224,7 @@ class DataTest(unittest.TestCase):
     }
 
     def test_data_to_dict(self):
-        dnode = self.ctx.parse_data_str(
-            self.JSON_CONFIG, PrintFmt.JSON, ParserOpt.CONFIG)
+        dnode = self.ctx.parse_data_str(self.JSON_CONFIG, 'json', config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             dic = dnode_to_dict(dnode)
@@ -244,7 +236,7 @@ class DataTest(unittest.TestCase):
         schema = self.ctx.get_module('yolo-system')
         dnode = dict_to_dnode(self.DICT_CONFIG, schema)
         try:
-            j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
+            j = dnode.dump_str('json', pretty=True)
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))

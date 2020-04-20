@@ -17,31 +17,60 @@ from .util import str2c
 
 
 #------------------------------------------------------------------------------
-class PrintFmt:  # TODO: use enum when dropping python2 support
-    XML = lib.LYD_XML
-    JSON = lib.LYD_JSON
-    LYB = lib.LYD_LYB
+def printer_flags(with_siblings=False, pretty=False, keep_empty_containers=False,
+                  trim_default_values=False, include_implicit_defaults=False):
+    flags = 0
+    if with_siblings:
+        flags |= lib.LYP_WITHSIBLINGS
+    if pretty:
+        flags |= lib.LYP_FORMAT
+    if keep_empty_containers:
+        flags |= lib.LYP_KEEPEMPTYCONT
+    if trim_default_values:
+        flags |= lib.LYP_WD_TRIM
+    if include_implicit_defaults:
+        flags |= lib.LYP_WD_ALL
+    return flags
 
 
 #------------------------------------------------------------------------------
-class PrintOpt:  # TODO: use enum when dropping python2 support
-    PRETTY = lib.LYP_FORMAT
+def data_format(fmt_string):
+    if fmt_string == 'json':
+        return lib.LYD_JSON
+    if fmt_string == 'xml':
+        return lib.LYD_XML
+    if fmt_string == 'lyb':
+        return lib.LYD_LYB
+    raise ValueError('unknown data format: %r' % fmt_string)
 
 
 #------------------------------------------------------------------------------
-class PathOpt:  # TODO: use enum when dropping python2 support
-    UPDATE = lib.LYD_PATH_OPT_UPDATE
-    OUTPUT = lib.LYD_PATH_OPT_OUTPUT
-    NOPARENTRET = lib.LYD_PATH_OPT_NOPARENTRET
+def path_flags(update=False, rpc_output=False, no_parent_ret=False):
+    flags = 0
+    if update:
+        flags |= lib.LYD_PATH_OPT_UPDATE
+    if rpc_output:
+        flags |= lib.LYD_PATH_OPT_OUTPUT
+    if no_parent_ret:
+        flags |= lib.LYD_PATH_OPT_NOPARENTRET
+    return flags
 
 
 #------------------------------------------------------------------------------
-class ParserOpt:  # TODO: use enum when dropping python2 support
-    DATA = lib.LYD_OPT_DATA
-    CONFIG = lib.LYD_OPT_CONFIG
-    STRICT = lib.LYD_OPT_STRICT
-    TRUSTED = lib.LYD_OPT_TRUSTED
-    NO_YANGLIB = lib.LYD_OPT_DATA_NO_YANGLIB
+def parser_flags(data=False, config=False, strict=False, trusted=False,
+                 no_yanglib=False):
+    flags = 0
+    if data:
+        flags |= lib.LYD_OPT_DATA
+    if config:
+        flags |= lib.LYD_OPT_CONFIG
+    if strict:
+        flags |= lib.LYD_OPT_STRICT
+    if trusted:
+        flags |= lib.LYD_OPT_TRUSTED
+    if no_yanglib:
+        flags |= lib.LYD_OPT_DATA_NO_YANGLIB
+    return flags
 
 
 #------------------------------------------------------------------------------
@@ -99,15 +128,30 @@ class DNode(object):
         finally:
             lib.free(path)
 
-    def validate(self, flags=0):
+    def validate(self, data=False, config=False, strict=False, trusted=False,
+                 no_yanglib=False):
+        flags = parser_flags(
+            data=data, config=config, strict=strict, trusted=trusted,
+            no_yanglib=no_yanglib)
         node_p = ffi.new('struct lyd_node **')
         node_p[0] = self._node
         ret = lib.lyd_validate(node_p, flags, ffi.NULL)
         if ret != 0:
             self.context.error('validation failed')
 
-    def dump_str(self, fmt=PrintFmt.JSON, flags=0):
+    def dump_str(self, fmt,
+                 with_siblings=False,
+                 pretty=False,
+                 include_implicit_defaults=False,
+                 trim_default_values=False,
+                 keep_empty_containers=False):
+        flags = printer_flags(
+            with_siblings=with_siblings, pretty=pretty,
+            include_implicit_defaults=include_implicit_defaults,
+            trim_default_values=trim_default_values,
+            keep_empty_containers=keep_empty_containers)
         buf = ffi.new('char **')
+        fmt = data_format(fmt)
         ret = lib.lyd_print_mem(buf, self._node, fmt, flags)
         if ret != 0:
             raise self.context.error('cannot print node')
@@ -116,7 +160,18 @@ class DNode(object):
         finally:
             lib.free(buf[0])
 
-    def dump_file(self, fileobj, fmt=PrintFmt.JSON, flags=0):
+    def dump_file(self, fileobj, fmt,
+                  with_siblings=False,
+                  pretty=False,
+                  include_implicit_defaults=False,
+                  trim_default_values=False,
+                  keep_empty_containers=False):
+        flags = printer_flags(
+            with_siblings=with_siblings, pretty=pretty,
+            include_implicit_defaults=include_implicit_defaults,
+            trim_default_values=trim_default_values,
+            keep_empty_containers=keep_empty_containers)
+        fmt = data_format(fmt)
         ret = lib.lyd_print_fd(fileobj.fileno(), self._node, fmt, flags)
         if ret != 0:
             raise self.context.error('cannot print node')
@@ -158,9 +213,9 @@ class DNode(object):
 @DNode.register(SNode.CONTAINER)
 class DContainer(DNode):
 
-    def create_path(self, path, value=None, flags=0):
+    def create_path(self, path, value=None, rpc_output=False):
         return self.context.create_data_path(
-            path, parent=self, value=value, flags=flags)
+            path, parent=self, value=value, rpc_output=rpc_output)
 
     def children(self):
         child = self._node.child
@@ -279,10 +334,6 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
     if not isinstance(dic, dict):
         raise TypeError('dic argument must be a python dict')
 
-    flags = 0
-    if rpc_output:
-        flags |= PathOpt.OUTPUT
-
     # XXX: ugly, required for python2. Cannot use nonlocal keyword
     _parent = [parent]
 
@@ -309,7 +360,8 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
                                     % (s.schema_path(), d))
                 if s.presence():
                     dnode = s.context.create_data_path(
-                        s.data_path() % key, parent=_parent[0], flags=flags)
+                        s.data_path() % key, parent=_parent[0],
+                        rpc_output=rpc_output)
                     if _parent[0] is None:
                         _parent[0] = dnode
                 _to_dnode(d, s, key)
@@ -343,12 +395,13 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
                 for element in d:
                     dnode = s.context.create_data_path(
                         s.data_path() % key, parent=_parent[0],
-                        value=element, flags=flags)
+                        value=element, rpc_output=rpc_output)
                     if _parent[0] is None:
                         _parent[0] = dnode
             elif isinstance(s, SLeaf):
                 dnode = s.context.create_data_path(
-                    s.data_path() % key, parent=_parent[0], value=d, flags=flags)
+                    s.data_path() % key, parent=_parent[0], value=d,
+                    rpc_output=rpc_output)
                 if _parent[0] is None:
                     _parent[0] = dnode
 

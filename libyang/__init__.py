@@ -20,9 +20,12 @@ from _libyang import ffi
 from _libyang import lib
 
 from .data import DNode
-from .data import PathOpt
+from .data import data_format
+from .data import parser_flags
+from .data import path_flags
 from .schema import Module
 from .schema import SNode
+from .schema import schema_in_format
 from .util import LibyangError
 from .util import c2str
 from .util import str2c
@@ -35,12 +38,14 @@ LOG.addHandler(logging.NullHandler())
 #------------------------------------------------------------------------------
 class Context(object):
 
-    def __init__(self, search_path=None,
-                 options=lib.LY_CTX_DISABLE_SEARCHDIR_CWD,
-                 pointer=None):
+    def __init__(self, search_path=None, disable_searchdir_cwd=True, pointer=None):
         if pointer is not None:
             self._ctx = ffi.cast('struct ly_ctx *', pointer)
             return  # already initialized
+
+        options = 0
+        if disable_searchdir_cwd:
+            options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
 
         self._ctx = ffi.gc(lib.ly_ctx_new(ffi.NULL, options),
                            lambda c: lib.ly_ctx_destroy(c, ffi.NULL))
@@ -76,14 +81,16 @@ class Context(object):
 
         return LibyangError(msg)
 
-    def parse_module_file(self, fileobj, fmt=lib.LYS_IN_YANG):
+    def parse_module_file(self, fileobj, fmt='yang'):
+        fmt = schema_in_format(fmt)
         mod = lib.lys_parse_fd(self._ctx, fileobj.fileno(), fmt)
         if not mod:
             raise self.error('cannot parse module')
 
         return Module(self, mod)
 
-    def parse_module_str(self, s, fmt=lib.LYS_IN_YANG):
+    def parse_module_str(self, s, fmt='yang'):
+        fmt = schema_in_format(fmt)
         mod = lib.lys_parse_mem(self._ctx, str2c(s), fmt)
         if not mod:
             raise self.error('cannot parse module')
@@ -114,17 +121,18 @@ class Context(object):
         finally:
             lib.ly_set_free(node_set)
 
-    def create_data_path(self, path, parent=None, value=None, flags=0):
+    def create_data_path(self, path, parent=None, value=None, rpc_output=False):
         lib.lypy_set_errno(0)
         if value is not None:
             if isinstance(value, bool):
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
+        flags = path_flags(
+            update=True, no_parent_ret=True, rpc_output=rpc_output)
         dnode = lib.lyd_new_path(
             parent._node if parent else ffi.NULL,
-            self._ctx, str2c(path), str2c(value), 0,
-            PathOpt.UPDATE | PathOpt.NOPARENTRET | flags)
+            self._ctx, str2c(path), str2c(value), 0, flags)
         if lib.lypy_get_errno() != 0:
             raise self.error('cannot create data path: %s', path)
 
@@ -145,13 +153,23 @@ class Context(object):
 
         return DNode.new(self, dnode)
 
-    def parse_data_str(self, s, fmt, flags=0):
+    def parse_data_str(self, s, fmt, data=False, config=False, strict=False,
+                       trusted=False, no_yanglib=False):
+        flags = parser_flags(
+            data=data, config=config, strict=strict, trusted=trusted,
+            no_yanglib=no_yanglib)
+        fmt = data_format(fmt)
         dnode = lib.lyd_parse_mem(self._ctx, str2c(s), fmt, flags)
         if not dnode:
             raise self.error('failed to parse data tree')
         return DNode.new(self, dnode)
 
-    def parse_data_file(self, fileobj, fmt, flags=0):
+    def parse_data_file(self, fileobj, fmt, data=False, config=False,
+                        strict=False, trusted=False, no_yanglib=False):
+        flags = parser_flags(
+            data=data, config=config, strict=strict, trusted=trusted,
+            no_yanglib=no_yanglib)
+        fmt = data_format(fmt)
         dnode = lib.lyd_parse_fd(self._ctx, fileobj.fileno(), fmt, flags)
         if not dnode:
             raise self.error('failed to parse data tree')

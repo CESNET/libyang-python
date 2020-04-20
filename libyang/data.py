@@ -76,9 +76,6 @@ class DNode(object):
     def schema(self):
         return SNode.new(self.context, self._node.schema)
 
-    def default(self):
-        return bool(self._node.dflt)
-
     def parent(self):
         if not self._node.parent:
             return None
@@ -203,15 +200,6 @@ class DLeaf(DNode):
     def __init__(self, context, node_p, autofree=False):
         DNode.__init__(self, context, node_p, autofree=autofree)
         self._leaf = ffi.cast('struct lyd_node_leaf_list *', node_p)
-
-    def set_value(self, new_val):
-        if new_val is not None:
-            if isinstance(new_val, bool):
-                new_val = str(new_val).lower()
-            elif not isinstance(new_val, str):
-                new_val = str(new_val)
-        if lib.lyd_change_leaf(self._leaf, str2c(new_val)) < 0:
-            raise self.context.error('failed to change leaf value')
 
     def value(self):
         if self._leaf.value_type == Type.EMPTY:

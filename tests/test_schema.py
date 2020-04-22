@@ -32,6 +32,7 @@ class ModuleTest(unittest.TestCase):
 
     def tearDown(self):
         self.module = None
+        self.ctx.destroy()
         self.ctx = None
 
     def test_mod_dump_str(self):
@@ -102,6 +103,7 @@ class RevisionTest(unittest.TestCase):
 
     def tearDown(self):
         self.revision = None
+        self.ctx.destroy()
         self.ctx = None
 
     def test_rev_date(self):
@@ -133,6 +135,7 @@ class IfFeatureTest(unittest.TestCase):
 
     def tearDown(self):
         self.container = None
+        self.ctx.destroy()
         self.ctx = None
 
     def test_iffeatures(self):
@@ -171,6 +174,7 @@ class ContainerTest(unittest.TestCase):
 
     def tearDown(self):
         self.container = None
+        self.ctx.destroy()
         self.ctx = None
 
     def test_cont_attrs(self):
@@ -213,6 +217,7 @@ class ListTest(unittest.TestCase):
 
     def tearDown(self):
         self.list = None
+        self.ctx.destroy()
         self.ctx = None
 
     def test_list_attrs(self):
@@ -252,6 +257,7 @@ class RpcTest(unittest.TestCase):
 
     def tearDown(self):
         self.rpc = None
+        self.ctx.destroy()
         self.ctx = None
 
     def test_rpc_attrs(self):
@@ -285,6 +291,7 @@ class LeafTypeTest(unittest.TestCase):
         self.ctx.load_module('yolo-system')
 
     def tearDown(self):
+        self.ctx.destroy()
         self.ctx = None
 
     def test_leaf_type_derived(self):

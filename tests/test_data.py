@@ -24,6 +24,7 @@ class DataTest(unittest.TestCase):
         mod.feature_enable_all()
 
     def tearDown(self):
+        self.ctx.destroy()
         self.ctx = None
 
     JSON_CONFIG = '''{

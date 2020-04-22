@@ -45,16 +45,15 @@ class DiffTest(unittest.TestCase):
     ))
 
     def test_diff(self):
-        ctx_old = Context(OLD_YANG_DIR)
-        mod = ctx_old.load_module('yolo-system')
-        mod.feature_enable_all()
-        ctx_new = Context(NEW_YANG_DIR)
-        mod = ctx_new.load_module('yolo-system')
-        mod.feature_enable_all()
-        diffs = []
-        for d in schema_diff(ctx_old, ctx_new):
-            if isinstance(d, (SNodeAdded, SNodeRemoved)):
-                diffs.append((d.__class__, d.node.schema_path()))
-            else:
-                diffs.append((d.__class__, d.new.schema_path()))
-        self.assertEqual(frozenset(diffs), self.expected_diffs)
+        with Context(OLD_YANG_DIR) as ctx_old, Context(NEW_YANG_DIR) as ctx_new:
+            mod = ctx_old.load_module('yolo-system')
+            mod.feature_enable_all()
+            mod = ctx_new.load_module('yolo-system')
+            mod.feature_enable_all()
+            diffs = []
+            for d in schema_diff(ctx_old, ctx_new):
+                if isinstance(d, (SNodeAdded, SNodeRemoved)):
+                    diffs.append((d.__class__, d.node.schema_path()))
+                else:
+                    diffs.append((d.__class__, d.new.schema_path()))
+            self.assertEqual(frozenset(diffs), self.expected_diffs)

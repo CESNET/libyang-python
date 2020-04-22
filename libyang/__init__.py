@@ -47,8 +47,7 @@ class Context(object):
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
 
-        self._ctx = ffi.gc(lib.ly_ctx_new(ffi.NULL, options),
-                           lambda c: lib.ly_ctx_destroy(c, ffi.NULL))
+        self._ctx = lib.ly_ctx_new(ffi.NULL, options)
         if not self._ctx:
             raise self.error('cannot create context')
 
@@ -68,20 +67,34 @@ class Context(object):
             if lib.ly_ctx_set_searchdir(self._ctx, str2c(path)) != 0:
                 raise self.error('cannot set search dir')
 
+    def destroy(self):
+        if self._ctx is not None:
+            lib.ly_ctx_destroy(self._ctx, ffi.NULL)
+            self._ctx = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.destroy()
+
     def error(self, msg, *args):
         msg %= args
 
-        err = lib.ly_err_first(self._ctx)
-        if err:
-            if err.msg:
-                msg += ': %s' % c2str(err.msg)
-            if err.path:
-                msg += ': %s' % c2str(err.path)
-        lib.ly_err_clean(self._ctx, ffi.NULL)
+        if self._ctx:
+            err = lib.ly_err_first(self._ctx)
+            if err:
+                if err.msg:
+                    msg += ': %s' % c2str(err.msg)
+                if err.path:
+                    msg += ': %s' % c2str(err.path)
+            lib.ly_err_clean(self._ctx, ffi.NULL)
 
         return LibyangError(msg)
 
     def parse_module_file(self, fileobj, fmt='yang'):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         fmt = schema_in_format(fmt)
         mod = lib.lys_parse_fd(self._ctx, fileobj.fileno(), fmt)
         if not mod:
@@ -90,6 +103,8 @@ class Context(object):
         return Module(self, mod)
 
     def parse_module_str(self, s, fmt='yang'):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         fmt = schema_in_format(fmt)
         mod = lib.lys_parse_mem(self._ctx, str2c(s), fmt)
         if not mod:
@@ -98,6 +113,8 @@ class Context(object):
         return Module(self, mod)
 
     def load_module(self, name):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         mod = lib.ly_ctx_load_module(self._ctx, str2c(name), ffi.NULL)
         if not mod:
             raise self.error('cannot load module')
@@ -105,6 +122,8 @@ class Context(object):
         return Module(self, mod)
 
     def get_module(self, name):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         mod = lib.ly_ctx_get_module(self._ctx, str2c(name), ffi.NULL, False)
         if not mod:
             raise self.error('cannot get module')
@@ -112,6 +131,8 @@ class Context(object):
         return Module(self, mod)
 
     def find_path(self, path):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         node_set = lib.ly_ctx_find_path(self._ctx, str2c(path))
         if not node_set:
             raise self.error('cannot find path')
@@ -122,6 +143,8 @@ class Context(object):
             lib.ly_set_free(node_set)
 
     def create_data_path(self, path, parent=None, value=None, rpc_output=False):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         lib.lypy_set_errno(0)
         if value is not None:
             if isinstance(value, bool):
@@ -155,6 +178,8 @@ class Context(object):
 
     def parse_data_str(self, s, fmt, data=False, config=False, strict=False,
                        trusted=False, no_yanglib=False):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         flags = parser_flags(
             data=data, config=config, strict=strict, trusted=trusted,
             no_yanglib=no_yanglib)
@@ -166,6 +191,8 @@ class Context(object):
 
     def parse_data_file(self, fileobj, fmt, data=False, config=False,
                         strict=False, trusted=False, no_yanglib=False):
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         flags = parser_flags(
             data=data, config=config, strict=strict, trusted=trusted,
             no_yanglib=no_yanglib)
@@ -179,6 +206,8 @@ class Context(object):
         """
         Return an iterator that yields all implemented modules from the context
         """
+        if self._ctx is None:
+            raise RuntimeError('context already destroyed')
         idx = ffi.new('uint32_t *')
         mod = lib.ly_ctx_get_module_iter(self._ctx, idx)
         while mod:

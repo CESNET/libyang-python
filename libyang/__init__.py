@@ -76,6 +76,20 @@ class Context(object):
 
         return LibyangError(msg)
 
+    def parse_module_file(self, fileobj, fmt=lib.LYS_IN_YANG):
+        mod = lib.lys_parse_fd(self._ctx, fileobj.fileno(), fmt)
+        if not mod:
+            raise self.error('cannot parse module')
+
+        return Module(self, mod)
+
+    def parse_module_str(self, s, fmt=lib.LYS_IN_YANG):
+        mod = lib.lys_parse_mem(self._ctx, str2c(s), fmt)
+        if not mod:
+            raise self.error('cannot parse module')
+
+        return Module(self, mod)
+
     def load_module(self, name):
         mod = lib.ly_ctx_load_module(self._ctx, str2c(name), ffi.NULL)
         if not mod:

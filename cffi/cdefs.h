@@ -342,6 +342,16 @@ struct lys_module *lys_main_module(const struct lys_module *);
 struct lys_node *lys_parent(const struct lys_node *);
 
 typedef enum {
+	LYS_IN_UNKNOWN,
+	LYS_IN_YANG,
+	LYS_IN_YIN,
+	...
+} LYS_INFORMAT;
+
+const struct lys_module *lys_parse_mem(struct ly_ctx *, const char *, LYS_INFORMAT);
+const struct lys_module *lys_parse_fd(struct ly_ctx *, int, LYS_INFORMAT);
+
+typedef enum {
 	LYS_OUT_UNKNOWN,
 	LYS_OUT_YANG,
 	LYS_OUT_YIN,

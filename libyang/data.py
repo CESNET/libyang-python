@@ -49,20 +49,15 @@ class DNode(object):
     """
     Data tree node.
     """
-    def __init__(self, context, node_p, autofree=False):
+    def __init__(self, context, node_p):
         """
         :arg Context context:
             The libyang.Context python object.
         :arg struct lyd_node * node_p:
             The pointer to the C structure allocated by libyang.so.
-        :arg bool autofree:
-            If True, automatically call lyd_free_withsiblings when the last
-            reference to this object is lost.
         """
         self.context = context
         self._node = ffi.cast('struct lyd_node *', node_p)
-        if autofree:
-            self._node = ffi.gc(self._node, lib.lyd_free_withsiblings)
 
     def name(self):
         return c2str(self._node.schema.name)
@@ -128,10 +123,6 @@ class DNode(object):
 
     def free(self, with_siblings=True):
         try:
-            ffi.gc(self._node, None)  # disable automatic gc
-        except TypeError:
-            pass
-        try:
             if with_siblings:
                 lib.lyd_free_withsiblings(self._node)
             else:
@@ -157,10 +148,10 @@ class DNode(object):
         return _decorator
 
     @classmethod
-    def new(cls, context, node_p, autofree=False):
+    def new(cls, context, node_p):
         node_p = ffi.cast('struct lyd_node *', node_p)
         nodecls = cls.NODETYPE_CLASS.get(node_p.schema.nodetype, DNode)
-        return nodecls(context, node_p, autofree=autofree)
+        return nodecls(context, node_p)
 
 
 #------------------------------------------------------------------------------
@@ -197,8 +188,8 @@ class DList(DContainer):
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
 
-    def __init__(self, context, node_p, autofree=False):
-        DNode.__init__(self, context, node_p, autofree=autofree)
+    def __init__(self, context, node_p):
+        DNode.__init__(self, context, node_p)
         self._leaf = ffi.cast('struct lyd_node_leaf_list *', node_p)
 
     def value(self):

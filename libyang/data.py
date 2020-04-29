@@ -111,6 +111,22 @@ class DNode(object):
             node = node.parent()
         return node
 
+    def first_sibling(self):
+        n = lib.lyd_first_sibling(self._node)
+        if n == self._node:
+            return self
+        return self.new(self.context, n)
+
+    def siblings(self, include_self=True):
+        n = lib.lyd_first_sibling(self._node)
+        while n:
+            if n == self._node:
+                if include_self:
+                    yield self
+            else:
+                yield self.new(self.context, n)
+            n = n.next
+
     def find_one(self, xpath):
         try:
             return next(self.find_all(xpath))

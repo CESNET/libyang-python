@@ -420,6 +420,7 @@ struct lyd_node_leaf_list {
 struct ly_set *lyd_find_instance(const struct lyd_node *, const struct lys_node *);
 struct ly_set *lyd_find_path(const struct lyd_node *, const char *);
 struct lyd_node *lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, void *, LYD_ANYDATA_VALUETYPE, int);
+struct lyd_node *lyd_first_sibling(struct lyd_node *);
 char *lyd_path(const struct lyd_node *);
 struct lys_module *lyd_node_module(struct lyd_node *);
 struct lyd_node *lyd_parse_mem(struct ly_ctx *, const char *, LYD_FORMAT, int);

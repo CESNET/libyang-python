@@ -78,7 +78,7 @@ class BuildExt(build_ext):
 
 
 LIBRARIES = []
-if os.environ.get('LIBYANG_INSTALL') != 'system':
+if os.environ.get('LIBYANG_INSTALL', 'system') == 'embed':
     LIBRARIES.append(('yang', {'sources': ['clib']}))
 
 

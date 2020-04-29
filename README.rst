@@ -25,39 +25,52 @@ Installation
 
    pip install libyang
 
+This assumes ``libyang.so`` is installed in the system and that ``libyang.h`` is
+available in the system include dirs.
+
 You need the following system dependencies installed:
 
 - Python development headers
 - GCC
-- cmake (to build the libyang C code)
-- Lib PCRE development headers (to build the libyang C code)
+- FFI development headers
 
 On a Debian/Ubuntu system::
 
-   sudo apt-get install python3-dev build-essential cmake libpcre3-dev
+   sudo apt-get install python3-dev gcc libffi-dev
 
 .. note::
-
-   By default, the C library will be compiled and the python ``_libyang.so``
-   extension will be linked with it (with a custom RPATH).
-
-   If you already have ``libyang.so`` installed on your system (with the
-   development headers), you can link the python extension with it by exporting
-   the ``LIBYANG_INSTALL=system`` variable when running pip::
-
-      LIBYANG_INSTALL=system pip install libyang
 
    If libyang headers and libraries are installed in a non-standard location,
    you can specify them with the ``LIBYANG_HEADERS`` and ``LIBYANG_LIBRARIES``
    variables. Additionally, for finer control, you may use
    ``LIBYANG_EXTRA_CFLAGS`` and ``LIBYANG_EXTRA_LDFLAGS``::
 
-      LIBYANG_INSTALL=system \
       LIBYANG_HEADERS=/home/build/opt/ly/include \
       LIBYANG_LIBRARIES=/home/build/opt/ly/lib \
       LIBYANG_EXTRA_CFLAGS="-O3" \
       LIBYANG_EXTRA_LDFLAGS="-rpath=/opt/ly/lib" \
              pip install libyang
+
+.. note::
+
+   If libyang headers and libraries are not installed on the system, you may
+   build ``libyang.so`` and embed it into the `libyang` package before linking
+   the CFFI extension against it (with a custom RPATH).
+
+   To do so, you must export the ``LIBYANG_INSTALL=embed`` variable when running
+   pip::
+
+      LIBYANG_INSTALL=embed pip install libyang
+
+   This requires additional system dependencies in order to build the libyang
+   C code:
+
+   - cmake
+   - Lib PCRE development headers
+
+   On a Debian/Ubuntu system::
+
+      sudo apt-get install cmake build-essential libpcre3-dev
 
 Examples
 ========

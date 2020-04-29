@@ -17,33 +17,33 @@ matrix:
   include:
     - env: TOXENV=lint
       python: 3.7.7
-    - env: TOXENV=py27-ownlib
+    - env: TOXENV=py27-system
       python: 2.7.17
-    - env: TOXENV=py27-systemlib
+    - env: TOXENV=py27-embed
       python: 2.7.17
-    - env: TOXENV=pypy-ownlib
+    - env: TOXENV=pypy-system
       python: pypy2.7-7.1.1
-    - env: TOXENV=pypy-systemlib
+    - env: TOXENV=pypy-embed
       python: pypy2.7-7.1.1
-    - env: TOXENV=py35-ownlib
+    - env: TOXENV=py35-system
       python: 3.5.9
-    - env: TOXENV=py35-systemlib
+    - env: TOXENV=py35-embed
       python: 3.5.9
-    - env: TOXENV=pypy3-ownlib
+    - env: TOXENV=pypy3-system
       python: pypy3.6-7.1.1
-    - env: TOXENV=pypy3-systemlib
+    - env: TOXENV=pypy3-embed
       python: pypy3.6-7.1.1
-    - env: TOXENV=py36-ownlib
+    - env: TOXENV=py36-system
       python: 3.6.9
-    - env: TOXENV=py36-systemlib
+    - env: TOXENV=py36-embed
       python: 3.6.9
-    - env: TOXENV=py37-ownlib
+    - env: TOXENV=py37-system
       python: 3.7.7
-    - env: TOXENV=py37-systemlib
+    - env: TOXENV=py37-embed
       python: 3.7.7
-    - env: TOXENV=py38-ownlib
+    - env: TOXENV=py38-system
       python: 3.8.2
-    - env: TOXENV=py38-systemlib
+    - env: TOXENV=py38-embed
       python: 3.8.2
 
 script: tox -- $(git ls-files '*.py')

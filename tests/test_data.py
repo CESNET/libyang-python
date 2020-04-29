@@ -61,9 +61,11 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_str(
             self.JSON_CONFIG, PrintFmt.JSON, ParserOpt.CONFIG)
         self.assertIsInstance(dnode, DContainer)
-        j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
-        self.assertEqual(j, self.JSON_CONFIG)
-        dnode.free()
+        try:
+            j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
+            self.assertEqual(j, self.JSON_CONFIG)
+        finally:
+            dnode.free()
 
     JSON_STATE = '''{
   "yolo-system:state": {
@@ -98,9 +100,11 @@ class DataTest(unittest.TestCase):
             self.JSON_STATE, PrintFmt.JSON,
             ParserOpt.DATA | ParserOpt.NO_YANGLIB)
         self.assertIsInstance(dnode, DContainer)
-        j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
-        self.assertEqual(j, self.JSON_STATE)
-        dnode.free()
+        try:
+            j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
+            self.assertEqual(j, self.JSON_STATE)
+        finally:
+            dnode.free()
 
     XML_CONFIG = '''<conf xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
@@ -128,9 +132,11 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_str(
             self.XML_CONFIG, PrintFmt.XML, ParserOpt.CONFIG)
         self.assertIsInstance(dnode, DContainer)
-        xml = dnode.dump_str(PrintFmt.XML, PrintOpt.PRETTY)
-        self.assertEqual(xml, self.XML_CONFIG)
-        dnode.free()
+        try:
+            xml = dnode.dump_str(PrintFmt.XML, PrintOpt.PRETTY)
+            self.assertEqual(xml, self.XML_CONFIG)
+        finally:
+            dnode.free()
 
     XML_STATE = '''<state xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
@@ -159,39 +165,47 @@ class DataTest(unittest.TestCase):
             self.XML_STATE, PrintFmt.XML,
             ParserOpt.DATA | ParserOpt.NO_YANGLIB)
         self.assertIsInstance(dnode, DContainer)
-        xml = dnode.dump_str(PrintFmt.XML, PrintOpt.PRETTY)
-        self.assertEqual(xml, self.XML_STATE)
-        dnode.free()
+        try:
+            xml = dnode.dump_str(PrintFmt.XML, PrintOpt.PRETTY)
+            self.assertEqual(xml, self.XML_STATE)
+        finally:
+            dnode.free()
 
     def test_data_create_paths(self):
         state = self.ctx.create_data_path('/yolo-system:state')
-        state.create_path('hostname', 'foo')
-        state.create_path('speed', 1234)
-        state.create_path('number', 1000)
-        state.create_path('number', 2000)
-        state.create_path('number', 3000)
-        u = state.create_path('url[proto="https"][host="github.com"]')
-        u.create_path('path', '/rjarry/libyang-cffi')
-        u.create_path('enabled', False)
-        u = state.create_path('url[proto="http"][host="foobar.com"]')
-        u.create_path('port', 8080)
-        u.create_path('path', '/index.html')
-        u.create_path('enabled', True)
-        state.validate(ParserOpt.STRICT)
-        self.assertEqual(state.dump_str(PrintFmt.JSON, PrintOpt.PRETTY), self.JSON_STATE)
-        state.free()
+        try:
+            state.create_path('hostname', 'foo')
+            state.create_path('speed', 1234)
+            state.create_path('number', 1000)
+            state.create_path('number', 2000)
+            state.create_path('number', 3000)
+            u = state.create_path('url[proto="https"][host="github.com"]')
+            u.create_path('path', '/rjarry/libyang-cffi')
+            u.create_path('enabled', False)
+            u = state.create_path('url[proto="http"][host="foobar.com"]')
+            u.create_path('port', 8080)
+            u.create_path('path', '/index.html')
+            u.create_path('enabled', True)
+            state.validate(strict=True)
+            self.assertEqual(state.dump_str(PrintFmt.JSON, PrintOpt.PRETTY), self.JSON_STATE)
+        finally:
+            state.free()
 
     def test_data_create_invalid_type(self):
         s = self.ctx.create_data_path('/yolo-system:state')
-        with self.assertRaises(LibyangError):
-            s.create_path('speed', 1234000000000000000000000000)
-        s.free()
+        try:
+            with self.assertRaises(LibyangError):
+                s.create_path('speed', 1234000000000000000000000000)
+        finally:
+            s.free()
 
     def test_data_create_invalid_regexp(self):
         s = self.ctx.create_data_path('/yolo-system:state')
-        with self.assertRaises(LibyangError):
-            s.create_path('hostname', 'INVALID.HOST')
-        s.free()
+        try:
+            with self.assertRaises(LibyangError):
+                s.create_path('hostname', 'INVALID.HOST')
+        finally:
+            s.free()
 
     DICT_CONFIG = {
         'conf': {
@@ -220,13 +234,17 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_str(
             self.JSON_CONFIG, PrintFmt.JSON, ParserOpt.CONFIG)
         self.assertIsInstance(dnode, DContainer)
-        dic = dnode_to_dict(dnode)
-        dnode.free()
+        try:
+            dic = dnode_to_dict(dnode)
+        finally:
+            dnode.free()
         self.assertEqual(dic, self.DICT_CONFIG)
 
     def test_data_from_dict(self):
         schema = self.ctx.get_module('yolo-system')
         dnode = dict_to_dnode(self.DICT_CONFIG, schema)
-        j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
-        dnode.free()
+        try:
+            j = dnode.dump_str(PrintFmt.JSON, PrintOpt.PRETTY)
+        finally:
+            dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))

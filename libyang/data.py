@@ -380,12 +380,11 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
                 if not isinstance(d, dict):
                     raise TypeError('%s: python value is not a dict: %r'
                                     % (s.schema_path(), d))
-                if s.presence():
-                    dnode = s.context.create_data_path(
-                        s.data_path() % key, parent=_parent[0],
-                        rpc_output=rpc_output)
-                    if _parent[0] is None:
-                        _parent[0] = dnode
+                dnode = s.context.create_data_path(
+                    s.data_path() % key, parent=_parent[0],
+                    rpc_output=rpc_output)
+                if _parent[0] is None:
+                    _parent[0] = dnode
                 _to_dnode(d, s, key)
             elif isinstance(s, SList):
                 if not isinstance(d, (list, tuple)):

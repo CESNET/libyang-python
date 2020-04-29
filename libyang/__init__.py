@@ -134,7 +134,7 @@ class Context(object):
             parent._node if parent else ffi.NULL,
             self._ctx, str2c(path), str2c(value), 0, flags)
         if lib.lypy_get_errno() != 0:
-            raise self.error('cannot create data path: %s', path)
+            raise self.error('cannot create data path')
 
         if not dnode and parent:
             # This can happen when path points to an already created leaf and

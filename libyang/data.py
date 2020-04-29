@@ -136,7 +136,7 @@ class DNode(object):
     def find_all(self, xpath):
         node_set = lib.lyd_find_path(self._node, str2c(xpath))
         if not node_set:
-            raise self.context.error('cannot find path: %s', xpath)
+            raise self.context.error('cannot find path')
         try:
             for i in range(node_set.number):
                 yield DNode.new(self.context, node_set.d[i])

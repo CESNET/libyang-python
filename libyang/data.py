@@ -287,6 +287,7 @@ class DLeaf(DNode):
             return referenced.value()
         if self._leaf.value_type == Type.BOOL:
             return bool(self._leaf.value.bln)
+        return None
 
 
 #------------------------------------------------------------------------------

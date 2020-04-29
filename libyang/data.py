@@ -105,6 +105,12 @@ class DNode(object):
             return None
         return self.new(self.context, self._node.parent)
 
+    def root(self):
+        node = self
+        while node.parent() is not None:
+            node = node.parent()
+        return node
+
     def find_one(self, xpath):
         try:
             return next(self.find_all(xpath))

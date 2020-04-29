@@ -178,6 +178,9 @@ class DNode(object):
         if ret != 0:
             raise self.context.error('cannot print node')
         try:
+            if fmt == 'lyb':
+                # binary format, do not convert to unicode
+                return ffi.string(buf[0])
             return c2str(buf[0])
         finally:
             lib.free(buf[0])

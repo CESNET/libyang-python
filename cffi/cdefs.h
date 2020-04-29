@@ -441,5 +441,6 @@ const struct lys_ext_instance *lypy_find_ext(
 	const char *, const char *, const char *);
 char *lypy_data_path_pattern(const struct lys_node *);
 char *lypy_node_fullname(const struct lys_node *);
+int lyd_toprint(const struct lyd_node *node, int options);
 LY_ERR lypy_get_errno(void);
 void lypy_set_errno(LY_ERR);

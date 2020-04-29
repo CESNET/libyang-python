@@ -297,7 +297,9 @@ class DLeafList(DLeaf):
 
 
 #------------------------------------------------------------------------------
-def dnode_to_dict(dnode, strip_prefixes=True):
+def dnode_to_dict(dnode, strip_prefixes=True, absolute=True,
+                  with_siblings=False, include_implicit_defaults=False,
+                  trim_default_values=False, keep_empty_containers=False):
     """
     Convert a DNode object to a python dictionary.
 
@@ -306,8 +308,26 @@ def dnode_to_dict(dnode, strip_prefixes=True):
     :arg bool strip_prefixes:
         If True (the default), module prefixes are stripped from dictionary
         keys. If False, dictionary keys are in the form ``<module>:<name>``.
+    :arg bool absolute:
+        If True (the default), always return a dictionary containing the
+        complete tree starting from the root.
+    :arg bool with_siblings:
+        If True, include the node's siblings.
+    :arg bool include_implicit_defaults:
+        Include implicit default nodes.
+    :arg bool trim_default_values:
+        Exclude nodes with the value equal to their default value.
+    :arg bool keep_empty_containers:
+        Preserve empty non-presence containers.
     """
+    flags = printer_flags(
+        include_implicit_defaults=include_implicit_defaults,
+        trim_default_values=trim_default_values,
+        keep_empty_containers=keep_empty_containers)
+
     def _to_dict(node, parent_dic):
+        if not lib.lyd_toprint(node._node, flags):
+            return
         if strip_prefixes:
             name = node.name()
         else:
@@ -328,7 +348,14 @@ def dnode_to_dict(dnode, strip_prefixes=True):
             parent_dic[name] = node.value()
 
     dic = {}
-    _to_dict(dnode, dic)
+    if dnode:
+        if absolute:
+            dnode = dnode.root()
+        if with_siblings:
+            for sib in dnode.siblings():
+                _to_dict(sib, dic)
+        else:
+            _to_dict(dnode, dic)
     return dic
 
 

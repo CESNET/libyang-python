@@ -176,7 +176,7 @@ class Context(object):
 
         return DNode.new(self, dnode)
 
-    def parse_data_str(self, s, fmt, data=False, config=False, strict=False,
+    def parse_data_mem(self, d, fmt, data=False, config=False, strict=False,
                        trusted=False, no_yanglib=False):
         if self._ctx is None:
             raise RuntimeError('context already destroyed')
@@ -184,7 +184,11 @@ class Context(object):
             data=data, config=config, strict=strict, trusted=trusted,
             no_yanglib=no_yanglib)
         fmt = data_format(fmt)
-        dnode = lib.lyd_parse_mem(self._ctx, str2c(s), fmt, flags)
+        if fmt == lib.LYD_LYB:
+            d = str2c(d, encode=False)
+        else:
+            d = str2c(d, encode=True)
+        dnode = lib.lyd_parse_mem(self._ctx, d, fmt, flags)
         if not dnode:
             raise self.error('failed to parse data tree')
         return DNode.new(self, dnode)

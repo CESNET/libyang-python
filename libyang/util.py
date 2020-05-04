@@ -10,7 +10,7 @@ class LibyangError(Exception):
 
 
 #------------------------------------------------------------------------------
-def str2c(s):
+def str2c(s, encode=True):
     if s is None:
         return ffi.NULL
     if hasattr(s, 'encode'):
@@ -19,7 +19,7 @@ def str2c(s):
 
 
 #------------------------------------------------------------------------------
-def c2str(c):
+def c2str(c, decode=True):
     if c == ffi.NULL:
         return None
     s = ffi.string(c)

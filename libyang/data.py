@@ -161,12 +161,12 @@ class DNode(object):
         if ret != 0:
             self.context.error('validation failed')
 
-    def dump_str(self, fmt,
-                 with_siblings=False,
-                 pretty=False,
-                 include_implicit_defaults=False,
-                 trim_default_values=False,
-                 keep_empty_containers=False):
+    def print_mem(self, fmt,
+                  with_siblings=False,
+                  pretty=False,
+                  include_implicit_defaults=False,
+                  trim_default_values=False,
+                  keep_empty_containers=False):
         flags = printer_flags(
             with_siblings=with_siblings, pretty=pretty,
             include_implicit_defaults=include_implicit_defaults,
@@ -178,19 +178,19 @@ class DNode(object):
         if ret != 0:
             raise self.context.error('cannot print node')
         try:
-            if fmt == 'lyb':
+            if fmt == lib.LYD_LYB:
                 # binary format, do not convert to unicode
-                return ffi.string(buf[0])
-            return c2str(buf[0])
+                return c2str(buf[0], decode=False)
+            return c2str(buf[0], decode=True)
         finally:
             lib.free(buf[0])
 
-    def dump_file(self, fileobj, fmt,
-                  with_siblings=False,
-                  pretty=False,
-                  include_implicit_defaults=False,
-                  trim_default_values=False,
-                  keep_empty_containers=False):
+    def print_file(self, fileobj, fmt,
+                   with_siblings=False,
+                   pretty=False,
+                   include_implicit_defaults=False,
+                   trim_default_values=False,
+                   keep_empty_containers=False):
         flags = printer_flags(
             with_siblings=with_siblings, pretty=pretty,
             include_implicit_defaults=include_implicit_defaults,

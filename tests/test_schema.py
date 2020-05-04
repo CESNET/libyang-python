@@ -35,8 +35,8 @@ class ModuleTest(unittest.TestCase):
         self.ctx.destroy()
         self.ctx = None
 
-    def test_mod_dump_str(self):
-        s = str(self.module)
+    def test_mod_print_mem(self):
+        s = self.module.print_mem('tree')
         self.assertGreater(len(s), 0)
 
     def test_mod_attrs(self):

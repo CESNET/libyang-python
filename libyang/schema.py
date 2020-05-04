@@ -97,9 +97,9 @@ class Module(object):
         return iter_children(self.context, self._module, types=types)
 
     def __str__(self):
-        return self.dump_str()
+        return self.name()
 
-    def dump_str(self, fmt='tree', path=None):
+    def print_mem(self, fmt='tree', path=None):
         fmt = schema_out_format(fmt)
         buf = ffi.new('char **')
         ret = lib.lys_print_mem(buf, self._module, fmt, str2c(path), 0, 0)
@@ -110,7 +110,7 @@ class Module(object):
         finally:
             lib.free(buf[0])
 
-    def dump_file(self, fileobj, fmt='tree', path=None):
+    def print_file(self, fileobj, fmt='tree', path=None):
         fmt = schema_out_format(fmt)
         ret = lib.lys_print_fd(
             fileobj.fileno(), self._module, fmt, str2c(path), 0, 0)

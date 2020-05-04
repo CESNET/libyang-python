@@ -8,8 +8,6 @@ import unittest
 from libyang import Context
 from libyang import LibyangError
 from libyang.data import DContainer
-from libyang.data import dict_to_dnode
-from libyang.data import dnode_to_dict
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), 'yang')
@@ -228,14 +226,15 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, 'json', config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            dic = dnode_to_dict(dnode)
+            dic = dnode.print_dict()
         finally:
             dnode.free()
         self.assertEqual(dic, self.DICT_CONFIG)
 
     def test_data_from_dict(self):
-        schema = self.ctx.get_module('yolo-system')
-        dnode = dict_to_dnode(self.DICT_CONFIG, schema)
+        module = self.ctx.get_module('yolo-system')
+        dnode = module.parse_data_dict(self.DICT_CONFIG)
+        self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem('json', pretty=True)
         finally:

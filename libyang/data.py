@@ -368,9 +368,11 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
     :arg dict dic:
         The python dictionary to convert.
     :arg SNode or Module schema:
-        The libyang schema object associated with the dictionary. It must be
-        at the same "level" than the dictionary (i.e.: direct children names of
-        the schema object must be keys in the dictionary).
+        The libyang schema object associated with the dictionary. It must be at
+        the same "level" than the dictionary (i.e.: the dictionary must have a
+        key that matches the name of the SNode. In the case schema is a
+        Module, dic should have keys that are names of root nodes of the
+        module).
     :arg DNode parent:
         Optional parent to update. If not specified a new top-level DNode will
         be created.
@@ -391,73 +393,81 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
     _parent = [parent]
 
     def _to_dnode(_dic, _schema, key=()):
-        if isinstance(_schema, SRpc):
+        name = _schema.name()
+        if name not in _dic:
+            name = _schema.fullname()
+            if name not in _dic:
+                return
+        data = _dic[name]
+        if isinstance(_schema, SContainer):
+            if not isinstance(data, dict):
+                raise TypeError('%s: python value is not a dict: %r'
+                                % (_schema.schema_path(), data))
+            dnode = _schema.context.create_data_path(
+                _schema.data_path() % key, parent=_parent[0],
+                rpc_output=rpc_output)
+            if _parent[0] is None:
+                _parent[0] = dnode
+            for s in _schema:
+                _to_dnode(data, s, key)
+        elif isinstance(_schema, SRpc):
             if rpc_input:
                 _schema = _schema.input()
             elif rpc_output:
                 _schema = _schema.output()
             else:
                 raise ValueError('rpc_input or rpc_output must be specified')
-        if not _schema:
-            return
-        for s in _schema:
-            name = s.name()
-            if name not in _dic:
-                name = s.fullname()
-                if name not in _dic:
-                    continue
-            d = _dic[name]
-            if isinstance(s, SContainer):
-                if not isinstance(d, dict):
-                    raise TypeError('%s: python value is not a dict: %r'
-                                    % (s.schema_path(), d))
-                dnode = s.context.create_data_path(
-                    s.data_path() % key, parent=_parent[0],
-                    rpc_output=rpc_output)
-                if _parent[0] is None:
-                    _parent[0] = dnode
-                _to_dnode(d, s, key)
-            elif isinstance(s, SList):
-                if not isinstance(d, (list, tuple)):
-                    raise TypeError('%s: python value is not a list/tuple: %r'
-                                    % (s.schema_path(), d))
-                for element in d:
-                    if not isinstance(element, dict):
-                        raise TypeError('%s: list element is not a dict: %r'
-                                        % (s.schema_path(), element))
-                    try:
-                        next_key = []
-                        for k in s.keys():
+            if not _schema:
+                # there may not be any input or any output node in the rpc
+                return
+            for s in _schema:
+                _to_dnode(data, s, key)
+        elif isinstance(_schema, SList):
+            if not isinstance(data, (list, tuple)):
+                raise TypeError('%s: python value is not a list/tuple: %r'
+                                % (_schema.schema_path(), data))
+            for element in data:
+                if not isinstance(element, dict):
+                    raise TypeError('%s: list element is not a dict: %r'
+                                    % (_schema.schema_path(), element))
+                try:
+                    next_key = []
+                    for k in _schema.keys():
+                        try:
+                            next_key.append(element[k.name()])
+                        except KeyError as _e:
                             try:
-                                next_key.append(element[k.name()])
-                            except KeyError as _e:
-                                try:
-                                    next_key.append(element[k.fullname()])
-                                except KeyError:
-                                    raise _e
-                    except KeyError as e:
-                        raise KeyError(
-                            "%s: key '%s' not present in list element: %r"
-                            % (s.schema_path(), e, element))
+                                next_key.append(element[k.fullname()])
+                            except KeyError:
+                                raise _e
+                except KeyError as e:
+                    raise KeyError(
+                        "%s: key '%s' not present in list element: %r"
+                        % (_schema.schema_path(), e, element))
+                for s in _schema:
                     _to_dnode(element, s, key + tuple(next_key))
-            elif isinstance(s, SLeafList):
-                if not isinstance(d, (list, tuple)):
-                    raise TypeError('%s: python value is not a list/tuple: %r'
-                                    % (s.schema_path(), d))
-                for element in d:
-                    dnode = s.context.create_data_path(
-                        s.data_path() % key, parent=_parent[0],
-                        value=element, rpc_output=rpc_output)
-                    if _parent[0] is None:
-                        _parent[0] = dnode
-            elif isinstance(s, SLeaf):
-                dnode = s.context.create_data_path(
-                    s.data_path() % key, parent=_parent[0], value=d,
-                    rpc_output=rpc_output)
+        elif isinstance(_schema, SLeafList):
+            if not isinstance(data, (list, tuple)):
+                raise TypeError('%s: python value is not a list/tuple: %r'
+                                % (_schema.schema_path(), data))
+            for element in data:
+                dnode = _schema.context.create_data_path(
+                    _schema.data_path() % key, parent=_parent[0],
+                    value=element, rpc_output=rpc_output)
                 if _parent[0] is None:
                     _parent[0] = dnode
+        elif isinstance(_schema, SLeaf):
+            dnode = _schema.context.create_data_path(
+                _schema.data_path() % key, parent=_parent[0], value=data,
+                rpc_output=rpc_output)
+            if _parent[0] is None:
+                _parent[0] = dnode
 
-    _to_dnode(dic, schema)
+    if isinstance(schema, Module):
+        for s in schema:
+            _to_dnode(dic, s)
+    else:
+        _to_dnode(dic, schema)
 
     # XXX: ugly, required for python2 support
     parent = _parent[0]

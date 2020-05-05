@@ -8,6 +8,10 @@ import unittest
 from libyang import Context
 from libyang import LibyangError
 from libyang.data import DContainer
+from libyang.data import DRpc
+from libyang.schema import SContainer
+from libyang.schema import SLeaf
+from libyang.schema import SRpc
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), 'yang')
@@ -222,7 +226,7 @@ class DataTest(unittest.TestCase):
         },
     }
 
-    def test_data_to_dict(self):
+    def test_data_to_dict_config(self):
         dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, 'json', config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
@@ -231,7 +235,17 @@ class DataTest(unittest.TestCase):
             dnode.free()
         self.assertEqual(dic, self.DICT_CONFIG)
 
-    def test_data_from_dict(self):
+    def test_data_to_dict_rpc_input(self):
+        dnode = self.ctx.parse_data_mem(
+           '{"yolo-system:format-disk": {"disk": "/dev/sda"}}', 'json', rpc=True)
+        self.assertIsInstance(dnode, DRpc)
+        try:
+            dic = dnode.print_dict()
+        finally:
+            dnode.free()
+        self.assertEqual(dic, {'format-disk': {'disk': '/dev/sda'}})
+
+    def test_data_from_dict_module(self):
         module = self.ctx.get_module('yolo-system')
         dnode = module.parse_data_dict(self.DICT_CONFIG)
         self.assertIsInstance(dnode, DContainer)
@@ -240,3 +254,36 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+
+    def test_data_from_dict_container(self):
+        snode = next(self.ctx.find_path('/yolo-system:conf'))
+        self.assertIsInstance(snode, SContainer)
+        dnode = snode.parse_data_dict(self.DICT_CONFIG)
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem('json', pretty=True)
+        finally:
+            dnode.free()
+        self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+
+    def test_data_from_dict_leaf(self):
+        snode = next(self.ctx.find_path('/yolo-system:state/yolo-system:hostname'))
+        self.assertIsInstance(snode, SLeaf)
+        dnode = snode.parse_data_dict({'hostname': 'foo'})
+        try:
+            j = dnode.print_mem('json')
+        finally:
+            dnode.free()
+        self.assertEqual(j, '{"yolo-system:state":{"hostname":"foo"}}')
+
+    def test_data_from_dict_rpc(self):
+        snode = next(self.ctx.find_path('/yolo-system:format-disk'))
+        self.assertIsInstance(snode, SRpc)
+        dnode = snode.parse_data_dict({'format-disk': {'duration': 42}},
+                                      rpc_output=True)
+        self.assertIsInstance(dnode, DRpc)
+        try:
+            j = dnode.print_mem('json')
+        finally:
+            dnode.free()
+        self.assertEqual(j, '{"yolo-system:format-disk":{"duration":42}}')

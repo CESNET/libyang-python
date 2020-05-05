@@ -392,6 +392,7 @@ typedef enum {
 #define LYD_OPT_STRICT ...
 #define LYD_OPT_TRUSTED ...
 #define LYD_OPT_DATA_NO_YANGLIB ...
+#define LYD_OPT_RPC ...
 
 typedef union lyd_value_u {
 	int8_t bln;
@@ -423,8 +424,8 @@ struct lyd_node *lyd_new_path(struct lyd_node *, const struct ly_ctx *, const ch
 struct lyd_node *lyd_first_sibling(struct lyd_node *);
 char *lyd_path(const struct lyd_node *);
 struct lys_module *lyd_node_module(struct lyd_node *);
-struct lyd_node *lyd_parse_mem(struct ly_ctx *, const char *, LYD_FORMAT, int);
-struct lyd_node *lyd_parse_fd(struct ly_ctx *, int, LYD_FORMAT, int);
+struct lyd_node *lyd_parse_mem(struct ly_ctx *, const char *, LYD_FORMAT, int, ...);
+struct lyd_node *lyd_parse_fd(struct ly_ctx *, int, LYD_FORMAT, int, ...);
 int lyd_print_fd(int, const struct lyd_node *, LYD_FORMAT, int);
 int lyd_print_mem(char **, const struct lyd_node *, LYD_FORMAT, int);
 double lyd_dec64_to_double(const struct lyd_node *);

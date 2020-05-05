@@ -58,7 +58,7 @@ def path_flags(update=False, rpc_output=False, no_parent_ret=False):
 
 #------------------------------------------------------------------------------
 def parser_flags(data=False, config=False, strict=False, trusted=False,
-                 no_yanglib=False):
+                 no_yanglib=False, rpc=False):
     flags = 0
     if data:
         flags |= lib.LYD_OPT_DATA
@@ -70,6 +70,8 @@ def parser_flags(data=False, config=False, strict=False, trusted=False,
         flags |= lib.LYD_OPT_TRUSTED
     if no_yanglib:
         flags |= lib.LYD_OPT_DATA_NO_YANGLIB
+    if rpc:
+        flags |= lib.LYD_OPT_RPC
     return flags
 
 

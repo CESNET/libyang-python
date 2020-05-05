@@ -177,18 +177,21 @@ class Context(object):
         return DNode.new(self, dnode)
 
     def parse_data_mem(self, d, fmt, data=False, config=False, strict=False,
-                       trusted=False, no_yanglib=False):
+                       trusted=False, no_yanglib=False, rpc=False):
         if self._ctx is None:
             raise RuntimeError('context already destroyed')
         flags = parser_flags(
             data=data, config=config, strict=strict, trusted=trusted,
-            no_yanglib=no_yanglib)
+            no_yanglib=no_yanglib, rpc=rpc)
         fmt = data_format(fmt)
         if fmt == lib.LYD_LYB:
             d = str2c(d, encode=False)
         else:
             d = str2c(d, encode=True)
-        dnode = lib.lyd_parse_mem(self._ctx, d, fmt, flags)
+        args = []
+        if rpc:
+            args.append(ffi.cast('struct lyd_node *', ffi.NULL))
+        dnode = lib.lyd_parse_mem(self._ctx, d, fmt, flags, *args)
         if not dnode:
             raise self.error('failed to parse data tree')
         return DNode.new(self, dnode)
@@ -201,7 +204,10 @@ class Context(object):
             data=data, config=config, strict=strict, trusted=trusted,
             no_yanglib=no_yanglib)
         fmt = data_format(fmt)
-        dnode = lib.lyd_parse_fd(self._ctx, fileobj.fileno(), fmt, flags)
+        args = []
+        if rpc:
+            args.append(ffi.cast('struct lyd_node *', ffi.NULL))
+        dnode = lib.lyd_parse_fd(self._ctx, fileobj.fileno(), fmt, flags, *args)
         if not dnode:
             raise self.error('failed to parse data tree')
         return DNode.new(self, dnode)

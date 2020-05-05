@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2019 Robin Jarry
+# Copyright (c) 2018-2020 Robin Jarry
 # SPDX-License-Identifier: MIT
 
 PYTHON ?= python3
@@ -7,23 +7,17 @@ from distutils.sysconfig import get_config_var
 print("_libyang" + (get_config_var("EXT_SUFFIX") or get_config_var("SO")))
 endef
 py_extension := $(shell $(PYTHON) -c '$(py_extension)')
-define buildtemp
-import sys
-from distutils.util import get_platform
-print("build/temp." + get_platform() + "-{0}.{1}".format(*sys.version_info[:2]))
-endef
-buildtemp := $(shell $(PYTHON) -c '$(buildtemp)')
 
 build: $(py_extension)
 
-$(py_extension): $(buildtemp)/libyang.so $(wildcard cffi/*)
-	$(PYTHON) ./setup.py build_ext --inplace
+$(py_extension): libyang/_lib/libyang.so libyang/_include/libyang/libyang.h $(wildcard cffi/*)
+	LIBYANG_INSTALL=embed $(PYTHON) ./setup.py build_ext --inplace
+
+libyang/_lib/libyang.so libyang/_include/libyang/libyang.h: clib/CMakeLists.txt
+	LIBYANG_INSTALL=embed $(PYTHON) ./setup.py build_clib
 
 clib/CMakeLists.txt:
 	git submodule update --init
-
-$(buildtemp)/libyang.so: clib/CMakeLists.txt
-	$(PYTHON) ./setup.py build_clib
 
 sdist: clib/CMakeLists.txt
 	rm -f dist/*.tar.gz

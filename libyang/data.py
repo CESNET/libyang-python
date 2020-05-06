@@ -391,6 +391,7 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
 
     # XXX: ugly, required for python2. Cannot use nonlocal keyword
     _parent = [parent]
+    created = []
 
     def _create(_schema, key, value=None):
         dnode = _schema.context.create_data_path(
@@ -398,6 +399,7 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
             update=False, no_parent_ret=False,
             force_return_value=False, rpc_output=rpc_output)
         if dnode is not None:
+            created.append(dnode)
             if _parent[0] is None:
                 _parent[0] = dnode
 
@@ -460,11 +462,16 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
         elif isinstance(_schema, SLeaf):
             _create(_schema, key, data)
 
-    if isinstance(schema, Module):
-        for s in schema:
-            _to_dnode(dic, s)
-    else:
-        _to_dnode(dic, schema)
+    try:
+        if isinstance(schema, Module):
+            for s in schema:
+                _to_dnode(dic, s)
+        else:
+            _to_dnode(dic, schema)
+    except:
+        for c in reversed(created):
+            c.free(with_siblings=False)
+        raise
 
     # XXX: ugly, required for python2 support
     parent = _parent[0]

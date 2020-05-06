@@ -8,6 +8,7 @@ import unittest
 from libyang import Context
 from libyang import LibyangError
 from libyang.data import DContainer
+from libyang.data import DNode
 from libyang.data import DRpc
 from libyang.schema import SContainer
 from libyang.schema import SLeaf
@@ -254,6 +255,66 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+
+    def test_data_from_dict_invalid(self):
+        try:
+            from unittest.mock import patch
+        except ImportError:
+            self.skipTest('unittest.mock not available')
+        module = self.ctx.get_module('yolo-system')
+        orig_create = Context.create_data_path
+        orig_free = DNode.free
+        created = []
+        freed = []
+
+        def wrapped_create(self, *args, **kwargs):
+            c = orig_create(self, *args, **kwargs)
+            if c is not None:
+                created.append(c)
+            return c
+
+        def wrapped_free(self, *args, **kwargs):
+            freed.append(self)
+            orig_free(self, *args, **kwargs)
+
+        root = module.parse_data_dict({
+            'conf': {
+                'hostname': 'foo',
+                'speed': 1234,
+                'number': [1000, 2000, 3000],
+            }
+        })
+
+        invalid_dict = {
+            'conf': {
+                'url': [
+                    {
+                        'proto': 'https',
+                        'host': 'github.com',
+                        'path': '/rjarry/libyang-cffi',
+                        'enabled': False,
+                    },
+                    {
+                        'proto': 'http',
+                        'host': 'foobar.com',
+                        'port': 'INVALID.PORT',
+                        'path': '/index.html',
+                        'enabled': True,
+                    },
+                ],
+            },
+        }
+
+        try:
+            with patch.object(Context, 'create_data_path', wrapped_create), \
+                    patch.object(DNode, 'free', wrapped_free):
+                with self.assertRaises(LibyangError):
+                    module.parse_data_dict(invalid_dict, parent=root)
+            self.assertGreater(len(created), 0)
+            self.assertGreater(len(freed), 0)
+            self.assertEqual(freed, list(reversed(created)))
+        finally:
+            root.free()
 
     def test_data_from_dict_container(self):
         snode = next(self.ctx.find_path('/yolo-system:conf'))

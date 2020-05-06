@@ -392,6 +392,15 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
     # XXX: ugly, required for python2. Cannot use nonlocal keyword
     _parent = [parent]
 
+    def _create(_schema, key, value=None):
+        dnode = _schema.context.create_data_path(
+            _schema.data_path() % key, parent=_parent[0], value=value,
+            update=False, no_parent_ret=False,
+            force_return_value=False, rpc_output=rpc_output)
+        if dnode is not None:
+            if _parent[0] is None:
+                _parent[0] = dnode
+
     def _to_dnode(_dic, _schema, key=()):
         name = _schema.name()
         if name not in _dic:
@@ -403,11 +412,7 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
             if not isinstance(data, dict):
                 raise TypeError('%s: python value is not a dict: %r'
                                 % (_schema.schema_path(), data))
-            dnode = _schema.context.create_data_path(
-                _schema.data_path() % key, parent=_parent[0],
-                rpc_output=rpc_output)
-            if _parent[0] is None:
-                _parent[0] = dnode
+            _create(_schema, key)
             for s in _schema:
                 _to_dnode(data, s, key)
         elif isinstance(_schema, SRpc):
@@ -451,17 +456,9 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
                 raise TypeError('%s: python value is not a list/tuple: %r'
                                 % (_schema.schema_path(), data))
             for element in data:
-                dnode = _schema.context.create_data_path(
-                    _schema.data_path() % key, parent=_parent[0],
-                    value=element, rpc_output=rpc_output)
-                if _parent[0] is None:
-                    _parent[0] = dnode
+                _create(_schema, key, element)
         elif isinstance(_schema, SLeaf):
-            dnode = _schema.context.create_data_path(
-                _schema.data_path() % key, parent=_parent[0], value=data,
-                rpc_output=rpc_output)
-            if _parent[0] is None:
-                _parent[0] = dnode
+            _create(_schema, key, data)
 
     if isinstance(schema, Module):
         for s in schema:

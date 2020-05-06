@@ -142,7 +142,9 @@ class Context(object):
         finally:
             lib.ly_set_free(node_set)
 
-    def create_data_path(self, path, parent=None, value=None, rpc_output=False):
+    def create_data_path(self, path, parent=None, value=None,
+                         update=True, no_parent_ret=True, rpc_output=False,
+                         force_return_value=True):
         if self._ctx is None:
             raise RuntimeError('context already destroyed')
         lib.lypy_set_errno(0)
@@ -152,12 +154,15 @@ class Context(object):
             elif not isinstance(value, str):
                 value = str(value)
         flags = path_flags(
-            update=True, no_parent_ret=True, rpc_output=rpc_output)
+            update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output)
         dnode = lib.lyd_new_path(
             parent._node if parent else ffi.NULL,
             self._ctx, str2c(path), str2c(value), 0, flags)
-        if lib.lypy_get_errno() != 0:
-            raise self.error('cannot create data path')
+        if lib.lypy_get_errno() != lib.LY_SUCCESS:
+            if lib.ly_vecode(self._ctx) != lib.LYVE_PATH_EXISTS:
+                raise self.error('cannot create data path')
+        if not dnode and not force_return_value:
+            return None
 
         if not dnode and parent:
             # This can happen when path points to an already created leaf and

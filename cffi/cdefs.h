@@ -22,6 +22,12 @@ typedef enum {
 } LY_ERR;
 
 typedef enum {
+    LYVE_SUCCESS,
+    LYVE_PATH_EXISTS,
+    ...
+} LY_VECODE;
+
+typedef enum {
 	LY_LLERR,
 	LY_LLWRN,
 	LY_LLVRB,
@@ -47,6 +53,7 @@ extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *);
 void ly_set_log_clb(void (*)(LY_LOG_LEVEL, const char *, const char *), int);
 struct ly_err_item *ly_err_first(const struct ly_ctx *);
 void ly_err_clean(struct ly_ctx *, struct ly_err_item *);
+LY_VECODE ly_vecode(const struct ly_ctx *);
 
 struct lys_module {
 	const char *name;

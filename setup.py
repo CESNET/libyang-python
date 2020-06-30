@@ -75,6 +75,10 @@ def _version_from_git_archive_id(git_archive_id='$Format:%ct %d$'):
     tstamp = git_archive_id.strip().split()[0]
     d = datetime.datetime.fromtimestamp(int(tstamp))
 
+#------------------------------------------------------------------------------
+def read_file(fpath, encoding='utf-8'):
+    with open(fpath, 'r', encoding=encoding) as f:
+        return f.read().strip()
 
 def _version():
     try:
@@ -103,7 +107,7 @@ setuptools.setup(
     name='libyang',
     version=_version(),
     description='CFFI bindings to libyang',
-    long_description=open('README.rst').read(),
+    long_description=read_file('README.rst'),
     url='https://github.com/CESNET/libyang-python',
     license='MIT',
     author='Robin Jarry',

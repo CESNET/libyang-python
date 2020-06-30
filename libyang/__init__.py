@@ -162,6 +162,8 @@ class Context:
         if lib.lypy_get_errno() != lib.LY_SUCCESS:
             if lib.ly_vecode(self._ctx) != lib.LYVE_PATH_EXISTS:
                 raise self.error('cannot create data path')
+            lib.ly_err_clean(self._ctx, ffi.NULL)
+            lib.lypy_set_errno(0)
         if not dnode and not force_return_value:
             return None
 

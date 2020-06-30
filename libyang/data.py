@@ -178,7 +178,7 @@ class DNode:
         node_p[0] = self._node
         ret = lib.lyd_validate(node_p, flags, ffi.NULL)
         if ret != 0:
-            self.context.error('validation failed')
+            raise self.context.error('validation failed')
 
     def merge(self, source, destruct=False, no_siblings=False, explicit=False):
         flags = parser_flags(destruct=destruct, no_siblings=no_siblings,

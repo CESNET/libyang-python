@@ -6,17 +6,8 @@ import datetime
 import os
 import re
 import subprocess
-import sys
 
 import setuptools
-
-
-CFFI_REQ = 'cffi>=1.7,!=1.11.3'
-INSTALL_REQS = []
-SETUP_REQS = []
-if '_cffi_backend' not in sys.builtin_module_names:
-    INSTALL_REQS.append(CFFI_REQ)
-    SETUP_REQS.append(CFFI_REQ)
 
 
 #------------------------------------------------------------------------------
@@ -126,8 +117,13 @@ setuptools.setup(
     zip_safe=False,
     include_package_data=True,
     python_requires='>=3.5',
-    setup_requires=SETUP_REQS,
-    install_requires=INSTALL_REQS,
+    setup_requires=[
+        'setuptools',
+        'cffi; platform_python_implementation != "PyPy"',
+    ],
+    install_requires=[
+        'cffi; platform_python_implementation != "PyPy"',
+    ],
     cffi_modules=['cffi/build.py:BUILDER'],
     cmdclass={
     },

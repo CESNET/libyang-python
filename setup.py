@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
+import distutils.file_util
 import os
 import re
 import subprocess
 
 import setuptools
+import setuptools.command.sdist
 
 
 #------------------------------------------------------------------------------
@@ -18,85 +20,114 @@ if os.environ.get('LIBYANG_INSTALL', 'system') == 'embed':
 
 
 #------------------------------------------------------------------------------
-def _tag_to_pep440_version(tag):
-    git_tag_re = re.compile(r'''
-        ^
+def git_describe_to_pep440(version):
+    """
+    ``git describe`` produces versions in the form: `v0.9.8-20-gf0f45ca` where
+    20 is the number of commit since last release, and gf0f45ca is the short
+    commit id preceded by 'g' we parse this a transform into a pep440 release
+    version 0.9.9.dev20 (increment last digit and add dev before 20)
+    """
+    match = re.search(
+        r'''
         v(?P<major>\d+)\.
         (?P<minor>\d+)\.
         (?P<patch>\d+)
         (\.post(?P<post>\d+))?
-        (-(?P<dev>\d+))?
-        (-g(?P<commit>.+))?
-        $
-        ''', re.VERBOSE)
-
-    match = git_tag_re.match(tag)
-    if match:
-        d = match.groupdict()
-        fmt = '{major}.{minor}.{patch}'
-        if d.get('post'):
-            fmt += '.post{post}'
-        if d.get('dev'):
-            d['patch'] = int(d['patch']) + 1
-            fmt += '.dev{dev}'
-        return fmt.format(**d)
-
-    return datetime.datetime.now().strftime('%Y.%m.%d')
-
-
-def _tag_from_git_describe():
-    if not os.path.isdir(os.path.join(HERE, '.git')):
-        raise ValueError('not in git repo')
-
-    out = subprocess.check_output(['git', 'describe', '--always'],
-                                  cwd=HERE, stderr=subprocess.STDOUT)
-    return out.strip().decode('utf-8')
+        (-(?P<dev>\d+))?(-g(?P<commit>.+))?
+        ''',
+        version,
+        flags=re.VERBOSE)
+    if not match:
+        raise ValueError('unknown tag format')
+    dic = {
+        'major': int(match.group('major')),
+        'minor': int(match.group('minor')),
+        'patch': int(match.group('patch')),
+    }
+    fmt = '{major}.{minor}.{patch}'
+    if match.group('dev'):
+        dic['patch'] += 1
+        dic['dev'] = int(match.group('dev'))
+        fmt += '.dev{dev}'
+    elif match.group('post'):
+        dic['post'] = int(match.group('post'))
+        fmt += '.post{post}'
+    return fmt.format(**dic)
 
 
-def _version_from_git_archive_id(git_archive_id='$Format:%ct %d$'):
+#------------------------------------------------------------------------------
+def get_version_from_archive_id(git_archive_id='$Format:%ct %d$'):
+    """
+    Extract the tag if a source is from git archive.
+
+    When source is exported via `git archive`, the git_archive_id init value is
+    modified and placeholders are expanded to the "archived" revision:
+
+        %ct: committer date, UNIX timestamp
+        %d: ref names, like the --decorate option of git-log
+
+    See man gitattributes(5) and git-log(1) (PRETTY FORMATS) for more details.
+    """
+    # mangle the magic string to make sure it is not replaced by git archive
     if git_archive_id.startswith('$For''mat:'):
-        raise ValueError('not a git archive')
+        raise ValueError('source was not modified by git archive')
 
+    # source was modified by git archive, try to parse the version from
+    # the value of git_archive_id
     match = re.search(r'tag:\s*v([^,)]+)', git_archive_id)
     if match:
         # archived revision is tagged, use the tag
-        return _tag_to_pep440_version(match.group(1))
+        return git_describe_to_pep440(match.group(1))
 
     # archived revision is not tagged, use the commit date
     tstamp = git_archive_id.strip().split()[0]
-    d = datetime.datetime.fromtimestamp(int(tstamp))
+    d = datetime.datetime.utcfromtimestamp(int(tstamp))
+    return d.strftime('%Y.%m.%d.dev0')
+
 
 #------------------------------------------------------------------------------
 def read_file(fpath, encoding='utf-8'):
     with open(fpath, 'r', encoding=encoding) as f:
         return f.read().strip()
 
-def _version():
+
+#------------------------------------------------------------------------------
+def get_version():
     try:
-        tag = _tag_from_git_describe()
-        version = _tag_to_pep440_version(tag)
-        with open(os.path.join(HERE, 'VERSION'), 'w') as f:
-            f.write(version)
-        return version
-    except:
+        return read_file('libyang/VERSION')
+    except IOError:
         pass
     try:
-        with open(os.path.join(HERE, 'VERSION'), 'r') as f:
-            version = f.read()
-        return version.strip()
-    except:
+        return get_version_from_archive_id()
+    except ValueError:
         pass
     try:
-        return _version_from_git_archive_id()
-    except:
+        if os.path.isdir('.git'):
+            out = subprocess.check_output(
+                ['git', 'describe', '--tags', '--always'],
+                stderr=subprocess.DEVNULL)
+            return git_describe_to_pep440(out.decode('utf-8').strip())
+    except Exception:
         pass
+    return '0.0.0'
 
-    return 'latest'
+
+#------------------------------------------------------------------------------
+class SDistCommand(setuptools.command.sdist.sdist):
+
+    def make_release_tree(self, base_dir, files):
+        super().make_release_tree(base_dir, files)
+        version_file = os.path.join(base_dir, 'libyang/VERSION')
+        self.execute(
+            distutils.file_util.write_file,
+            (version_file, [self.distribution.metadata.version]),
+            'Writing %s' % version_file)
 
 
+#------------------------------------------------------------------------------
 setuptools.setup(
     name='libyang',
-    version=_version(),
+    version=get_version(),
     description='CFFI bindings to libyang',
     long_description=read_file('README.rst'),
     url='https://github.com/CESNET/libyang-python',
@@ -126,5 +157,6 @@ setuptools.setup(
     ],
     cffi_modules=['cffi/build.py:BUILDER'],
     cmdclass={
+        'sdist': SDistCommand,
     },
 )

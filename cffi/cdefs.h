@@ -436,6 +436,7 @@ struct lyd_node *lyd_parse_mem(struct ly_ctx *, const char *, LYD_FORMAT, int, .
 struct lyd_node *lyd_parse_fd(struct ly_ctx *, int, LYD_FORMAT, int, ...);
 int lyd_print_fd(int, const struct lyd_node *, LYD_FORMAT, int);
 int lyd_print_mem(char **, const struct lyd_node *, LYD_FORMAT, int);
+int lyd_node_should_print(const struct lyd_node *, int);
 double lyd_dec64_to_double(const struct lyd_node *);
 void lyd_free(struct lyd_node *);
 void lyd_free_withsiblings(struct lyd_node *);
@@ -449,7 +450,6 @@ const struct lys_ext_instance *lypy_find_ext(
 	const struct lys_ext_instance **, uint8_t,
 	const char *, const char *, const char *);
 char *lypy_node_fullname(const struct lys_node *);
-int lyd_toprint(const struct lyd_node *node, int options);
 uint8_t lypy_module_implemented(const struct lys_module *);
 LY_ERR lypy_get_errno(void);
 void lypy_set_errno(LY_ERR);

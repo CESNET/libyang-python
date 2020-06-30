@@ -232,7 +232,7 @@ class DNode:
             keep_empty_containers=keep_empty_containers)
 
         def _to_dict(node, parent_dic):
-            if not lib.lyd_toprint(node._node, flags):
+            if not lib.lyd_node_should_print(node._node, flags):
                 return
             if strip_prefixes:
                 name = node.name()

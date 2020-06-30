@@ -355,9 +355,9 @@ class Type:
     def range(self):
         if self._type.base in self.NUM_TYPES and self._type.info.num.range:
             return c2str(self._type.info.num.range.expr)
-        elif self._type.base == self.DEC64 and self._type.info.dec64.range:
+        if self._type.base == self.DEC64 and self._type.info.dec64.range:
             return c2str(self._type.info.dec64.range.expr)
-        elif self._type.der:
+        if self._type.der:
             return self.derived_type().range()
         return None
 
@@ -373,9 +373,9 @@ class Type:
     def length(self):
         if self._type.base == self.STRING and self._type.info.str.length:
             return c2str(self._type.info.str.length.expr)
-        elif self._type.base == self.BINARY and self._type.info.binary.length:
+        if self._type.base == self.BINARY and self._type.info.binary.length:
             return c2str(self._type.info.binary.length.expr)
-        elif self._type.der:
+        if self._type.der:
             return self.derived_type().length()
         return None
 
@@ -525,10 +525,9 @@ class IfFeatureExpr:
             op = next(operands)
             if op is IfNotFeature:
                 return op(self.context, _tree(operands))
-            elif op in (IfAndFeatures, IfOrFeatures):
+            if op in (IfAndFeatures, IfOrFeatures):
                 return op(self.context, _tree(operands), _tree(operands))
-            else:
-                return op
+            return op
         return _tree(self._operands())
 
     def dump(self):
@@ -671,10 +670,10 @@ class SNode:
         return bool(self._node.flags & lib.LYS_STATUS_OBSLT)
 
     def status(self):
+        if self._node.flags & lib.LYS_STATUS_OBSLT:
+            return 'obsolete'
         if self._node.flags & lib.LYS_STATUS_DEPRC:
             return 'deprecated'
-        elif self._node.flags & lib.LYS_STATUS_OBSLT:
-            return 'obsolete'
         return 'current'
 
     def module(self):

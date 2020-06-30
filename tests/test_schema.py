@@ -110,8 +110,9 @@ class RevisionTest(unittest.TestCase):
         self.assertEqual(self.revision.date(), '1999-04-01')
 
     def test_rev_reference(self):
-        self.assertEqual(self.revision.reference(),
-                'RFC 2549 - IP over Avian Carriers with Quality of Service.')
+        self.assertEqual(
+            self.revision.reference(),
+            'RFC 2549 - IP over Avian Carriers with Quality of Service.')
 
     def test_rev_description(self):
         self.assertEqual(self.revision.description(), 'Version update.')
@@ -134,7 +135,6 @@ class IfFeatureTest(unittest.TestCase):
             '/yolo-system:conf/yolo-system:isolation-level'))
 
     def tearDown(self):
-        self.container = None
         self.ctx.destroy()
         self.ctx = None
 

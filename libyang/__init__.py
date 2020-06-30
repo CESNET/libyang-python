@@ -205,12 +205,12 @@ class Context:
         return DNode.new(self, dnode)
 
     def parse_data_file(self, fileobj, fmt, data=False, config=False,
-                        strict=False, trusted=False, no_yanglib=False):
+                        strict=False, trusted=False, no_yanglib=False, rpc=False):
         if self._ctx is None:
             raise RuntimeError('context already destroyed')
         flags = parser_flags(
             data=data, config=config, strict=strict, trusted=trusted,
-            no_yanglib=no_yanglib)
+            no_yanglib=no_yanglib, rpc=rpc)
         fmt = data_format(fmt)
         args = []
         if rpc:

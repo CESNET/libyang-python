@@ -1,13 +1,7 @@
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-*.so.*
-*.h
-/htmlcov/
+/.tox/
 /build/
 /dist/
 /*.egg-info/
-MANIFEST
-VERSION
-/.*

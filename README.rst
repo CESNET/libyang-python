@@ -36,44 +36,49 @@ You need the following system dependencies installed:
 
 On a Debian/Ubuntu system::
 
-   sudo apt-get install python3-dev gcc libffi-dev
+   sudo apt-get install python3-dev gcc python3-cffi
 
-.. note::
+Compilation Flags
+-----------------
 
-   If libyang headers and libraries are installed in a non-standard location,
-   you can specify them with the ``LIBYANG_HEADERS`` and ``LIBYANG_LIBRARIES``
-   variables. Additionally, for finer control, you may use
-   ``LIBYANG_EXTRA_CFLAGS`` and ``LIBYANG_EXTRA_LDFLAGS``::
+If libyang headers and libraries are installed in a non-standard location, you
+can specify them with the ``LIBYANG_HEADERS`` and ``LIBYANG_LIBRARIES``
+variables. Additionally, for finer control, you may use ``LIBYANG_EXTRA_CFLAGS``
+and ``LIBYANG_EXTRA_LDFLAGS``::
 
-      LIBYANG_HEADERS=/home/build/opt/ly/include \
-      LIBYANG_LIBRARIES=/home/build/opt/ly/lib \
-      LIBYANG_EXTRA_CFLAGS="-O3" \
-      LIBYANG_EXTRA_LDFLAGS="-rpath=/opt/ly/lib" \
-             pip install libyang
+   LIBYANG_HEADERS=/home/build/opt/ly/include \
+   LIBYANG_LIBRARIES=/home/build/opt/ly/lib \
+   LIBYANG_EXTRA_CFLAGS="-O3" \
+   LIBYANG_EXTRA_LDFLAGS="-rpath=/opt/ly/lib" \
+          pip install libyang
 
-.. note::
+Embedding ``libyang.so``
+------------------------
 
-   If libyang headers and libraries are not installed on the system, you may
-   build ``libyang.so`` and embed it into the `libyang` package before linking
-   the CFFI extension against it (with a custom RPATH).
+If libyang headers and libraries are not installed on the system, you may build
+``libyang.so`` and embed it into the `libyang` package before linking the CFFI
+extension against it (with a custom RPATH).
 
-   To do so, you must export the ``LIBYANG_INSTALL=embed`` variable when running
-   pip::
+To do so, you must export the ``LIBYANG_INSTALL=embed`` variable when running
+pip::
 
-      LIBYANG_INSTALL=embed pip install libyang
+   LIBYANG_INSTALL=embed pip install libyang
 
-   This requires additional system dependencies in order to build the libyang
-   C code:
+This requires additional system dependencies in order to build the libyang
+C code:
 
-   - cmake
-   - Lib PCRE development headers
+- cmake
+- Lib PCRE development headers
 
-   On a Debian/Ubuntu system::
+On a Debian/Ubuntu system::
 
-      sudo apt-get install cmake build-essential libpcre3-dev
+   sudo apt-get install cmake build-essential libpcre3-dev
 
 Examples
 ========
+
+Schema Introspection
+--------------------
 
 .. code-block:: pycon
 
@@ -144,3 +149,69 @@ Examples
    ...
    <libyang.schema.SLeaf: name string>
    <libyang.schema.SContainer: udp-and-tcp>
+   >>> ctx.destroy()
+   >>>
+
+Data Tree
+---------
+
+.. code-block:: pycon
+
+   >>> import libyang
+   >>> ctx = libyang.Context()
+   >>> module = ctx.parse_module_str('''
+   ... module example {
+   ...   namespace "urn:example";
+   ...   prefix "ex";
+   ...   container data {
+   ...     list interface {
+   ...       key name;
+   ...       leaf name {
+   ...         type string;
+   ...       }
+   ...       leaf address {
+   ...         type string;
+   ...       }
+   ...     }
+   ...     leaf hostname {
+   ...       type string;
+   ...     }
+   ...   }
+   ... }
+   ... ''')
+   >>> print(module.print_mem('tree'))
+   module: example
+     +--rw data
+        +--rw interface* [name]
+        |  +--rw name       string
+        |  +--rw address?   string
+        +--rw hostname?    string
+   >>> node = module.parse_data_dict({
+   ...     'data': {
+   ...         'hostname': 'foobar',
+   ...         'interface': [
+   ...             {'name': 'eth0', 'address': '1.2.3.4/24'},
+   ...             {'name': 'lo', 'address': '127.0.0.1'},
+   ...         ],
+   ...     },
+   ... })
+   >>> print(node.print_mem('xml', pretty=True))
+   <data xmlns="urn:example">
+     <interface>
+       <name>eth0</name>
+       <address>1.2.3.4/24</address>
+     </interface>
+     <interface>
+       <name>lo</name>
+       <address>127.0.0.1</address>
+     </interface>
+     <hostname>foobar</hostname>
+   </data>
+   >>> node.print_dict()
+   {'data': {'interface': [{'name': 'eth0', 'address': '1.2.3.4/24'}, {'name':
+   'lo', 'address': '127.0.0.1'}], 'hostname': 'foobar'}}
+   >>> node.free()
+   >>> ctx.destroy()
+   >>>
+
+See the ``tests`` folder for more examples.

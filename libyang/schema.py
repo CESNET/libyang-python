@@ -682,9 +682,9 @@ class SNode:
         finally:
             lib.free(s)
 
-    def data_path(self):
+    def data_path(self, key_placeholder="'%s'"):
         try:
-            s = lib.lypy_data_path_pattern(self._node)
+            s = lib.lys_data_path_pattern(self._node, str2c(key_placeholder))
             return c2str(s)
         finally:
             lib.free(s)

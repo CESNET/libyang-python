@@ -344,6 +344,7 @@ const struct lys_node_list *lys_is_key(const struct lys_node_leaf *, uint8_t *);
 const struct lys_node *lys_getnext(const struct lys_node *, const struct lys_node *, const struct lys_module *, int);
 char *lys_data_path(const struct lys_node *);
 char *lys_path(const struct lys_node *, int);
+char *lys_data_path_pattern(const struct lys_node *, const char *);
 struct lys_module *lys_node_module(const struct lys_node *);
 struct lys_module *lys_main_module(const struct lys_module *);
 struct lys_node *lys_parent(const struct lys_node *);
@@ -447,7 +448,6 @@ void free(void *);
 const struct lys_ext_instance *lypy_find_ext(
 	const struct lys_ext_instance **, uint8_t,
 	const char *, const char *, const char *);
-char *lypy_data_path_pattern(const struct lys_node *);
 char *lypy_node_fullname(const struct lys_node *);
 int lyd_toprint(const struct lyd_node *node, int options);
 uint8_t lypy_module_implemented(const struct lys_module *);

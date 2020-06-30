@@ -76,7 +76,7 @@ def parser_flags(data=False, config=False, strict=False, trusted=False,
 
 
 #------------------------------------------------------------------------------
-class DNode(object):
+class DNode:
     """
     Data tree node.
     """
@@ -332,7 +332,7 @@ class DList(DContainer):
 class DLeaf(DNode):
 
     def __init__(self, context, node_p):
-        DNode.__init__(self, context, node_p)
+        super().__init__(context, node_p)
         self._leaf = ffi.cast('struct lyd_node_leaf_list *', node_p)
 
     def value(self):
@@ -389,19 +389,18 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
     if not isinstance(dic, dict):
         raise TypeError('dic argument must be a python dict')
 
-    # XXX: ugly, required for python2. Cannot use nonlocal keyword
-    _parent = [parent]
     created = []
 
     def _create(_schema, key, value=None):
+        nonlocal parent
         dnode = _schema.context.create_data_path(
-            _schema.data_path() % key, parent=_parent[0], value=value,
+            _schema.data_path() % key, parent=parent, value=value,
             update=False, no_parent_ret=False,
             force_return_value=False, rpc_output=rpc_output)
         if dnode is not None:
             created.append(dnode)
-            if _parent[0] is None:
-                _parent[0] = dnode
+            if parent is None:
+                parent = dnode
 
     def _to_dnode(_dic, _schema, key=()):
         name = _schema.name()
@@ -472,9 +471,6 @@ def dict_to_dnode(dic, schema, parent=None, rpc_input=False, rpc_output=False):
         for c in reversed(created):
             c.free(with_siblings=False)
         raise
-
-    # XXX: ugly, required for python2 support
-    parent = _parent[0]
 
     if parent is not None:
         # go back to the root of the created tree

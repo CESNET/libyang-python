@@ -4,6 +4,7 @@
 import json
 import os
 import unittest
+from unittest.mock import patch
 
 from libyang import Context
 from libyang import LibyangError
@@ -257,10 +258,6 @@ class DataTest(unittest.TestCase):
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
 
     def test_data_from_dict_invalid(self):
-        try:
-            from unittest.mock import patch
-        except ImportError:
-            self.skipTest('unittest.mock not available')
         module = self.ctx.get_module('yolo-system')
         orig_create = Context.create_data_path
         orig_free = DNode.free

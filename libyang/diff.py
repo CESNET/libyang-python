@@ -65,8 +65,7 @@ def schema_diff(ctx_old, ctx_new, exclude_node_cb=None):
         diffs[path] = snode_changes(old, new)
 
     for path in sorted(diffs.keys()):
-        for d in diffs[path]:
-            yield d
+        yield from diffs[path]
 
 
 #------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2018-2019 Robin Jarry
 # SPDX-License-Identifier: MIT
 
@@ -170,15 +170,13 @@ setuptools.setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: Unix',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries',
     ],
     packages=['libyang'],
     zip_safe=False,
     include_package_data=True,
+    python_requires='>=3.5',
     setup_requires=SETUP_REQS,
     install_requires=INSTALL_REQS,
     cffi_modules=['cffi/build.py:BUILDER'],

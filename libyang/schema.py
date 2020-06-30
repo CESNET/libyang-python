@@ -33,7 +33,7 @@ def schema_out_format(fmt_string):
 
 
 #------------------------------------------------------------------------------
-class Module(object):
+class Module:
 
     def __init__(self, context, module_p):
         self.context = context
@@ -140,7 +140,7 @@ class Module(object):
 
 
 #------------------------------------------------------------------------------
-class Revision(object):
+class Revision:
 
     def __init__(self, context, rev_p):
         self.context = context
@@ -176,7 +176,7 @@ class Revision(object):
 
 
 #------------------------------------------------------------------------------
-class Extension(object):
+class Extension:
 
     def __init__(self, context, ext_p):
         self.context = context
@@ -204,7 +204,7 @@ class Extension(object):
 
 
 #------------------------------------------------------------------------------
-class Type(object):
+class Type:
 
     DER = lib.LY_TYPE_DER
     BINARY = lib.LY_TYPE_BINARY
@@ -255,15 +255,12 @@ class Type(object):
 
     def get_bases(self):
         if self._type.base == lib.LY_TYPE_DER:
-            for b in self.derived_type().get_bases():
-                yield b
+            yield from self.derived_type().get_bases()
         elif self._type.base == lib.LY_TYPE_LEAFREF:
-            for b in self.leafref_type().get_bases():
-                yield b
+            yield from self.leafref_type().get_bases()
         elif self._type.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
-                for b in t.get_bases():
-                    yield b
+                yield from t.get_bases()
         else:  # builtin type
             yield self
 
@@ -323,8 +320,7 @@ class Type(object):
 
     def all_enums(self):
         for b in self.get_bases():
-            for e in b.enums():
-                yield e
+            yield from b.enums()
 
     def bits(self):
         if self._type.base != self.BITS:
@@ -338,8 +334,7 @@ class Type(object):
 
     def all_bits(self):
         for b in self.get_bases():
-            for bb in b.bits():
-                yield bb
+            yield from b.bits()
 
     NUM_TYPES = frozenset(
         (INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
@@ -356,8 +351,7 @@ class Type(object):
     def all_ranges(self):
         if self._type.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
-                for r in t.all_ranges():
-                    yield r
+                yield from t.all_ranges()
         else:
             rng = self.range()
             if rng is not None:
@@ -375,8 +369,7 @@ class Type(object):
     def all_lengths(self):
         if self._type.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
-                for l in t.all_lengths():
-                    yield l
+                yield from t.all_lengths()
         else:
             length = self.length()
             if length is not None:
@@ -398,17 +391,14 @@ class Type(object):
             #     ('[xX][mM][lL].*', True)
             yield c2str(p.expr + 1), invert_match
         if self._type.der:
-            for p in self.derived_type().patterns():
-                yield p
+            yield from self.derived_type().patterns()
 
     def all_patterns(self):
         if self._type.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
-                for p in t.all_patterns():
-                    yield p
+                yield from t.all_patterns()
         else:
-            for p in self.patterns():
-                yield p
+            yield from self.patterns()
 
     def module(self):
         module_p = lib.lys_main_module(self._type.der.module)
@@ -444,7 +434,7 @@ class Type(object):
 
 
 #------------------------------------------------------------------------------
-class Feature(object):
+class Feature:
 
     def __init__(self, context, feature_p):
         self.context = context
@@ -483,7 +473,7 @@ class Feature(object):
 
 
 #------------------------------------------------------------------------------
-class IfFeatureExpr(object):
+class IfFeatureExpr:
 
     def __init__(self, context, iffeature_p):
         self.context = context
@@ -537,7 +527,7 @@ class IfFeatureExpr(object):
 
 
 #------------------------------------------------------------------------------
-class IfFeatureExprTree(object):
+class IfFeatureExprTree:
 
     def dump(self, indent=0):
         raise NotImplementedError()
@@ -615,7 +605,7 @@ class IfOrFeatures(IfFeatureExprTree):
 
 
 #------------------------------------------------------------------------------
-class SNode(object):
+class SNode:
 
     CONTAINER = lib.LYS_CONTAINER
     LEAF = lib.LYS_LEAF
@@ -771,7 +761,7 @@ class SNode(object):
 class SLeaf(SNode):
 
     def __init__(self, context, node_p):
-        SNode.__init__(self, context, node_p)
+        super().__init__(context, node_p)
         self._leaf = ffi.cast('struct lys_node_leaf *', node_p)
 
     def default(self):
@@ -801,7 +791,7 @@ class SLeaf(SNode):
 class SLeafList(SNode):
 
     def __init__(self, context, node_p):
-        SNode.__init__(self, context, node_p)
+        super().__init__(context, node_p)
         self._leaflist = ffi.cast('struct lys_node_leaflist *', node_p)
 
     def ordered(self):
@@ -830,7 +820,7 @@ class SLeafList(SNode):
 class SContainer(SNode):
 
     def __init__(self, context, node_p):
-        SNode.__init__(self, context, node_p)
+        super().__init__(context, node_p)
         self._container = ffi.cast('struct lys_node_container *', node_p)
 
     def presence(self):
@@ -852,7 +842,7 @@ class SContainer(SNode):
 class SList(SNode):
 
     def __init__(self, context, node_p):
-        SNode.__init__(self, context, node_p)
+        super().__init__(context, node_p)
         self._list = ffi.cast('struct lys_node_list *', node_p)
 
     def ordered(self):

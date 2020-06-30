@@ -36,7 +36,7 @@ LOG.addHandler(logging.NullHandler())
 
 
 #------------------------------------------------------------------------------
-class Context(object):
+class Context:
 
     def __init__(self, search_path=None, disable_searchdir_cwd=True, pointer=None):
         if pointer is not None:

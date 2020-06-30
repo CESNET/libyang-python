@@ -17,14 +17,6 @@ matrix:
   include:
     - env: TOXENV=lint
       python: 3.7.7
-    - env: TOXENV=py27-system
-      python: 2.7.17
-    - env: TOXENV=py27-embed
-      python: 2.7.17
-    - env: TOXENV=pypy-system
-      python: pypy2.7-7.1.1
-    - env: TOXENV=pypy-embed
-      python: pypy2.7-7.1.1
     - env: TOXENV=py35-system
       python: 3.5.9
     - env: TOXENV=py35-embed

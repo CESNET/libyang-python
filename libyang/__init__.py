@@ -83,11 +83,12 @@ class Context:
 
         if self._ctx:
             err = lib.ly_err_first(self._ctx)
-            if err:
+            while err:
                 if err.msg:
                     msg += ': %s' % c2str(err.msg)
                 if err.path:
                     msg += ': %s' % c2str(err.path)
+                err = err.next
             lib.ly_err_clean(self._ctx, ffi.NULL)
 
         return LibyangError(msg)

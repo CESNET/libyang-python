@@ -640,11 +640,7 @@ class SNode:
         return c2str(self._node.name)
 
     def fullname(self):
-        try:
-            s = lib.lypy_node_fullname(self._node)
-            return c2str(s)
-        finally:
-            lib.free(s)
+        return '%s:%s' % (self.module().name(), self.name())
 
     def description(self):
         return c2str(self._node.dsc)

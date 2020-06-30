@@ -1,8 +1,8 @@
 ---
 language: python
+os: linux
 dist: bionic
 cache: pip
-sudo: false
 
 addons:
   apt:
@@ -11,9 +11,19 @@ addons:
     - cmake
     - libffi-dev
     - libpcre3-dev
-    - tox
 
-matrix:
+branches:
+  only:
+    - master
+    - devel
+
+before_install:
+  - pip install tox twine
+
+script:
+  - tox -- $(git ls-files '*.py')
+
+jobs:
   include:
     - env: TOXENV=lint
       python: 3.7
@@ -27,9 +37,13 @@ matrix:
       python: 3.7
     - env: TOXENV=py38
       python: 3.8
-    - env: TOXENV=py3-master
-      python: 3.7
     - env: TOXENV=py3-devel
       python: 3.7
-
-script: tox -- $(git ls-files '*.py')
+    - stage: deploy
+      env: TOXENV=py3-master
+      python: 3.7
+      deploy:
+        provider: script
+        script: twine upload --skip-existing dist/libyang-*.tar.gz
+        on:
+          tags: true

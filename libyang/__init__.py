@@ -161,7 +161,7 @@ class Context:
             self._ctx, str2c(path), str2c(value), 0, flags)
         if lib.lypy_get_errno() != lib.LY_SUCCESS:
             if lib.ly_vecode(self._ctx) != lib.LYVE_PATH_EXISTS:
-                raise self.error('cannot create data path')
+                raise self.error('cannot create data path: %s', path)
             lib.ly_err_clean(self._ctx, ffi.NULL)
             lib.lypy_set_errno(0)
         if not dnode and not force_return_value:
@@ -174,7 +174,7 @@ class Context:
             node_set = lib.lyd_find_path(parent._node, str2c(path))
             try:
                 if not node_set or not node_set.number:
-                    raise self.error('cannot find path')
+                    raise self.error('cannot find path: %s', path)
                 dnode = node_set.set.s[0]
             finally:
                 lib.ly_set_free(node_set)

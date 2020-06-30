@@ -10,11 +10,7 @@ from libyang import Context
 from libyang import LibyangError
 from libyang import lib
 from libyang.data import DContainer
-from libyang.data import DNode
 from libyang.data import DRpc
-from libyang.schema import SContainer
-from libyang.schema import SLeaf
-from libyang.schema import SRpc
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), 'yang')
@@ -239,7 +235,7 @@ class DataTest(unittest.TestCase):
 
     def test_data_to_dict_rpc_input(self):
         dnode = self.ctx.parse_data_mem(
-           '{"yolo-system:format-disk": {"disk": "/dev/sda"}}', 'json', rpc=True)
+            '{"yolo-system:format-disk": {"disk": "/dev/sda"}}', 'json', rpc=True)
         self.assertIsInstance(dnode, DRpc)
         try:
             dic = dnode.print_dict()

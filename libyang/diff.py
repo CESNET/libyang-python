@@ -12,8 +12,8 @@ from .schema import SRpcInOut
 #------------------------------------------------------------------------------
 def schema_diff(ctx_old, ctx_new, exclude_node_cb=None):
     """
-    Compare two libyang :cls:`.Context`\s, for a given set of paths and return
-    all differences.
+    Compare two libyang :cls:`.Context` objects, for a given set of paths and
+    return all differences.
 
     :arg Context ctx_old:
         The first context.

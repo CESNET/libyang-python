@@ -446,9 +446,6 @@ int lyd_validate(struct lyd_node **, int, void *);
 void free(void *);
 
 /* extra functions */
-const struct lys_ext_instance *lypy_find_ext(
-	const struct lys_ext_instance **, uint8_t,
-	const char *, const char *, const char *);
 char *lypy_node_fullname(const struct lys_node *);
 uint8_t lypy_module_implemented(const struct lys_module *);
 LY_ERR lypy_get_errno(void);

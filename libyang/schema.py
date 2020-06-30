@@ -160,11 +160,14 @@ class Revision:
             yield Extension(self.context, self._rev.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
-        ext = lib.lypy_find_ext(
-            self._rev.ext, self._rev.ext_size,
-            str2c(name), str2c(prefix), str2c(arg_value))
-        if ext:
-            return Extension(self.context, ext)
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
         return None
 
     def __repr__(self):
@@ -414,15 +417,14 @@ class Type:
                 yield Extension(self.context, self._type.parent.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
-        ext = lib.lypy_find_ext(
-            self._type.ext, self._type.ext_size,
-            str2c(name), str2c(prefix), str2c(arg_value))
-        if not ext and self._type.parent:
-            ext = lib.lypy_find_ext(
-                self._type.parent.ext, self._type.parent.ext_size,
-                str2c(name), str2c(prefix), str2c(arg_value))
-        if ext:
-            return Extension(self.context, ext)
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
         return None
 
     def __repr__(self):
@@ -694,11 +696,14 @@ class SNode:
             yield Extension(self.context, self._node.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
-        ext = lib.lypy_find_ext(
-            self._node.ext, self._node.ext_size,
-            str2c(name), str2c(prefix), str2c(arg_value))
-        if ext:
-            return Extension(self.context, ext)
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
         return None
 
     def if_features(self):

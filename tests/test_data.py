@@ -45,7 +45,7 @@ class DataTest(unittest.TestCase):
       {
         "proto": "https",
         "host": "github.com",
-        "path": "/rjarry/libyang-cffi",
+        "path": "/CESNET/libyang-python",
         "enabled": false
       },
       {
@@ -82,7 +82,7 @@ class DataTest(unittest.TestCase):
       {
         "proto": "https",
         "host": "github.com",
-        "path": "/rjarry/libyang-cffi",
+        "path": "/CESNET/libyang-python",
         "enabled": false
       },
       {
@@ -116,7 +116,7 @@ class DataTest(unittest.TestCase):
   <url>
     <proto>https</proto>
     <host>github.com</host>
-    <path>/rjarry/libyang-cffi</path>
+    <path>/CESNET/libyang-python</path>
     <enabled>false</enabled>
   </url>
   <url>
@@ -147,7 +147,7 @@ class DataTest(unittest.TestCase):
   <url>
     <proto>https</proto>
     <host>github.com</host>
-    <path>/rjarry/libyang-cffi</path>
+    <path>/CESNET/libyang-python</path>
     <enabled>false</enabled>
   </url>
   <url>
@@ -179,7 +179,7 @@ class DataTest(unittest.TestCase):
             state.create_path('number', 2000)
             state.create_path('number', 3000)
             u = state.create_path('url[proto="https"][host="github.com"]')
-            u.create_path('path', '/rjarry/libyang-cffi')
+            u.create_path('path', '/CESNET/libyang-python')
             u.create_path('enabled', False)
             u = state.create_path('url[proto="http"][host="foobar.com"]')
             u.create_path('port', 8080)
@@ -214,7 +214,7 @@ class DataTest(unittest.TestCase):
                 {
                     'proto': 'https',
                     'host': 'github.com',
-                    'path': '/rjarry/libyang-cffi',
+                    'path': '/CESNET/libyang-python',
                     'enabled': False,
                 },
                 {
@@ -302,7 +302,7 @@ class DataTest(unittest.TestCase):
                 {
                     'proto': 'https',
                     'host': 'github.com',
-                    'path': '/rjarry/libyang-cffi',
+                    'path': '/CESNET/libyang-python',
                     'enabled': False,
                 },
                 {

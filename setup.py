@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2019 Robin Jarry
+# Copyright (c) 2018-2020 Robin Jarry
 # SPDX-License-Identifier: MIT
 
 import datetime
-from distutils import dir_util
-from distutils import log
-from distutils.command.build_clib import build_clib
-import glob
-import multiprocessing
 import os
 import re
 import subprocess
 import sys
 
 import setuptools
-from setuptools.command.build_ext import build_ext
 
 
 CFFI_REQ = 'cffi>=1.7,!=1.11.3'
@@ -23,65 +17,16 @@ SETUP_REQS = []
 if '_cffi_backend' not in sys.builtin_module_names:
     INSTALL_REQS.append(CFFI_REQ)
     SETUP_REQS.append(CFFI_REQ)
-HERE = os.path.abspath(os.path.dirname(__file__))
 
 
-class BuildCLib(build_clib):
-
-    def run(self):
-        if not self.libraries:
-            return
-        log.info('Building libyang C library ...')
-        tmp = os.path.abspath(self.build_temp)
-        cmd = [
-            os.path.join(HERE, 'build-libyang.sh'),
-            '--src=%s' % os.path.join(HERE, 'clib'),
-            '--build=%s' % tmp,
-            '--prefix=%s' % self.get_finalized_command('install').install_base,
-            '--install=%s' % os.path.join(tmp, 'staging'),
-        ]
-        log.debug('+ %s' % ' '.join(cmd))
-        subprocess.check_call(cmd)
-
-
-class BuildExt(build_ext):
-
-    def run(self):
-        if self.distribution.has_c_libraries():
-            if 'build_clib' not in self.distribution.have_run or \
-                    not self.distribution.have_run['build_clib']:
-                self.run_command('build_clib')
-            tmp = os.path.abspath(
-                self.get_finalized_command('build_clib').build_temp)
-            self.include_dirs.append(os.path.join(tmp, 'staging/_include'))
-            self.library_dirs.append(os.path.join(tmp, 'staging/_lib'))
-            self.rpath.append('$ORIGIN/libyang/_lib')
-
-        build_ext.run(self)
-
-        if self.distribution.has_c_libraries():
-            if self.inplace:
-                build_py = self.get_finalized_command('build_py')
-                dest = build_py.get_package_dir('libyang')
-            else:
-                dest = os.path.join(self.build_lib, 'libyang')
-            if os.path.isdir(os.path.join(dest, '_lib')):
-                # Work around dir_util.copy_tree() that fails when a symlink
-                # already exists.
-                for f in os.listdir(os.path.join(dest, '_lib')):
-                    if os.path.islink(os.path.join(dest, '_lib', f)):
-                        os.unlink(os.path.join(dest, '_lib', f))
-            tmp = self.get_finalized_command('build_clib').build_temp
-            dir_util.copy_tree(
-                os.path.join(tmp, 'staging'), dest,
-                preserve_symlinks=True, update=True)
-
-
-LIBRARIES = []
+#------------------------------------------------------------------------------
 if os.environ.get('LIBYANG_INSTALL', 'system') == 'embed':
-    LIBRARIES.append(('yang', {'sources': ['clib']}))
+    raise NotImplementedError(
+        'LIBYANG_INSTALL=embed is no longer supported. '
+        'Please install libyang separately first.')
 
 
+#------------------------------------------------------------------------------
 def _tag_to_pep440_version(tag):
     git_tag_re = re.compile(r'''
         ^
@@ -180,9 +125,6 @@ setuptools.setup(
     setup_requires=SETUP_REQS,
     install_requires=INSTALL_REQS,
     cffi_modules=['cffi/build.py:BUILDER'],
-    libraries=LIBRARIES,
     cmdclass={
-        'build_clib': BuildCLib,
-        'build_ext': BuildExt,
     },
 )

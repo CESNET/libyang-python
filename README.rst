@@ -52,28 +52,6 @@ and ``LIBYANG_EXTRA_LDFLAGS``::
    LIBYANG_EXTRA_LDFLAGS="-rpath=/opt/ly/lib" \
           pip install libyang
 
-Embedding ``libyang.so``
-------------------------
-
-If libyang headers and libraries are not installed on the system, you may build
-``libyang.so`` and embed it into the `libyang` package before linking the CFFI
-extension against it (with a custom RPATH).
-
-To do so, you must export the ``LIBYANG_INSTALL=embed`` variable when running
-pip::
-
-   LIBYANG_INSTALL=embed pip install libyang
-
-This requires additional system dependencies in order to build the libyang
-C code:
-
-- cmake
-- Lib PCRE development headers
-
-On a Debian/Ubuntu system::
-
-   sudo apt-get install cmake build-essential libpcre3-dev
-
 Examples
 ========
 

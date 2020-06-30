@@ -1,3 +1,0 @@
-[submodule "clib"]
-	path = clib
-	url = https://github.com/CESNET/libyang.git

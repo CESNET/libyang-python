@@ -208,17 +208,17 @@ class DataTest(unittest.TestCase):
             'number': [1000, 2000, 3000],
             'url': [
                 {
-                    'proto': 'https',
-                    'host': 'github.com',
-                    'path': '/CESNET/libyang-python',
                     'enabled': False,
+                    'path': '/CESNET/libyang-python',
+                    'host': 'github.com',
+                    'proto': 'https',
                 },
                 {
-                    'proto': 'http',
-                    'host': 'foobar.com',
                     'port': 8080,
+                    'proto': 'http',
                     'path': '/index.html',
                     'enabled': True,
+                    'host': 'foobar.com',
                 },
             ],
         },
@@ -296,17 +296,17 @@ class DataTest(unittest.TestCase):
         invalid_dict = {
             'url': [
                 {
-                    'proto': 'https',
                     'host': 'github.com',
-                    'path': '/CESNET/libyang-python',
+                    'proto': 'https',
                     'enabled': False,
+                    'path': '/CESNET/libyang-python',
                 },
                 {
                     'proto': 'http',
-                    'host': 'foobar.com',
-                    'port': 'INVALID.PORT',
                     'path': '/index.html',
                     'enabled': True,
+                    'host': 'foobar.com',
+                    'port': 'INVALID.PORT',
                 },
             ],
         }

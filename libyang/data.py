@@ -525,8 +525,25 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
         schema_cache[cache_key] = (snode, module)
         return snode, module
 
+    keys_cache = {}
+
+    def _dic_keys(_dic, _schema):
+        if isinstance(_schema, SList):
+            # list keys must be first and in the order specified in the schema
+            list_keys = keys_cache.get(_schema._node, None)
+            if list_keys is None:
+                list_keys = tuple(k.name() for k in _schema.keys())
+                keys_cache[_schema._node] = list_keys
+            keys = []
+            for k in list_keys:
+                if k in _dic:
+                    keys.append(k)
+            keys.extend(_dic.keys() - list_keys)
+            return keys
+        return _dic.keys()
+
     def _to_dnode(_dic, _schema, _parent=ffi.NULL, in_rpc_output=False):
-        for key, value in _dic.items():
+        for key in _dic_keys(_dic, _schema):
             if ':' in key:
                 prefix, name = name.split(':')
             else:
@@ -544,6 +561,8 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
                     raise LibyangError('%s: unknown element %r' % (path, key))
                 LOG.warning('%s: skipping unknown element %r', path, key)
                 continue
+
+            value = _dic[key]
 
             if isinstance(s, SLeaf):
                 _create_leaf(_parent, module, name, value, in_rpc_output)

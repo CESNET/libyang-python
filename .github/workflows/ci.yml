@@ -1,0 +1,78 @@
+# Copyright (c) 2020 Robin Jarry
+# SPDX-License-Identifier: MIT
+---
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip
+          restore-keys: pip
+      - run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade tox twine
+      - run: python -m tox -e lint
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: 3.5
+            toxenv: py35
+          - python-version: 3.6
+            toxenv: py36
+          - python-version: 3.7
+            toxenv: py37
+          - python-version: 3.8
+            toxenv: py38
+          - python-version: pypy3
+            toxenv: pypy3
+          - python-version: 3.x
+            toxenv: py3-master
+          - python-version: 3.x
+            toxenv: py3-devel
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip
+          restore-keys: pip
+      - run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade tox twine
+      - run: python -m tox -e ${{ matrix.toxenv }}
+
+  deploy:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip
+          restore-keys: pip
+      - run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade tox twine
+      - run: |
+          python -m tox --sdistonly
+          twine upload --skip-existing dist/libyang-*.tar.gz

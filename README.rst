@@ -9,13 +9,13 @@ __ https://github.com/CESNET/libyang/
 |pypi-project|__ |python-versions|__ |build-status|__ |license|__
 
 __ https://pypi.org/project/libyang
-__ https://travis-ci.com/CESNET/libyang-python
-__ https://travis-ci.com/CESNET/libyang-python
+__ https://github.com/CESNET/libyang-python/actions
+__ https://github.com/CESNET/libyang-python/actions
 __ https://github.com/CESNET/libyang-python/blob/master/LICENSE
 
 .. |pypi-project| image:: https://img.shields.io/pypi/v/libyang.svg
 .. |python-versions| image:: https://img.shields.io/pypi/pyversions/libyang.svg
-.. |build-status| image:: https://travis-ci.com/CESNET/libyang-python.svg
+.. |build-status| image:: https://github.com/CESNET/libyang-python/workflows/CI/badge.svg
 .. |license| image:: https://img.shields.io/github/license/CESNET/libyang-python.svg
 
 Installation

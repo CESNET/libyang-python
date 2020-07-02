@@ -606,7 +606,7 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
                   in_rpc_output=rpcreply and isinstance(parent, DRpc))
         if created:
             result = DNode.new(module.context, created[0])
-            result.validate(rpc=rpc, rpcreply=rpc,
+            result.validate(rpc=rpc, rpcreply=rpcreply,
                             data=data, config=config, no_yanglib=no_yanglib)
     except:
         for c in reversed(created):

@@ -324,8 +324,13 @@ class DataTest(unittest.TestCase):
     def test_data_from_dict_container(self):
         dnode = self.ctx.create_data_path('/yolo-system:conf')
         self.assertIsInstance(dnode, DContainer)
-        dnode.merge_data_dict(self.DICT_CONFIG['conf'], strict=True, config=True)
+        subtree = dnode.merge_data_dict(
+            self.DICT_CONFIG['conf'], strict=True, config=True, validate=False)
+        # make sure subtree validation is forbidden
+        with self.assertRaises(LibyangError):
+            subtree.validate(config=True)
         try:
+            dnode.validate(config=True)
             j = dnode.print_mem('json', pretty=True)
         finally:
             dnode.free()

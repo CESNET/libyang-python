@@ -171,6 +171,9 @@ class DNode:
 
     def validate(self, data=False, config=False, get=False, rpc=False,
                  rpcreply=False, no_yanglib=False):
+        if self._node.parent:
+            raise self.context.error(
+                'validation is only supported on top-level nodes')
         flags = parser_flags(
             data=data, config=config, get=get, rpc=rpc,
             rpcreply=rpcreply, no_yanglib=no_yanglib)
@@ -289,7 +292,8 @@ class DNode:
         return dic
 
     def merge_data_dict(self, dic, rpc=False, rpcreply=False, strict=False,
-                        data=False, config=False, no_yanglib=False):
+                        data=False, config=False, no_yanglib=False,
+                        validate=True):
         """
         Merge a python dictionary into this node. The returned value is the
         first created node.
@@ -312,10 +316,14 @@ class DNode:
         :arg bool no_yanglib:
             Ignore (possibly) missing ietf-yang-library data. Applicable only
             with data=True.
+        :arg bool validate:
+            If False, do not validate the modified tree before returning. The
+            validation is performed on the top of the modified data tree.
         """
         return dict_to_dnode(dic, self.module(), parent=self,
                              rpc=rpc, rpcreply=rpcreply, strict=strict,
-                             data=data, config=config, no_yanglib=no_yanglib)
+                             data=data, config=config, no_yanglib=no_yanglib,
+                             validate=validate)
 
     def free(self, with_siblings=True):
         try:
@@ -414,7 +422,8 @@ class DLeafList(DLeaf):
 
 #------------------------------------------------------------------------------
 def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
-                  strict=False, data=False, config=False, no_yanglib=False):
+                  strict=False, data=False, config=False, no_yanglib=False,
+                  validate=True):
     """
     Convert a python dictionary to a DNode object given a YANG module object.
     The return value is the first created node. If parent is not set, a
@@ -443,6 +452,9 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
     :arg bool no_yanglib:
         Ignore (possibly) missing ietf-yang-library data. Applicable only
         with data=True.
+    :arg bool validate:
+        If False, do not validate the modified tree before returning. The
+        validation is performed on the top of the data tree.
     """
     if not dic:
         return None
@@ -606,8 +618,10 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
                   in_rpc_output=rpcreply and isinstance(parent, DRpc))
         if created:
             result = DNode.new(module.context, created[0])
-            result.validate(rpc=rpc, rpcreply=rpcreply,
-                            data=data, config=config, no_yanglib=no_yanglib)
+            if validate:
+                result.root().validate(
+                    rpc=rpc, rpcreply=rpcreply, data=data,
+                    config=config, no_yanglib=no_yanglib)
     except:
         for c in reversed(created):
             lib.lyd_free(c)

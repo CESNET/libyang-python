@@ -118,7 +118,8 @@ class Module:
             raise self.context.error('cannot print module')
 
     def parse_data_dict(self, dic, rpc=False, rpcreply=False, strict=False,
-                        data=False, config=False, no_yanglib=False):
+                        data=False, config=False, no_yanglib=False,
+                        validate=True):
         """
         Convert a python dictionary to a DNode object following the schema of
         this module. The returned value is always a top-level data node (i.e.:
@@ -142,11 +143,14 @@ class Module:
         :arg bool no_yanglib:
             Ignore (possibly) missing ietf-yang-library data. Applicable only
             with data=True.
+        :arg bool validate:
+            If False, do not validate the created data tree.
         """
         from .data import dict_to_dnode  # circular import
         return dict_to_dnode(dic, self, parent=None,
                              rpc=rpc, rpcreply=rpcreply, strict=strict,
-                             data=data, config=config, no_yanglib=no_yanglib)
+                             data=data, config=config, no_yanglib=no_yanglib,
+                             validate=validate)
 
 
 #------------------------------------------------------------------------------

@@ -2,19 +2,8 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
-import os  # isort:skip
-
-# Important: the following *must* remain *before* the import of _libyang
-HERE = os.path.dirname(__file__)
-LIBDIR = os.path.join(HERE, '_lib')
-INCLUDEDIR = os.path.join(HERE, '_include')
-if os.path.isdir(LIBDIR):
-    os.environ.setdefault(
-        'LIBYANG_EXTENSIONS_PLUGINS_DIR', os.path.join(LIBDIR, 'extensions'))
-    os.environ.setdefault(
-        'LIBYANG_USER_TYPES_PLUGINS_DIR', os.path.join(LIBDIR, 'user_types'))
-
 import logging
+import os
 
 from _libyang import ffi
 from _libyang import lib
@@ -285,19 +274,3 @@ def configure_logging(enable_py_logger, level=logging.ERROR):
 
 
 configure_logging(False, logging.ERROR)
-
-
-#------------------------------------------------------------------------------
-def lib_dirs():
-    dirs = []
-    if os.path.isdir(LIBDIR):
-        dirs.append(LIBDIR)
-    return dirs
-
-
-#------------------------------------------------------------------------------
-def include_dirs():
-    dirs = []
-    if os.path.isdir(INCLUDEDIR):
-        dirs.append(INCLUDEDIR)
-    return dirs

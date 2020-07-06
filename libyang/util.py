@@ -1,12 +1,21 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # SPDX-License-Identifier: MIT
 
+import warnings
+
 from _libyang import ffi
 
 
 #------------------------------------------------------------------------------
 class LibyangError(Exception):
     pass
+
+
+#------------------------------------------------------------------------------
+def deprecated(old, new, removed_in):
+    msg = '%s has been replaced by %s, it will be removed in version %s'
+    msg %= (old, new, removed_in)
+    warnings.warn(msg, DeprecationWarning, stacklevel=3)
 
 
 #------------------------------------------------------------------------------

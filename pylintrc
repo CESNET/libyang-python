@@ -80,6 +80,7 @@ disable=
 	raising-format-tuple,
 	suppressed-message,
 	too-many-branches,
+	too-many-lines,
 	too-many-locals,
 	too-many-return-statements,
 	too-many-statements,

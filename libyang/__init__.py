@@ -17,6 +17,7 @@ from .schema import SNode
 from .schema import schema_in_format
 from .util import LibyangError
 from .util import c2str
+from .util import deprecated
 from .util import str2c
 
 
@@ -27,17 +28,21 @@ LOG.addHandler(logging.NullHandler())
 #------------------------------------------------------------------------------
 class Context:
 
-    def __init__(self, search_path=None, disable_searchdir_cwd=True, pointer=None):
+    def __init__(self, search_path=None, disable_searchdir_cwd=True,
+                 pointer=None, cdata=None):
         if pointer is not None:
-            self._ctx = ffi.cast('struct ly_ctx *', pointer)
+            deprecated('pointer=', 'cdata=', '2.0.0')
+            cdata = pointer
+        if cdata is not None:
+            self.cdata = ffi.cast('struct ly_ctx *', cdata)
             return  # already initialized
 
         options = 0
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
 
-        self._ctx = lib.ly_ctx_new(ffi.NULL, options)
-        if not self._ctx:
+        self.cdata = lib.ly_ctx_new(ffi.NULL, options)
+        if not self.cdata:
             raise self.error('cannot create context')
 
         search_dirs = []
@@ -53,13 +58,18 @@ class Context:
         for path in search_dirs:
             if not os.path.isdir(path):
                 continue
-            if lib.ly_ctx_set_searchdir(self._ctx, str2c(path)) != 0:
+            if lib.ly_ctx_set_searchdir(self.cdata, str2c(path)) != 0:
                 raise self.error('cannot set search dir')
 
+    @property
+    def _ctx(self):
+        deprecated('_ctx', 'cdata', '2.0.0')
+        return self.cdata
+
     def destroy(self):
-        if self._ctx is not None:
-            lib.ly_ctx_destroy(self._ctx, ffi.NULL)
-            self._ctx = None
+        if self.cdata is not None:
+            lib.ly_ctx_destroy(self.cdata, ffi.NULL)
+            self.cdata = None
 
     def __enter__(self):
         return self
@@ -70,60 +80,60 @@ class Context:
     def error(self, msg, *args):
         msg %= args
 
-        if self._ctx:
-            err = lib.ly_err_first(self._ctx)
+        if self.cdata:
+            err = lib.ly_err_first(self.cdata)
             while err:
                 if err.msg:
                     msg += ': %s' % c2str(err.msg)
                 if err.path:
                     msg += ': %s' % c2str(err.path)
                 err = err.next
-            lib.ly_err_clean(self._ctx, ffi.NULL)
+            lib.ly_err_clean(self.cdata, ffi.NULL)
 
         return LibyangError(msg)
 
     def parse_module_file(self, fileobj, fmt='yang'):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
         fmt = schema_in_format(fmt)
-        mod = lib.lys_parse_fd(self._ctx, fileobj.fileno(), fmt)
+        mod = lib.lys_parse_fd(self.cdata, fileobj.fileno(), fmt)
         if not mod:
             raise self.error('cannot parse module')
 
         return Module(self, mod)
 
     def parse_module_str(self, s, fmt='yang'):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
         fmt = schema_in_format(fmt)
-        mod = lib.lys_parse_mem(self._ctx, str2c(s), fmt)
+        mod = lib.lys_parse_mem(self.cdata, str2c(s), fmt)
         if not mod:
             raise self.error('cannot parse module')
 
         return Module(self, mod)
 
     def load_module(self, name):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
-        mod = lib.ly_ctx_load_module(self._ctx, str2c(name), ffi.NULL)
+        mod = lib.ly_ctx_load_module(self.cdata, str2c(name), ffi.NULL)
         if not mod:
             raise self.error('cannot load module')
 
         return Module(self, mod)
 
     def get_module(self, name):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
-        mod = lib.ly_ctx_get_module(self._ctx, str2c(name), ffi.NULL, False)
+        mod = lib.ly_ctx_get_module(self.cdata, str2c(name), ffi.NULL, False)
         if not mod:
             raise self.error('cannot get module')
 
         return Module(self, mod)
 
     def find_path(self, path):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
-        node_set = lib.ly_ctx_find_path(self._ctx, str2c(path))
+        node_set = lib.ly_ctx_find_path(self.cdata, str2c(path))
         if not node_set:
             raise self.error('cannot find path')
         try:
@@ -135,7 +145,7 @@ class Context:
     def create_data_path(self, path, parent=None, value=None,
                          update=True, no_parent_ret=True, rpc_output=False,
                          force_return_value=True):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
         lib.lypy_set_errno(0)
         if value is not None:
@@ -146,12 +156,12 @@ class Context:
         flags = path_flags(
             update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output)
         dnode = lib.lyd_new_path(
-            parent._node if parent else ffi.NULL,
-            self._ctx, str2c(path), str2c(value), 0, flags)
+            parent.cdata if parent else ffi.NULL,
+            self.cdata, str2c(path), str2c(value), 0, flags)
         if lib.lypy_get_errno() != lib.LY_SUCCESS:
-            if lib.ly_vecode(self._ctx) != lib.LYVE_PATH_EXISTS:
+            if lib.ly_vecode(self.cdata) != lib.LYVE_PATH_EXISTS:
                 raise self.error('cannot create data path: %s', path)
-            lib.ly_err_clean(self._ctx, ffi.NULL)
+            lib.ly_err_clean(self.cdata, ffi.NULL)
             lib.lypy_set_errno(0)
         if not dnode and not force_return_value:
             return None
@@ -160,7 +170,7 @@ class Context:
             # This can happen when path points to an already created leaf and
             # its value does not change.
             # In that case, lookup the existing leaf and return it.
-            node_set = lib.lyd_find_path(parent._node, str2c(path))
+            node_set = lib.lyd_find_path(parent.cdata, str2c(path))
             try:
                 if not node_set or not node_set.number:
                     raise self.error('cannot find path: %s', path)
@@ -176,7 +186,7 @@ class Context:
     def parse_data_mem(self, d, fmt, data=False, config=False, get=False,
                        strict=False, trusted=False, no_yanglib=False,
                        rpc=False, rpcreply=False):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
         flags = parser_flags(
             data=data, config=config, get=get, strict=strict, trusted=trusted,
@@ -189,7 +199,7 @@ class Context:
         args = []
         if rpc:
             args.append(ffi.cast('struct lyd_node *', ffi.NULL))
-        dnode = lib.lyd_parse_mem(self._ctx, d, fmt, flags, *args)
+        dnode = lib.lyd_parse_mem(self.cdata, d, fmt, flags, *args)
         if not dnode:
             raise self.error('failed to parse data tree')
         return DNode.new(self, dnode)
@@ -197,7 +207,7 @@ class Context:
     def parse_data_file(self, fileobj, fmt, data=False, config=False, get=False,
                         strict=False, trusted=False, no_yanglib=False,
                         rpc=False, rpcreply=False):
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
         flags = parser_flags(
             data=data, config=config, get=get, strict=strict, trusted=trusted,
@@ -206,7 +216,7 @@ class Context:
         args = []
         if rpc:
             args.append(ffi.cast('struct lyd_node *', ffi.NULL))
-        dnode = lib.lyd_parse_fd(self._ctx, fileobj.fileno(), fmt, flags, *args)
+        dnode = lib.lyd_parse_fd(self.cdata, fileobj.fileno(), fmt, flags, *args)
         if not dnode:
             raise self.error('failed to parse data tree')
         return DNode.new(self, dnode)
@@ -215,13 +225,13 @@ class Context:
         """
         Return an iterator that yields all implemented modules from the context
         """
-        if self._ctx is None:
+        if self.cdata is None:
             raise RuntimeError('context already destroyed')
         idx = ffi.new('uint32_t *')
-        mod = lib.ly_ctx_get_module_iter(self._ctx, idx)
+        mod = lib.ly_ctx_get_module_iter(self.cdata, idx)
         while mod:
             yield Module(self, mod)
-            mod = lib.ly_ctx_get_module_iter(self._ctx, idx)
+            mod = lib.ly_ctx_get_module_iter(self.cdata, idx)
 
 
 #------------------------------------------------------------------------------

@@ -5,6 +5,7 @@ from _libyang import ffi
 from _libyang import lib
 
 from .util import c2str
+from .util import deprecated
 from .util import str2c
 
 
@@ -35,27 +36,32 @@ def schema_out_format(fmt_string):
 #------------------------------------------------------------------------------
 class Module:
 
-    def __init__(self, context, module_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._module = module_p
+        self.cdata = cdata
+
+    @property
+    def _module(self):
+        deprecated('_module', 'cdata', '2.0.0')
+        return self.cdata
 
     def name(self):
-        return c2str(self._module.name)
+        return c2str(self.cdata.name)
 
     def prefix(self):
-        return c2str(self._module.prefix)
+        return c2str(self.cdata.prefix)
 
     def description(self):
-        return c2str(self._module.dsc)
+        return c2str(self.cdata.dsc)
 
     def filepath(self):
-        return c2str(self._module.filepath)
+        return c2str(self.cdata.filepath)
 
     def implemented(self):
-        return bool(lib.lypy_module_implemented(self._module))
+        return bool(lib.lypy_module_implemented(self.cdata))
 
     def feature_enable(self, name):
-        ret = lib.lys_features_enable(self._module, str2c(name))
+        ret = lib.lys_features_enable(self.cdata, str2c(name))
         if ret != 0:
             raise self.context.error('no such feature: %r' % name)
 
@@ -63,7 +69,7 @@ class Module:
         self.feature_enable('*')
 
     def feature_disable(self, name):
-        ret = lib.lys_features_disable(self._module, str2c(name))
+        ret = lib.lys_features_disable(self.cdata, str2c(name))
         if ret != 0:
             raise self.context.error('no such feature: %r' % name)
 
@@ -71,14 +77,14 @@ class Module:
         self.feature_disable('*')
 
     def feature_state(self, name):
-        ret = lib.lys_features_state(self._module, str2c(name))
+        ret = lib.lys_features_state(self.cdata, str2c(name))
         if ret < 0:
             raise self.context.error('no such feature: %r' % name)
         return bool(ret)
 
     def features(self):
-        for i in range(self._module.features_size):
-            yield Feature(self.context, self._module.features[i])
+        for i in range(self.cdata.features_size):
+            yield Feature(self.context, self.cdata.features[i])
 
     def get_feature(self, name):
         for f in self.features():
@@ -87,14 +93,14 @@ class Module:
         raise self.context.error('no such feature: %r' % name)
 
     def revisions(self):
-        for i in range(self._module.rev_size):
-            yield Revision(self.context, self._module.rev[i])
+        for i in range(self.cdata.rev_size):
+            yield Revision(self.context, self.cdata.rev[i])
 
     def __iter__(self):
         return self.children()
 
     def children(self, types=None):
-        return iter_children(self.context, self._module, types=types)
+        return iter_children(self.context, self.cdata, types=types)
 
     def __str__(self):
         return self.name()
@@ -102,7 +108,7 @@ class Module:
     def print_mem(self, fmt='tree', path=None):
         fmt = schema_out_format(fmt)
         buf = ffi.new('char **')
-        ret = lib.lys_print_mem(buf, self._module, fmt, str2c(path), 0, 0)
+        ret = lib.lys_print_mem(buf, self.cdata, fmt, str2c(path), 0, 0)
         if ret != 0:
             raise self.context.error('cannot print module')
         try:
@@ -113,7 +119,7 @@ class Module:
     def print_file(self, fileobj, fmt='tree', path=None):
         fmt = schema_out_format(fmt)
         ret = lib.lys_print_fd(
-            fileobj.fileno(), self._module, fmt, str2c(path), 0, 0)
+            fileobj.fileno(), self.cdata, fmt, str2c(path), 0, 0)
         if ret != 0:
             raise self.context.error('cannot print module')
 
@@ -156,22 +162,27 @@ class Module:
 #------------------------------------------------------------------------------
 class Revision:
 
-    def __init__(self, context, rev_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._rev = rev_p
+        self.cdata = cdata
+
+    @property
+    def _rev(self):
+        deprecated('_rev', 'cdata', '2.0.0')
+        return self.cdata
 
     def date(self):
-        return c2str(self._rev.date)
+        return c2str(self.cdata.date)
 
     def description(self):
-        return c2str(self._rev.dsc)
+        return c2str(self.cdata.dsc)
 
     def reference(self):
-        return c2str(self._rev.ref)
+        return c2str(self.cdata.ref)
 
     def extensions(self):
-        for i in range(self._rev.ext_size):
-            yield Extension(self.context, self._rev.ext[i])
+        for i in range(self.cdata.ext_size):
+            yield Extension(self.context, self.cdata.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
         for ext in self.extensions():
@@ -195,19 +206,27 @@ class Revision:
 #------------------------------------------------------------------------------
 class Extension:
 
-    def __init__(self, context, ext_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._ext = ext_p
-        self._def = getattr(ext_p, 'def')
+        self.cdata = cdata
+        self.cdata_def = getattr(cdata, 'def')
+
+    @property
+    def _ext(self):
+        deprecated('_ext', 'cdata', '2.0.0')
+
+    @property
+    def _def(self):
+        deprecated('_def', 'cdata_def', '2.0.0')
 
     def name(self):
-        return c2str(self._def.name)
+        return c2str(self.cdata_def.name)
 
     def argument(self):
-        return c2str(self._ext.arg_value)
+        return c2str(self.cdata.arg_value)
 
     def module(self):
-        module_p = lib.lys_main_module(self._def.module)
+        module_p = lib.lys_main_module(self.cdata_def.module)
         if not module_p:
             raise self.context.error('cannot get module')
         return Module(self.context, module_p)
@@ -266,69 +285,74 @@ class Type:
         UINT64: 'uint64',
     }
 
-    def __init__(self, context, type_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._type = type_p
+        self.cdata = cdata
+
+    @property
+    def _type(self):
+        deprecated('_type', 'cdata', '2.0.0')
+        return self.cdata
 
     def get_bases(self):
-        if self._type.base == lib.LY_TYPE_DER:
+        if self.cdata.base == lib.LY_TYPE_DER:
             yield from self.derived_type().get_bases()
-        elif self._type.base == lib.LY_TYPE_LEAFREF:
+        elif self.cdata.base == lib.LY_TYPE_LEAFREF:
             yield from self.leafref_type().get_bases()
-        elif self._type.base == lib.LY_TYPE_UNION:
+        elif self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.get_bases()
         else:  # builtin type
             yield self
 
     def name(self):
-        if self._type.der:
-            return c2str(self._type.der.name)
+        if self.cdata.der:
+            return c2str(self.cdata.der.name)
         return self.basename()
 
     def description(self):
-        if self._type.der:
-            return c2str(self._type.der.dsc)
+        if self.cdata.der:
+            return c2str(self.cdata.der.dsc)
         return None
 
     def base(self):
-        return self._type.base
+        return self.cdata.base
 
     def bases(self):
         for b in self.get_bases():
             yield b.base()
 
     def basename(self):
-        return self.BASENAMES.get(self._type.base, 'unknown')
+        return self.BASENAMES.get(self.cdata.base, 'unknown')
 
     def basenames(self):
         for b in self.get_bases():
             yield b.basename()
 
     def derived_type(self):
-        if not self._type.der:
+        if not self.cdata.der:
             return None
-        return Type(self.context, ffi.addressof(self._type.der.type))
+        return Type(self.context, ffi.addressof(self.cdata.der.type))
 
     def leafref_type(self):
-        if self._type.base != self.LEAFREF:
+        if self.cdata.base != self.LEAFREF:
             return None
-        lref = self._type.info.lref
+        lref = self.cdata.info.lref
         return Type(self.context, ffi.addressof(lref.target.type))
 
     def union_types(self):
-        if self._type.base != self.UNION:
+        if self.cdata.base != self.UNION:
             return
-        t = self._type
+        t = self.cdata
         while t.info.uni.count == 0:
             t = ffi.addressof(t.der.type)
         for i in range(t.info.uni.count):
             yield Type(self.context, t.info.uni.types[i])
 
     def enums(self):
-        if self._type.base != self.ENUM:
+        if self.cdata.base != self.ENUM:
             return
-        t = self._type
+        t = self.cdata
         while t.info.enums.count == 0:
             t = ffi.addressof(t.der.type)
         for i in range(t.info.enums.count):
@@ -340,9 +364,9 @@ class Type:
             yield from b.enums()
 
     def bits(self):
-        if self._type.base != self.BITS:
+        if self.cdata.base != self.BITS:
             return
-        t = self._type
+        t = self.cdata
         while t.info.bits.count == 0:
             t = ffi.addressof(t.der.type)
         for i in range(t.info.bits.count):
@@ -357,16 +381,16 @@ class Type:
         (INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
 
     def range(self):
-        if self._type.base in self.NUM_TYPES and self._type.info.num.range:
-            return c2str(self._type.info.num.range.expr)
-        if self._type.base == self.DEC64 and self._type.info.dec64.range:
-            return c2str(self._type.info.dec64.range.expr)
-        if self._type.der:
+        if self.cdata.base in self.NUM_TYPES and self.cdata.info.num.range:
+            return c2str(self.cdata.info.num.range.expr)
+        if self.cdata.base == self.DEC64 and self.cdata.info.dec64.range:
+            return c2str(self.cdata.info.dec64.range.expr)
+        if self.cdata.der:
             return self.derived_type().range()
         return None
 
     def all_ranges(self):
-        if self._type.base == lib.LY_TYPE_UNION:
+        if self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_ranges()
         else:
@@ -375,16 +399,16 @@ class Type:
                 yield rng
 
     def length(self):
-        if self._type.base == self.STRING and self._type.info.str.length:
-            return c2str(self._type.info.str.length.expr)
-        if self._type.base == self.BINARY and self._type.info.binary.length:
-            return c2str(self._type.info.binary.length.expr)
-        if self._type.der:
+        if self.cdata.base == self.STRING and self.cdata.info.str.length:
+            return c2str(self.cdata.info.str.length.expr)
+        if self.cdata.base == self.BINARY and self.cdata.info.binary.length:
+            return c2str(self.cdata.info.binary.length.expr)
+        if self.cdata.der:
             return self.derived_type().length()
         return None
 
     def all_lengths(self):
-        if self._type.base == lib.LY_TYPE_UNION:
+        if self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_lengths()
         else:
@@ -393,10 +417,10 @@ class Type:
                 yield length
 
     def patterns(self):
-        if self._type.base != self.STRING:
+        if self.cdata.base != self.STRING:
             return
-        for i in range(self._type.info.str.pat_count):
-            p = self._type.info.str.patterns[i]
+        for i in range(self.cdata.info.str.pat_count):
+            p = self.cdata.info.str.patterns[i]
             if not p:
                 continue
             # in case of pattern restriction, the first byte has a special
@@ -407,28 +431,28 @@ class Type:
             #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
             #     ('[xX][mM][lL].*', True)
             yield c2str(p.expr + 1), invert_match
-        if self._type.der:
+        if self.cdata.der:
             yield from self.derived_type().patterns()
 
     def all_patterns(self):
-        if self._type.base == lib.LY_TYPE_UNION:
+        if self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_patterns()
         else:
             yield from self.patterns()
 
     def module(self):
-        module_p = lib.lys_main_module(self._type.der.module)
+        module_p = lib.lys_main_module(self.cdata.der.module)
         if not module_p:
             raise self.context.error('cannot get module')
         return Module(self.context, module_p)
 
     def extensions(self):
-        for i in range(self._type.ext_size):
-            yield Extension(self.context, self._type.ext[i])
-        if self._type.parent:
-            for i in range(self._type.parent.ext_size):
-                yield Extension(self.context, self._type.parent.ext[i])
+        for i in range(self.cdata.ext_size):
+            yield Extension(self.context, self.cdata.ext[i])
+        if self.cdata.parent:
+            for i in range(self.cdata.parent.ext_size):
+                yield Extension(self.context, self.cdata.parent.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
         for ext in self.extensions():
@@ -452,34 +476,39 @@ class Type:
 #------------------------------------------------------------------------------
 class Feature:
 
-    def __init__(self, context, feature_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._feature = feature_p
+        self.cdata = cdata
+
+    @property
+    def _feature(self):
+        deprecated('_feature', 'cdata', '2.0.0')
+        return self.cdata
 
     def name(self):
-        return c2str(self._feature.name)
+        return c2str(self.cdata.name)
 
     def description(self):
-        return c2str(self._feature.dsc)
+        return c2str(self.cdata.dsc)
 
     def reference(self):
-        return c2str(self._feature.ref)
+        return c2str(self.cdata.ref)
 
     def state(self):
-        return bool(self._feature.flags & lib.LYS_FENABLED)
+        return bool(self.cdata.flags & lib.LYS_FENABLED)
 
     def deprecated(self):
-        return bool(self._feature.flags & lib.LYS_STATUS_DEPRC)
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
 
     def obsolete(self):
-        return bool(self._feature.flags & lib.LYS_STATUS_OBSLT)
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
 
     def if_features(self):
-        for i in range(self._feature.iffeature_size):
-            yield IfFeatureExpr(self.context, self._feature.iffeature[i])
+        for i in range(self.cdata.iffeature_size):
+            yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
 
     def module(self):
-        module_p = lib.lys_main_module(self._feature.module)
+        module_p = lib.lys_main_module(self.cdata.module)
         if not module_p:
             raise self.context.error('cannot get module')
         return Module(self.context, module_p)
@@ -491,16 +520,21 @@ class Feature:
 #------------------------------------------------------------------------------
 class IfFeatureExpr:
 
-    def __init__(self, context, iffeature_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._iffeature = iffeature_p
+        self.cdata = cdata
+
+    @property
+    def _iffeature(self):
+        deprecated('_iffeature', 'cdata', '2.0.0')
+        return self.cdata
 
     def _get_operator(self, position):
         # the ->exp field is a 2bit array of operator values stored under
         # a uint8_t C array.
         mask = 0x3  # 2bits mask
         shift = 2 * (position % 4)
-        item = self._iffeature.expr[position // 4]
+        item = self.cdata.expr[position // 4]
         result = item & (mask << shift)
         return result >> shift
 
@@ -512,7 +546,7 @@ class IfFeatureExpr:
             operator = self._get_operator(op_index)
             op_index += 1
             if operator == lib.LYS_IFF_F:
-                yield IfFeature(self.context, self._iffeature.features[ft_index])
+                yield IfFeature(self.context, self.cdata.features[ft_index])
                 ft_index += 1
                 expected -= 1
             elif operator == lib.LYS_IFF_NOT:
@@ -554,12 +588,17 @@ class IfFeatureExprTree:
 #------------------------------------------------------------------------------
 class IfFeature(IfFeatureExprTree):
 
-    def __init__(self, context, feature_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._feature = feature_p
+        self.cdata = cdata
+
+    @property
+    def _feature(self):
+        deprecated('_feature', 'cdata', '2.0.0')
+        return self.cdata
 
     def feature(self):
-        return Feature(self.context, self._feature)
+        return Feature(self.context, self.cdata)
 
     def dump(self, indent=0):
         feat = self.feature()
@@ -639,70 +678,75 @@ class SNode:
         OUTPUT: 'output',
     }
 
-    def __init__(self, context, node_p):
+    def __init__(self, context, cdata):
         self.context = context
-        self._node = node_p
+        self.cdata = cdata
+
+    @property
+    def _node(self):
+        deprecated('_node', 'cdata', '2.0.0')
+        return self.cdata
 
     def nodetype(self):
-        return self._node.nodetype
+        return self.cdata.nodetype
 
     def keyword(self):
-        return self.KEYWORDS.get(self._node.nodetype, '???')
+        return self.KEYWORDS.get(self.cdata.nodetype, '???')
 
     def name(self):
-        return c2str(self._node.name)
+        return c2str(self.cdata.name)
 
     def fullname(self):
         return '%s:%s' % (self.module().name(), self.name())
 
     def description(self):
-        return c2str(self._node.dsc)
+        return c2str(self.cdata.dsc)
 
     def config_set(self):
-        return bool(self._node.flags & lib.LYS_CONFIG_SET)
+        return bool(self.cdata.flags & lib.LYS_CONFIG_SET)
 
     def config_false(self):
-        return bool(self._node.flags & lib.LYS_CONFIG_R)
+        return bool(self.cdata.flags & lib.LYS_CONFIG_R)
 
     def mandatory(self):
-        return bool(self._node.flags & lib.LYS_MAND_TRUE)
+        return bool(self.cdata.flags & lib.LYS_MAND_TRUE)
 
     def deprecated(self):
-        return bool(self._node.flags & lib.LYS_STATUS_DEPRC)
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
 
     def obsolete(self):
-        return bool(self._node.flags & lib.LYS_STATUS_OBSLT)
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
 
     def status(self):
-        if self._node.flags & lib.LYS_STATUS_OBSLT:
+        if self.cdata.flags & lib.LYS_STATUS_OBSLT:
             return 'obsolete'
-        if self._node.flags & lib.LYS_STATUS_DEPRC:
+        if self.cdata.flags & lib.LYS_STATUS_DEPRC:
             return 'deprecated'
         return 'current'
 
     def module(self):
-        module_p = lib.lys_node_module(self._node)
+        module_p = lib.lys_node_module(self.cdata)
         if not module_p:
             raise self.context.error('cannot get module')
         return Module(self.context, module_p)
 
     def schema_path(self):
         try:
-            s = lib.lys_path(self._node, 0)
+            s = lib.lys_path(self.cdata, 0)
             return c2str(s)
         finally:
             lib.free(s)
 
     def data_path(self, key_placeholder="'%s'"):
         try:
-            s = lib.lys_data_path_pattern(self._node, str2c(key_placeholder))
+            s = lib.lys_data_path_pattern(self.cdata, str2c(key_placeholder))
             return c2str(s)
         finally:
             lib.free(s)
 
     def extensions(self):
-        for i in range(self._node.ext_size):
-            yield Extension(self.context, self._node.ext[i])
+        for i in range(self.cdata.ext_size):
+            yield Extension(self.context, self.cdata.ext[i])
 
     def get_extension(self, name, prefix=None, arg_value=None):
         for ext in self.extensions():
@@ -716,11 +760,11 @@ class SNode:
         return None
 
     def if_features(self):
-        for i in range(self._node.iffeature_size):
-            yield IfFeatureExpr(self.context, self._node.iffeature[i])
+        for i in range(self.cdata.iffeature_size):
+            yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
 
     def parent(self):
-        parent_p = lib.lys_parent(self._node)
+        parent_p = lib.lys_parent(self.cdata)
         while parent_p and parent_p.nodetype not in SNode.NODETYPE_CLASS:
             parent_p = lib.lys_parent(parent_p)
         if parent_p:
@@ -744,36 +788,41 @@ class SNode:
         return _decorator
 
     @classmethod
-    def new(cls, context, node_p):
-        nodecls = cls.NODETYPE_CLASS.get(node_p.nodetype, SNode)
-        return nodecls(context, node_p)
+    def new(cls, context, cdata):
+        nodecls = cls.NODETYPE_CLASS.get(cdata.nodetype, SNode)
+        return nodecls(context, cdata)
 
 
 #------------------------------------------------------------------------------
 @SNode.register(SNode.LEAF)
 class SLeaf(SNode):
 
-    def __init__(self, context, node_p):
-        super().__init__(context, node_p)
-        self._leaf = ffi.cast('struct lys_node_leaf *', node_p)
+    def __init__(self, context, cdata):
+        super().__init__(context, cdata)
+        self.cdata_leaf = ffi.cast('struct lys_node_leaf *', cdata)
+
+    @property
+    def _leaf(self):
+        deprecated('_leaf', 'cdata_leaf', '2.0.0')
+        return self.cdata_leaf
 
     def default(self):
-        return c2str(self._leaf.dflt)
+        return c2str(self.cdata_leaf.dflt)
 
     def units(self):
-        return c2str(self._leaf.units)
+        return c2str(self.cdata_leaf.units)
 
     def type(self):
-        return Type(self.context, ffi.addressof(self._leaf.type))
+        return Type(self.context, ffi.addressof(self.cdata_leaf.type))
 
     def is_key(self):
-        if lib.lys_is_key(self._leaf, ffi.NULL):
+        if lib.lys_is_key(self.cdata_leaf, ffi.NULL):
             return True
         return False
 
     def must_conditions(self):
-        for i in range(self._leaf.must_size):
-            yield c2str(self._leaf.must[i].expr)
+        for i in range(self.cdata_leaf.must_size):
+            yield c2str(self.cdata_leaf.must[i].expr)
 
     def __str__(self):
         return '%s %s' % (self.name(), self.type().name())
@@ -783,26 +832,31 @@ class SLeaf(SNode):
 @SNode.register(SNode.LEAFLIST)
 class SLeafList(SNode):
 
-    def __init__(self, context, node_p):
-        super().__init__(context, node_p)
-        self._leaflist = ffi.cast('struct lys_node_leaflist *', node_p)
+    def __init__(self, context, cdata):
+        super().__init__(context, cdata)
+        self.cdata_leaflist = ffi.cast('struct lys_node_leaflist *', cdata)
+
+    @property
+    def _leaflist(self):
+        deprecated('_leaflist', 'cdata_leaflist', '2.0.0')
+        return self.cdata_leaflist
 
     def ordered(self):
-        return bool(self._node.flags & lib.LYS_USERORDERED)
+        return bool(self.cdata.flags & lib.LYS_USERORDERED)
 
     def units(self):
-        return c2str(self._leaflist.units)
+        return c2str(self.cdata_leaflist.units)
 
     def type(self):
-        return Type(self.context, ffi.addressof(self._leaflist.type))
+        return Type(self.context, ffi.addressof(self.cdata_leaflist.type))
 
     def defaults(self):
-        for i in range(self._leaflist.dflt_size):
-            yield c2str(self._leaflist.dflt[i])
+        for i in range(self.cdata_leaflist.dflt_size):
+            yield c2str(self.cdata_leaflist.dflt[i])
 
     def must_conditions(self):
-        for i in range(self._leaflist.must_size):
-            yield c2str(self._leaflist.must[i].expr)
+        for i in range(self.cdata_leaflist.must_size):
+            yield c2str(self.cdata_leaflist.must[i].expr)
 
     def __str__(self):
         return '%s %s' % (self.name(), self.type().name())
@@ -812,50 +866,60 @@ class SLeafList(SNode):
 @SNode.register(SNode.CONTAINER)
 class SContainer(SNode):
 
-    def __init__(self, context, node_p):
-        super().__init__(context, node_p)
-        self._container = ffi.cast('struct lys_node_container *', node_p)
+    def __init__(self, context, cdata):
+        super().__init__(context, cdata)
+        self.cdata_container = ffi.cast('struct lys_node_container *', cdata)
+
+    @property
+    def _container(self):
+        deprecated('_container', 'cdata_container', '2.0.0')
+        return self.cdata_container
 
     def presence(self):
-        return c2str(self._container.presence)
+        return c2str(self.cdata_container.presence)
 
     def must_conditions(self):
-        for i in range(self._container.must_size):
-            yield c2str(self._container.must[i].expr)
+        for i in range(self.cdata_container.must_size):
+            yield c2str(self.cdata_container.must[i].expr)
 
     def __iter__(self):
         return self.children()
 
     def children(self, types=None):
-        return iter_children(self.context, self._node, types=types)
+        return iter_children(self.context, self.cdata, types=types)
 
 
 #------------------------------------------------------------------------------
 @SNode.register(SNode.LIST)
 class SList(SNode):
 
-    def __init__(self, context, node_p):
-        super().__init__(context, node_p)
-        self._list = ffi.cast('struct lys_node_list *', node_p)
+    def __init__(self, context, cdata):
+        super().__init__(context, cdata)
+        self.cdata_list = ffi.cast('struct lys_node_list *', cdata)
+
+    @property
+    def _list(self):
+        deprecated('_list', 'cdata_list', '2.0.0')
+        return self.cdata_list
 
     def ordered(self):
-        return bool(self._node.flags & lib.LYS_USERORDERED)
+        return bool(self.cdata.flags & lib.LYS_USERORDERED)
 
     def __iter__(self):
         return self.children()
 
     def children(self, skip_keys=False, types=None):
         return iter_children(
-            self.context, self._node, skip_keys=skip_keys, types=types)
+            self.context, self.cdata, skip_keys=skip_keys, types=types)
 
     def keys(self):
-        for i in range(self._list.keys_size):
-            node = ffi.cast('struct lys_node *', self._list.keys[i])
+        for i in range(self.cdata_list.keys_size):
+            node = ffi.cast('struct lys_node *', self.cdata_list.keys[i])
             yield SLeaf(self.context, node)
 
     def must_conditions(self):
-        for i in range(self._list.must_size):
-            yield c2str(self._list.must[i].expr)
+        for i in range(self.cdata_list.must_size):
+            yield c2str(self.cdata_list.must[i].expr)
 
     def __str__(self):
         return '%s [%s]' % (
@@ -874,7 +938,7 @@ class SRpcInOut(SNode):
         return ()
 
     def children(self, types=None):
-        return iter_children(self.context, self._node, types=types)
+        return iter_children(self.context, self.cdata, types=types)
 
 
 #------------------------------------------------------------------------------
@@ -887,7 +951,7 @@ class SRpc(SNode):
     def input(self):
         try:
             return next(iter_children(
-                self.context, self._node, types=(self.INPUT,),
+                self.context, self.cdata, types=(self.INPUT,),
                 options=lib.LYS_GETNEXT_WITHINOUT))
         except StopIteration:
             return None
@@ -895,7 +959,7 @@ class SRpc(SNode):
     def output(self):
         try:
             return next(iter_children(
-                self.context, self._node, types=(self.OUTPUT,),
+                self.context, self.cdata, types=(self.OUTPUT,),
                 options=lib.LYS_GETNEXT_WITHINOUT))
         except StopIteration:
             return None
@@ -904,7 +968,7 @@ class SRpc(SNode):
         return self.children()
 
     def children(self, types=None):
-        return iter_children(self.context, self._node, types=types)
+        return iter_children(self.context, self.cdata, types=types)
 
 
 #------------------------------------------------------------------------------

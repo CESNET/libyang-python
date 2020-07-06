@@ -16,6 +16,7 @@ from .schema import SRpc
 from .schema import Type
 from .util import LibyangError
 from .util import c2str
+from .util import deprecated
 from .util import str2c
 
 
@@ -97,32 +98,37 @@ class DNode:
     """
     Data tree node.
     """
-    def __init__(self, context, node_p):
+    def __init__(self, context, cdata):
         """
         :arg Context context:
             The libyang.Context python object.
-        :arg struct lyd_node * node_p:
+        :arg struct lyd_node * cdata:
             The pointer to the C structure allocated by libyang.so.
         """
         self.context = context
-        self._node = ffi.cast('struct lyd_node *', node_p)
+        self.cdata = cdata
+
+    @property
+    def _node(self):
+        deprecated('_node', 'cdata', '2.0.0')
+        return self.cdata
 
     def name(self):
-        return c2str(self._node.schema.name)
+        return c2str(self.cdata.schema.name)
 
     def module(self):
-        mod = lib.lyd_node_module(self._node)
+        mod = lib.lyd_node_module(self.cdata)
         if not mod:
             raise self.context.error('cannot get module')
         return Module(self.context, mod)
 
     def schema(self):
-        return SNode.new(self.context, self._node.schema)
+        return SNode.new(self.context, self.cdata.schema)
 
     def parent(self):
-        if not self._node.parent:
+        if not self.cdata.parent:
             return None
-        return self.new(self.context, self._node.parent)
+        return self.new(self.context, self.cdata.parent)
 
     def root(self):
         node = self
@@ -131,15 +137,15 @@ class DNode:
         return node
 
     def first_sibling(self):
-        n = lib.lyd_first_sibling(self._node)
-        if n == self._node:
+        n = lib.lyd_first_sibling(self.cdata)
+        if n == self.cdata:
             return self
         return self.new(self.context, n)
 
     def siblings(self, include_self=True):
-        n = lib.lyd_first_sibling(self._node)
+        n = lib.lyd_first_sibling(self.cdata)
         while n:
-            if n == self._node:
+            if n == self.cdata:
                 if include_self:
                     yield self
             else:
@@ -153,7 +159,7 @@ class DNode:
             return None
 
     def find_all(self, xpath):
-        node_set = lib.lyd_find_path(self._node, str2c(xpath))
+        node_set = lib.lyd_find_path(self.cdata, str2c(xpath))
         if not node_set:
             raise self.context.error('cannot find path')
         try:
@@ -163,7 +169,7 @@ class DNode:
             lib.ly_set_free(node_set)
 
     def path(self):
-        path = lib.lyd_path(self._node)
+        path = lib.lyd_path(self.cdata)
         try:
             return c2str(path)
         finally:
@@ -171,14 +177,14 @@ class DNode:
 
     def validate(self, data=False, config=False, get=False, rpc=False,
                  rpcreply=False, no_yanglib=False):
-        if self._node.parent:
+        if self.cdata.parent:
             raise self.context.error(
                 'validation is only supported on top-level nodes')
         flags = parser_flags(
             data=data, config=config, get=get, rpc=rpc,
             rpcreply=rpcreply, no_yanglib=no_yanglib)
         node_p = ffi.new('struct lyd_node **')
-        node_p[0] = self._node
+        node_p[0] = self.cdata
         ret = lib.lyd_validate(node_p, flags, ffi.NULL)
         if ret != 0:
             raise self.context.error('validation failed')
@@ -186,7 +192,7 @@ class DNode:
     def merge(self, source, destruct=False, no_siblings=False, explicit=False):
         flags = parser_flags(destruct=destruct, no_siblings=no_siblings,
                              explicit=explicit)
-        ret = lib.lyd_merge(self._node, source._node, flags)
+        ret = lib.lyd_merge(self.cdata, source.cdata, flags)
         if ret != 0:
             raise self.context.error('merge failed')
 
@@ -203,7 +209,7 @@ class DNode:
             keep_empty_containers=keep_empty_containers)
         buf = ffi.new('char **')
         fmt = data_format(fmt)
-        ret = lib.lyd_print_mem(buf, self._node, fmt, flags)
+        ret = lib.lyd_print_mem(buf, self.cdata, fmt, flags)
         if ret != 0:
             raise self.context.error('cannot print node')
         try:
@@ -226,7 +232,7 @@ class DNode:
             trim_default_values=trim_default_values,
             keep_empty_containers=keep_empty_containers)
         fmt = data_format(fmt)
-        ret = lib.lyd_print_fd(fileobj.fileno(), self._node, fmt, flags)
+        ret = lib.lyd_print_fd(fileobj.fileno(), self.cdata, fmt, flags)
         if ret != 0:
             raise self.context.error('cannot print node')
 
@@ -259,7 +265,7 @@ class DNode:
             keep_empty_containers=keep_empty_containers)
 
         def _to_dict(node, parent_dic):
-            if not lib.lyd_node_should_print(node._node, flags):
+            if not lib.lyd_node_should_print(node.cdata, flags):
                 return
             if strip_prefixes:
                 name = node.name()
@@ -328,11 +334,11 @@ class DNode:
     def free(self, with_siblings=True):
         try:
             if with_siblings:
-                lib.lyd_free_withsiblings(self._node)
+                lib.lyd_free_withsiblings(self.cdata)
             else:
-                lib.lyd_free(self._node)
+                lib.lyd_free(self.cdata)
         finally:
-            self._node = None
+            self.cdata = None
 
     def __repr__(self):
         cls = self.__class__
@@ -352,10 +358,10 @@ class DNode:
         return _decorator
 
     @classmethod
-    def new(cls, context, node_p):
-        node_p = ffi.cast('struct lyd_node *', node_p)
-        nodecls = cls.NODETYPE_CLASS.get(node_p.schema.nodetype, DNode)
-        return nodecls(context, node_p)
+    def new(cls, context, cdata):
+        cdata = ffi.cast('struct lyd_node *', cdata)
+        nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, DNode)
+        return nodecls(context, cdata)
 
 
 #------------------------------------------------------------------------------
@@ -367,7 +373,7 @@ class DContainer(DNode):
             path, parent=self, value=value, rpc_output=rpc_output)
 
     def children(self):
-        child = self._node.child
+        child = self.cdata.child
         while child:
             yield DNode.new(self.context, child)
             child = child.next
@@ -392,25 +398,30 @@ class DList(DContainer):
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
 
-    def __init__(self, context, node_p):
-        super().__init__(context, node_p)
-        self._leaf = ffi.cast('struct lyd_node_leaf_list *', node_p)
+    def __init__(self, context, cdata):
+        super().__init__(context, cdata)
+        self.cdata_leaf = ffi.cast('struct lyd_node_leaf_list *', cdata)
+
+    @property
+    def _leaf(self):
+        deprecated('_leaf', 'cdata_leaf', '2.0.0')
+        return self.cdata_leaf
 
     def value(self):
-        if self._leaf.value_type == Type.EMPTY:
+        if self.cdata_leaf.value_type == Type.EMPTY:
             return None
-        if self._leaf.value_type in Type.NUM_TYPES:
-            return int(c2str(self._leaf.value_str))
-        if self._leaf.value_type in (
+        if self.cdata_leaf.value_type in Type.NUM_TYPES:
+            return int(c2str(self.cdata_leaf.value_str))
+        if self.cdata_leaf.value_type in (
                 Type.STRING, Type.BINARY, Type.ENUM, Type.IDENT, Type.BITS):
-            return c2str(self._leaf.value_str)
-        if self._leaf.value_type == Type.DEC64:
-            return lib.lyd_dec64_to_double(self._node)
-        if self._leaf.value_type == Type.LEAFREF:
-            referenced = DNode.new(self.context, self._leaf.value.leafref)
+            return c2str(self.cdata_leaf.value_str)
+        if self.cdata_leaf.value_type == Type.DEC64:
+            return lib.lyd_dec64_to_double(self.cdata)
+        if self.cdata_leaf.value_type == Type.LEAFREF:
+            referenced = DNode.new(self.context, self.cdata_leaf.value.leafref)
             return referenced.value()
-        if self._leaf.value_type == Type.BOOL:
-            return bool(self._leaf.value.bln)
+        if self.cdata_leaf.value_type == Type.BOOL:
+            return bool(self.cdata_leaf.value.bln)
         return None
 
 
@@ -476,10 +487,10 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
                 value = str(value)
         if in_rpc_output:
             n = lib.lyd_new_output_leaf(
-                _parent, module._module, str2c(name), str2c(value))
+                _parent, module.cdata, str2c(name), str2c(value))
         else:
             n = lib.lyd_new_leaf(
-                _parent, module._module, str2c(name), str2c(value))
+                _parent, module.cdata, str2c(name), str2c(value))
         if not n:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
@@ -491,9 +502,9 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
 
     def _create_container(_parent, module, name, in_rpc_output=False):
         if in_rpc_output:
-            n = lib.lyd_new_output(_parent, module._module, str2c(name))
+            n = lib.lyd_new_output(_parent, module.cdata, str2c(name))
         else:
-            n = lib.lyd_new(_parent, module._module, str2c(name))
+            n = lib.lyd_new(_parent, module.cdata, str2c(name))
         if not n:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
@@ -508,10 +519,7 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
     schema_cache = {}
 
     def _find_schema(schema_parent, name, prefix):
-        if isinstance(schema_parent, Module):
-            cache_key = (schema_parent._module, name, prefix)
-        else:
-            cache_key = (schema_parent._node, name, prefix)
+        cache_key = (schema_parent.cdata, name, prefix)
         snode, module = schema_cache.get(cache_key, (None, None))
         if snode is not None:
             return snode, module
@@ -542,10 +550,10 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
     def _dic_keys(_dic, _schema):
         if isinstance(_schema, SList):
             # list keys must be first and in the order specified in the schema
-            list_keys = keys_cache.get(_schema._node, None)
+            list_keys = keys_cache.get(_schema.cdata, None)
             if list_keys is None:
                 list_keys = tuple(k.name() for k in _schema.keys())
-                keys_cache[_schema._node] = list_keys
+                keys_cache[_schema.cdata] = list_keys
             keys = []
             for k in list_keys:
                 if k in _dic:
@@ -609,7 +617,7 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
 
     try:
         if parent is not None:
-            _parent = parent._node
+            _parent = parent.cdata
             _schema_parent = parent.schema()
         else:
             _parent = ffi.NULL

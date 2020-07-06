@@ -28,6 +28,8 @@ LOG.addHandler(logging.NullHandler())
 #------------------------------------------------------------------------------
 class Context:
 
+    __slots__ = ('cdata',)
+
     def __init__(self, search_path=None, disable_searchdir_cwd=True,
                  pointer=None, cdata=None):
         if pointer is not None:

@@ -98,6 +98,8 @@ class DNode:
     """
     Data tree node.
     """
+    __slots__ = ('context', 'cdata')
+
     def __init__(self, context, cdata):
         """
         :arg Context context:
@@ -397,6 +399,8 @@ class DList(DContainer):
 #------------------------------------------------------------------------------
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
+
+    __slots__ = DNode.__slots__ + ('cdata_leaf',)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)

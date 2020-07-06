@@ -36,6 +36,8 @@ def schema_out_format(fmt_string):
 #------------------------------------------------------------------------------
 class Module:
 
+    __slots__ = ('context', 'cdata')
+
     def __init__(self, context, cdata):
         self.context = context
         self.cdata = cdata
@@ -162,6 +164,8 @@ class Module:
 #------------------------------------------------------------------------------
 class Revision:
 
+    __slots__ = ('context', 'cdata')
+
     def __init__(self, context, cdata):
         self.context = context
         self.cdata = cdata
@@ -206,6 +210,8 @@ class Revision:
 #------------------------------------------------------------------------------
 class Extension:
 
+    __slots__ = ('context', 'cdata', 'cdata_def')
+
     def __init__(self, context, cdata):
         self.context = context
         self.cdata = cdata
@@ -241,6 +247,8 @@ class Extension:
 
 #------------------------------------------------------------------------------
 class Type:
+
+    __slots__ = ('context', 'cdata')
 
     DER = lib.LY_TYPE_DER
     BINARY = lib.LY_TYPE_BINARY
@@ -476,6 +484,8 @@ class Type:
 #------------------------------------------------------------------------------
 class Feature:
 
+    __slots__ = ('context', 'cdata')
+
     def __init__(self, context, cdata):
         self.context = context
         self.cdata = cdata
@@ -519,6 +529,8 @@ class Feature:
 
 #------------------------------------------------------------------------------
 class IfFeatureExpr:
+
+    __slots__ = ('context', 'cdata')
 
     def __init__(self, context, cdata):
         self.context = context
@@ -588,6 +600,8 @@ class IfFeatureExprTree:
 #------------------------------------------------------------------------------
 class IfFeature(IfFeatureExprTree):
 
+    __slots__ = ('context', 'cdata')
+
     def __init__(self, context, cdata):
         self.context = context
         self.cdata = cdata
@@ -611,6 +625,8 @@ class IfFeature(IfFeatureExprTree):
 #------------------------------------------------------------------------------
 class IfNotFeature(IfFeatureExprTree):
 
+    __slots__ = ('context', 'child')
+
     def __init__(self, context, child):
         self.context = context
         self.child = child
@@ -624,6 +640,8 @@ class IfNotFeature(IfFeatureExprTree):
 
 #------------------------------------------------------------------------------
 class IfAndFeatures(IfFeatureExprTree):
+
+    __slots__ = ('context', 'a', 'b')
 
     def __init__(self, context, a, b):
         self.context = context
@@ -643,6 +661,8 @@ class IfAndFeatures(IfFeatureExprTree):
 #------------------------------------------------------------------------------
 class IfOrFeatures(IfFeatureExprTree):
 
+    __slots__ = ('context', 'a', 'b')
+
     def __init__(self, context, a, b):
         self.context = context
         self.a = a
@@ -660,6 +680,8 @@ class IfOrFeatures(IfFeatureExprTree):
 
 #------------------------------------------------------------------------------
 class SNode:
+
+    __slots__ = ('context', 'cdata')
 
     CONTAINER = lib.LYS_CONTAINER
     LEAF = lib.LYS_LEAF
@@ -797,6 +819,8 @@ class SNode:
 @SNode.register(SNode.LEAF)
 class SLeaf(SNode):
 
+    __slots__ = SNode.__slots__ + ('cdata_leaf',)
+
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
         self.cdata_leaf = ffi.cast('struct lys_node_leaf *', cdata)
@@ -832,6 +856,8 @@ class SLeaf(SNode):
 @SNode.register(SNode.LEAFLIST)
 class SLeafList(SNode):
 
+    __slots__ = SNode.__slots__ + ('cdata_leaflist',)
+
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
         self.cdata_leaflist = ffi.cast('struct lys_node_leaflist *', cdata)
@@ -866,6 +892,8 @@ class SLeafList(SNode):
 @SNode.register(SNode.CONTAINER)
 class SContainer(SNode):
 
+    __slots__ = SNode.__slots__ + ('cdata_container',)
+
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
         self.cdata_container = ffi.cast('struct lys_node_container *', cdata)
@@ -892,6 +920,8 @@ class SContainer(SNode):
 #------------------------------------------------------------------------------
 @SNode.register(SNode.LIST)
 class SList(SNode):
+
+    __slots__ = SNode.__slots__ + ('cdata_list',)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)

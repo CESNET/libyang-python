@@ -76,6 +76,8 @@ class SNodeDiff:
 #------------------------------------------------------------------------------
 class SNodeRemoved(SNodeDiff):
 
+    __slots__ = ('node',)
+
     def __init__(self, node):
         self.node = node
 
@@ -87,6 +89,8 @@ class SNodeRemoved(SNodeDiff):
 #------------------------------------------------------------------------------
 class SNodeAdded(SNodeDiff):
 
+    __slots__ = ('node',)
+
     def __init__(self, node):
         self.node = node
 
@@ -96,6 +100,8 @@ class SNodeAdded(SNodeDiff):
 
 #------------------------------------------------------------------------------
 class SNodeAttributeChanged(SNodeDiff):
+
+    __slots__ = ('old', 'new', 'value')
 
     def __init__(self, old, new, value=None):
         self.old = old

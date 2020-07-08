@@ -9,4 +9,7 @@ lint:
 tests:
 	tox -e py3-devel
 
-.PHONY: lint tests
+format:
+	tox -e format
+
+.PHONY: lint tests format

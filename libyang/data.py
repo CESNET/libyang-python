@@ -3,29 +3,22 @@
 
 import logging
 
-from _libyang import ffi
-from _libyang import lib
-
-from .schema import Module
-from .schema import SContainer
-from .schema import SLeaf
-from .schema import SLeafList
-from .schema import SList
-from .schema import SNode
-from .schema import SRpc
-from .schema import Type
-from .util import LibyangError
-from .util import c2str
-from .util import deprecated
-from .util import str2c
+from _libyang import ffi, lib
+from .schema import Module, SContainer, SLeaf, SLeafList, SList, SNode, SRpc, Type
+from .util import LibyangError, c2str, deprecated, str2c
 
 
 LOG = logging.getLogger(__name__)
 
 
-#------------------------------------------------------------------------------
-def printer_flags(with_siblings=False, pretty=False, keep_empty_containers=False,
-                  trim_default_values=False, include_implicit_defaults=False):
+# -------------------------------------------------------------------------------------
+def printer_flags(
+    with_siblings=False,
+    pretty=False,
+    keep_empty_containers=False,
+    trim_default_values=False,
+    include_implicit_defaults=False,
+):
     flags = 0
     if with_siblings:
         flags |= lib.LYP_WITHSIBLINGS
@@ -40,18 +33,18 @@ def printer_flags(with_siblings=False, pretty=False, keep_empty_containers=False
     return flags
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def data_format(fmt_string):
-    if fmt_string == 'json':
+    if fmt_string == "json":
         return lib.LYD_JSON
-    if fmt_string == 'xml':
+    if fmt_string == "xml":
         return lib.LYD_XML
-    if fmt_string == 'lyb':
+    if fmt_string == "lyb":
         return lib.LYD_LYB
-    raise ValueError('unknown data format: %r' % fmt_string)
+    raise ValueError("unknown data format: %r" % fmt_string)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def path_flags(update=False, rpc_output=False, no_parent_ret=False):
     flags = 0
     if update:
@@ -63,10 +56,20 @@ def path_flags(update=False, rpc_output=False, no_parent_ret=False):
     return flags
 
 
-#------------------------------------------------------------------------------
-def parser_flags(data=False, config=False, get=False, strict=False,
-                 trusted=False, no_yanglib=False, rpc=False, rpcreply=False,
-                 destruct=False, no_siblings=False, explicit=False):
+# -------------------------------------------------------------------------------------
+def parser_flags(
+    data=False,
+    config=False,
+    get=False,
+    strict=False,
+    trusted=False,
+    no_yanglib=False,
+    rpc=False,
+    rpcreply=False,
+    destruct=False,
+    no_siblings=False,
+    explicit=False,
+):
     flags = 0
     if data:
         flags |= lib.LYD_OPT_DATA
@@ -93,12 +96,13 @@ def parser_flags(data=False, config=False, get=False, strict=False,
     return flags
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class DNode:
     """
     Data tree node.
     """
-    __slots__ = ('context', 'cdata')
+
+    __slots__ = ("context", "cdata")
 
     def __init__(self, context, cdata):
         """
@@ -112,7 +116,7 @@ class DNode:
 
     @property
     def _node(self):
-        deprecated('_node', 'cdata', '2.0.0')
+        deprecated("_node", "cdata", "2.0.0")
         return self.cdata
 
     def name(self):
@@ -121,7 +125,7 @@ class DNode:
     def module(self):
         mod = lib.lyd_node_module(self.cdata)
         if not mod:
-            raise self.context.error('cannot get module')
+            raise self.context.error("cannot get module")
         return Module(self.context, mod)
 
     def schema(self):
@@ -163,7 +167,7 @@ class DNode:
     def find_all(self, xpath):
         node_set = lib.lyd_find_path(self.cdata, str2c(xpath))
         if not node_set:
-            raise self.context.error('cannot find path')
+            raise self.context.error("cannot find path")
         try:
             for i in range(node_set.number):
                 yield DNode.new(self.context, node_set.d[i])
@@ -177,43 +181,60 @@ class DNode:
         finally:
             lib.free(path)
 
-    def validate(self, data=False, config=False, get=False, rpc=False,
-                 rpcreply=False, no_yanglib=False):
+    def validate(
+        self,
+        data=False,
+        config=False,
+        get=False,
+        rpc=False,
+        rpcreply=False,
+        no_yanglib=False,
+    ):
         if self.cdata.parent:
-            raise self.context.error(
-                'validation is only supported on top-level nodes')
+            raise self.context.error("validation is only supported on top-level nodes")
         flags = parser_flags(
-            data=data, config=config, get=get, rpc=rpc,
-            rpcreply=rpcreply, no_yanglib=no_yanglib)
-        node_p = ffi.new('struct lyd_node **')
+            data=data,
+            config=config,
+            get=get,
+            rpc=rpc,
+            rpcreply=rpcreply,
+            no_yanglib=no_yanglib,
+        )
+        node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
         ret = lib.lyd_validate(node_p, flags, ffi.NULL)
         if ret != 0:
-            raise self.context.error('validation failed')
+            raise self.context.error("validation failed")
 
     def merge(self, source, destruct=False, no_siblings=False, explicit=False):
-        flags = parser_flags(destruct=destruct, no_siblings=no_siblings,
-                             explicit=explicit)
+        flags = parser_flags(
+            destruct=destruct, no_siblings=no_siblings, explicit=explicit
+        )
         ret = lib.lyd_merge(self.cdata, source.cdata, flags)
         if ret != 0:
-            raise self.context.error('merge failed')
+            raise self.context.error("merge failed")
 
-    def print_mem(self, fmt,
-                  with_siblings=False,
-                  pretty=False,
-                  include_implicit_defaults=False,
-                  trim_default_values=False,
-                  keep_empty_containers=False):
+    def print_mem(
+        self,
+        fmt,
+        with_siblings=False,
+        pretty=False,
+        include_implicit_defaults=False,
+        trim_default_values=False,
+        keep_empty_containers=False,
+    ):
         flags = printer_flags(
-            with_siblings=with_siblings, pretty=pretty,
+            with_siblings=with_siblings,
+            pretty=pretty,
             include_implicit_defaults=include_implicit_defaults,
             trim_default_values=trim_default_values,
-            keep_empty_containers=keep_empty_containers)
-        buf = ffi.new('char **')
+            keep_empty_containers=keep_empty_containers,
+        )
+        buf = ffi.new("char **")
         fmt = data_format(fmt)
         ret = lib.lyd_print_mem(buf, self.cdata, fmt, flags)
         if ret != 0:
-            raise self.context.error('cannot print node')
+            raise self.context.error("cannot print node")
         try:
             if fmt == lib.LYD_LYB:
                 # binary format, do not convert to unicode
@@ -222,36 +243,48 @@ class DNode:
         finally:
             lib.free(buf[0])
 
-    def print_file(self, fileobj, fmt,
-                   with_siblings=False,
-                   pretty=False,
-                   include_implicit_defaults=False,
-                   trim_default_values=False,
-                   keep_empty_containers=False):
+    def print_file(
+        self,
+        fileobj,
+        fmt,
+        with_siblings=False,
+        pretty=False,
+        include_implicit_defaults=False,
+        trim_default_values=False,
+        keep_empty_containers=False,
+    ):
         flags = printer_flags(
-            with_siblings=with_siblings, pretty=pretty,
+            with_siblings=with_siblings,
+            pretty=pretty,
             include_implicit_defaults=include_implicit_defaults,
             trim_default_values=trim_default_values,
-            keep_empty_containers=keep_empty_containers)
+            keep_empty_containers=keep_empty_containers,
+        )
         fmt = data_format(fmt)
         ret = lib.lyd_print_fd(fileobj.fileno(), self.cdata, fmt, flags)
         if ret != 0:
-            raise self.context.error('cannot print node')
+            raise self.context.error("cannot print node")
 
-    def print_dict(self, strip_prefixes=True, absolute=True,
-                   with_siblings=False, include_implicit_defaults=False,
-                   trim_default_values=False, keep_empty_containers=False):
+    def print_dict(
+        self,
+        strip_prefixes=True,
+        absolute=True,
+        with_siblings=False,
+        include_implicit_defaults=False,
+        trim_default_values=False,
+        keep_empty_containers=False,
+    ):
         """
         Convert a DNode object to a python dictionary.
 
         :arg DNode dnode:
             The data node to convert.
         :arg bool strip_prefixes:
-            If True (the default), module prefixes are stripped from dictionary
-            keys. If False, dictionary keys are in the form ``<module>:<name>``.
+            If True (the default), module prefixes are stripped from dictionary keys. If
+            False, dictionary keys are in the form ``<module>:<name>``.
         :arg bool absolute:
-            If True (the default), always return a dictionary containing the
-            complete tree starting from the root.
+            If True (the default), always return a dictionary containing the complete
+            tree starting from the root.
         :arg bool with_siblings:
             If True, include the node's siblings.
         :arg bool include_implicit_defaults:
@@ -264,7 +297,8 @@ class DNode:
         flags = printer_flags(
             include_implicit_defaults=include_implicit_defaults,
             trim_default_values=trim_default_values,
-            keep_empty_containers=keep_empty_containers)
+            keep_empty_containers=keep_empty_containers,
+        )
 
         def _to_dict(node, parent_dic):
             if not lib.lyd_node_should_print(node.cdata, flags):
@@ -272,7 +306,7 @@ class DNode:
             if strip_prefixes:
                 name = node.name()
             else:
-                name = '%s:%s' % (node.module().name(), node.name())
+                name = "%s:%s" % (node.module().name(), node.name())
             if isinstance(node, DList):
                 list_element = {}
                 for child in node:
@@ -299,12 +333,20 @@ class DNode:
             _to_dict(dnode, dic)
         return dic
 
-    def merge_data_dict(self, dic, rpc=False, rpcreply=False, strict=False,
-                        data=False, config=False, no_yanglib=False,
-                        validate=True):
+    def merge_data_dict(
+        self,
+        dic,
+        rpc=False,
+        rpcreply=False,
+        strict=False,
+        data=False,
+        config=False,
+        no_yanglib=False,
+        validate=True,
+    ):
         """
-        Merge a python dictionary into this node. The returned value is the
-        first created node.
+        Merge a python dictionary into this node. The returned value is the first
+        created node.
 
         :arg dict dic:
             The python dictionary to convert.
@@ -316,22 +358,30 @@ class DNode:
             Instead of ignoring (with a warning message) data without schema
             definition, raise an error.
         :arg bool data:
-            Complete datastore content with configuration as well as state
-            data. To handle possibly missing (but by default required)
-            ietf-yang-library data, use no_yanglib=True.
+            Complete datastore content with configuration as well as state data. To
+            handle possibly missing (but by default required) ietf-yang-library data,
+            use no_yanglib=True.
         :arg bool config:
             Complete datastore without state data.
         :arg bool no_yanglib:
-            Ignore (possibly) missing ietf-yang-library data. Applicable only
-            with data=True.
+            Ignore (possibly) missing ietf-yang-library data. Applicable only with
+            data=True.
         :arg bool validate:
-            If False, do not validate the modified tree before returning. The
-            validation is performed on the top of the modified data tree.
+            If False, do not validate the modified tree before returning. The validation
+            is performed on the top of the modified data tree.
         """
-        return dict_to_dnode(dic, self.module(), parent=self,
-                             rpc=rpc, rpcreply=rpcreply, strict=strict,
-                             data=data, config=config, no_yanglib=no_yanglib,
-                             validate=validate)
+        return dict_to_dnode(
+            dic,
+            self.module(),
+            parent=self,
+            rpc=rpc,
+            rpcreply=rpcreply,
+            strict=strict,
+            data=data,
+            config=config,
+            no_yanglib=no_yanglib,
+            validate=validate,
+        )
 
     def free(self, with_siblings=True):
         try:
@@ -344,7 +394,7 @@ class DNode:
 
     def __repr__(self):
         cls = self.__class__
-        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
 
     def __str__(self):
         return self.name()
@@ -357,22 +407,23 @@ class DNode:
             for t in nodetypes:
                 cls.NODETYPE_CLASS[t] = nodeclass
             return nodeclass
+
         return _decorator
 
     @classmethod
     def new(cls, context, cdata):
-        cdata = ffi.cast('struct lyd_node *', cdata)
+        cdata = ffi.cast("struct lyd_node *", cdata)
         nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, DNode)
         return nodecls(context, cdata)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @DNode.register(SNode.CONTAINER)
 class DContainer(DNode):
-
     def create_path(self, path, value=None, rpc_output=False):
         return self.context.create_data_path(
-            path, parent=self, value=value, rpc_output=rpc_output)
+            path, parent=self, value=value, rpc_output=rpc_output
+        )
 
     def children(self):
         child = self.cdata.child
@@ -384,31 +435,31 @@ class DContainer(DNode):
         return self.children()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @DNode.register(SNode.RPC)
 class DRpc(DContainer):
     pass
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @DNode.register(SNode.LIST)
 class DList(DContainer):
     pass
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
 
-    __slots__ = DNode.__slots__ + ('cdata_leaf',)
+    __slots__ = DNode.__slots__ + ("cdata_leaf",)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
-        self.cdata_leaf = ffi.cast('struct lyd_node_leaf_list *', cdata)
+        self.cdata_leaf = ffi.cast("struct lyd_node_leaf_list *", cdata)
 
     @property
     def _leaf(self):
-        deprecated('_leaf', 'cdata_leaf', '2.0.0')
+        deprecated("_leaf", "cdata_leaf", "2.0.0")
         return self.cdata_leaf
 
     def value(self):
@@ -417,7 +468,12 @@ class DLeaf(DNode):
         if self.cdata_leaf.value_type in Type.NUM_TYPES:
             return int(c2str(self.cdata_leaf.value_str))
         if self.cdata_leaf.value_type in (
-                Type.STRING, Type.BINARY, Type.ENUM, Type.IDENT, Type.BITS):
+            Type.STRING,
+            Type.BINARY,
+            Type.ENUM,
+            Type.IDENT,
+            Type.BITS,
+        ):
             return c2str(self.cdata_leaf.value_str)
         if self.cdata_leaf.value_type == Type.DEC64:
             return lib.lyd_dec64_to_double(self.cdata)
@@ -429,57 +485,65 @@ class DLeaf(DNode):
         return None
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @DNode.register(SNode.LEAFLIST)
 class DLeafList(DLeaf):
     pass
 
 
-#------------------------------------------------------------------------------
-def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
-                  strict=False, data=False, config=False, no_yanglib=False,
-                  validate=True):
+# -------------------------------------------------------------------------------------
+def dict_to_dnode(
+    dic,
+    module,
+    parent=None,
+    rpc=False,
+    rpcreply=False,
+    strict=False,
+    data=False,
+    config=False,
+    no_yanglib=False,
+    validate=True,
+):
     """
-    Convert a python dictionary to a DNode object given a YANG module object.
-    The return value is the first created node. If parent is not set, a
-    top-level node is returned.
+    Convert a python dictionary to a DNode object given a YANG module object. The return
+    value is the first created node. If parent is not set, a top-level node is returned.
 
     :arg dict dic:
         The python dictionary to convert.
     :arg Module module:
         The libyang Module object associated with the dictionary.
     :arg DNode parent:
-        Optional parent to update. If not specified a new top-level DNode will
-        be created.
+        Optional parent to update. If not specified a new top-level DNode will be
+        created.
     :arg bool rpc:
         Data represents RPC or action input parameters.
     :arg bool rpcreply:
         Data represents RPC or action output parameters.
     :arg bool strict:
-        Instead of ignoring (with a warning message) data without schema
-        definition, raise an error.
+        Instead of ignoring (with a warning message) data without schema definition,
+        raise an error.
     :arg bool data:
-        Complete datastore content with configuration as well as state
-        data. To handle possibly missing (but by default required)
-        ietf-yang-library data, use no_yanglib=True.
+        Complete datastore content with configuration as well as state data. To handle
+        possibly missing (but by default required) ietf-yang-library data, use
+        no_yanglib=True.
     :arg bool config:
         Complete datastore without state data.
     :arg bool no_yanglib:
-        Ignore (possibly) missing ietf-yang-library data. Applicable only
-        with data=True.
+        Ignore (possibly) missing ietf-yang-library data. Applicable only with
+        data=True.
     :arg bool validate:
-        If False, do not validate the modified tree before returning. The
-        validation is performed on the top of the data tree.
+        If False, do not validate the modified tree before returning. The validation is
+        performed on the top of the data tree.
     """
     if not dic:
         return None
 
     if not isinstance(dic, dict):
-        raise TypeError('dic argument must be a python dict')
+        raise TypeError("dic argument must be a python dict")
     if not isinstance(module, Module):
-        raise TypeError('module argument must be a Module object')
+        raise TypeError("module argument must be a Module object")
     if parent is not None and not isinstance(parent, DNode):
-        raise TypeError('parent argument must be a DNode object or None')
+        raise TypeError("parent argument must be a DNode object or None")
 
     created = []
 
@@ -491,17 +555,18 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
                 value = str(value)
         if in_rpc_output:
             n = lib.lyd_new_output_leaf(
-                _parent, module.cdata, str2c(name), str2c(value))
+                _parent, module.cdata, str2c(name), str2c(value)
+            )
         else:
-            n = lib.lyd_new_leaf(
-                _parent, module.cdata, str2c(name), str2c(value))
+            n = lib.lyd_new_leaf(_parent, module.cdata, str2c(name), str2c(value))
         if not n:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
             else:
-                parent_path = 'module %r' % module.name()
+                parent_path = "module %r" % module.name()
             raise module.context.error(
-                'failed to create leaf %r as a child of %s', name, parent_path)
+                "failed to create leaf %r as a child of %s", name, parent_path
+            )
         created.append(n)
 
     def _create_container(_parent, module, name, in_rpc_output=False):
@@ -513,10 +578,12 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
             else:
-                parent_path = 'module %r' % module.name()
+                parent_path = "module %r" % module.name()
             raise module.context.error(
-                'failed to create container/list/rpc %r as a child of %s',
-                name, parent_path)
+                "failed to create container/list/rpc %r as a child of %s",
+                name,
+                parent_path,
+            )
         created.append(n)
         return n
 
@@ -533,7 +600,7 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
             elif rpcreply:
                 schema_parent = schema_parent.output()
             else:
-                raise ValueError('rpc or rpcreply must be specified')
+                raise ValueError("rpc or rpcreply must be specified")
             if schema_parent is None:
                 # there may not be any input or any output node in the rpc
                 return None, None
@@ -568,8 +635,8 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
 
     def _to_dnode(_dic, _schema, _parent=ffi.NULL, in_rpc_output=False):
         for key in _dic_keys(_dic, _schema):
-            if ':' in key:
-                prefix, name = name.split(':')
+            if ":" in key:
+                prefix, name = name.split(":")
             else:
                 prefix, name = None, key
 
@@ -582,8 +649,8 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
                 else:
                     path = str(_schema)
                 if strict:
-                    raise LibyangError('%s: unknown element %r' % (path, key))
-                LOG.warning('%s: skipping unknown element %r', path, key)
+                    raise LibyangError("%s: unknown element %r" % (path, key))
+                LOG.warning("%s: skipping unknown element %r", path, key)
                 continue
 
             value = _dic[key]
@@ -593,8 +660,10 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
 
             elif isinstance(s, SLeafList):
                 if not isinstance(value, (list, tuple)):
-                    raise TypeError('%s: python value is not a list/tuple: %r'
-                                    % (s.schema_path(), value))
+                    raise TypeError(
+                        "%s: python value is not a list/tuple: %r"
+                        % (s.schema_path(), value)
+                    )
                 for v in value:
                     _create_leaf(_parent, module, name, v, in_rpc_output)
 
@@ -608,12 +677,16 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
 
             elif isinstance(s, SList):
                 if not isinstance(value, (list, tuple)):
-                    raise TypeError('%s: python value is not a list/tuple: %r'
-                                    % (s.schema_path(), value))
+                    raise TypeError(
+                        "%s: python value is not a list/tuple: %r"
+                        % (s.schema_path(), value)
+                    )
                 for v in value:
                     if not isinstance(v, dict):
-                        raise TypeError('%s: list element is not a dict: %r'
-                                        % (_schema.schema_path(), v))
+                        raise TypeError(
+                            "%s: list element is not a dict: %r"
+                            % (_schema.schema_path(), v)
+                        )
                     n = _create_container(_parent, module, name, in_rpc_output)
                     _to_dnode(v, s, n, in_rpc_output)
 
@@ -626,14 +699,22 @@ def dict_to_dnode(dic, module, parent=None, rpc=False, rpcreply=False,
         else:
             _parent = ffi.NULL
             _schema_parent = module
-        _to_dnode(dic, _schema_parent, _parent,
-                  in_rpc_output=rpcreply and isinstance(parent, DRpc))
+        _to_dnode(
+            dic,
+            _schema_parent,
+            _parent,
+            in_rpc_output=rpcreply and isinstance(parent, DRpc),
+        )
         if created:
             result = DNode.new(module.context, created[0])
             if validate:
                 result.root().validate(
-                    rpc=rpc, rpcreply=rpcreply, data=data,
-                    config=config, no_yanglib=no_yanglib)
+                    rpc=rpc,
+                    rpcreply=rpcreply,
+                    data=data,
+                    config=config,
+                    no_yanglib=no_yanglib,
+                )
     except:
         for c in reversed(created):
             lib.lyd_free(c)

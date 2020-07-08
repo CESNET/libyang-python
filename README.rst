@@ -6,17 +6,19 @@ Python CFFI bindings to libyang__.
 
 __ https://github.com/CESNET/libyang/
 
-|pypi-project|__ |python-versions|__ |build-status|__ |license|__
+|pypi-project|__ |python-versions|__ |build-status|__ |license|__ |code-style|__
 
 __ https://pypi.org/project/libyang
 __ https://github.com/CESNET/libyang-python/actions
 __ https://github.com/CESNET/libyang-python/actions
 __ https://github.com/CESNET/libyang-python/blob/master/LICENSE
+__ https://github.com/psf/black
 
 .. |pypi-project| image:: https://img.shields.io/pypi/v/libyang.svg
 .. |python-versions| image:: https://img.shields.io/pypi/pyversions/libyang.svg
 .. |build-status| image:: https://github.com/CESNET/libyang-python/workflows/CI/badge.svg
 .. |license| image:: https://img.shields.io/github/license/CESNET/libyang-python.svg
+.. |code-style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
 
 Installation
 ============

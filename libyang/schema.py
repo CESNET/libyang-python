@@ -1,42 +1,38 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # SPDX-License-Identifier: MIT
 
-from _libyang import ffi
-from _libyang import lib
-
-from .util import c2str
-from .util import deprecated
-from .util import str2c
+from _libyang import ffi, lib
+from .util import c2str, deprecated, str2c
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def schema_in_format(fmt_string):
-    if fmt_string == 'yang':
+    if fmt_string == "yang":
         return lib.LYS_IN_YANG
-    if fmt_string == 'yin':
+    if fmt_string == "yin":
         return lib.LYS_IN_YIN
-    raise ValueError('unknown schema input format: %r' % fmt_string)
+    raise ValueError("unknown schema input format: %r" % fmt_string)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def schema_out_format(fmt_string):
-    if fmt_string == 'yang':
+    if fmt_string == "yang":
         return lib.LYS_OUT_YANG
-    if fmt_string == 'yin':
+    if fmt_string == "yin":
         return lib.LYS_OUT_YIN
-    if fmt_string == 'tree':
+    if fmt_string == "tree":
         return lib.LYS_OUT_TREE
-    if fmt_string == 'info':
+    if fmt_string == "info":
         return lib.LYS_OUT_INFO
-    if fmt_string == 'json':
+    if fmt_string == "json":
         return lib.LYS_OUT_JSON
-    raise ValueError('unknown schema output format: %r' % fmt_string)
+    raise ValueError("unknown schema output format: %r" % fmt_string)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class Module:
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     def __init__(self, context, cdata):
         self.context = context
@@ -44,7 +40,7 @@ class Module:
 
     @property
     def _module(self):
-        deprecated('_module', 'cdata', '2.0.0')
+        deprecated("_module", "cdata", "2.0.0")
         return self.cdata
 
     def name(self):
@@ -65,23 +61,23 @@ class Module:
     def feature_enable(self, name):
         ret = lib.lys_features_enable(self.cdata, str2c(name))
         if ret != 0:
-            raise self.context.error('no such feature: %r' % name)
+            raise self.context.error("no such feature: %r" % name)
 
     def feature_enable_all(self):
-        self.feature_enable('*')
+        self.feature_enable("*")
 
     def feature_disable(self, name):
         ret = lib.lys_features_disable(self.cdata, str2c(name))
         if ret != 0:
-            raise self.context.error('no such feature: %r' % name)
+            raise self.context.error("no such feature: %r" % name)
 
     def feature_disable_all(self):
-        self.feature_disable('*')
+        self.feature_disable("*")
 
     def feature_state(self, name):
         ret = lib.lys_features_state(self.cdata, str2c(name))
         if ret < 0:
-            raise self.context.error('no such feature: %r' % name)
+            raise self.context.error("no such feature: %r" % name)
         return bool(ret)
 
     def features(self):
@@ -92,7 +88,7 @@ class Module:
         for f in self.features():
             if f.name() == name:
                 return f
-        raise self.context.error('no such feature: %r' % name)
+        raise self.context.error("no such feature: %r" % name)
 
     def revisions(self):
         for i in range(self.cdata.rev_size):
@@ -107,31 +103,38 @@ class Module:
     def __str__(self):
         return self.name()
 
-    def print_mem(self, fmt='tree', path=None):
+    def print_mem(self, fmt="tree", path=None):
         fmt = schema_out_format(fmt)
-        buf = ffi.new('char **')
+        buf = ffi.new("char **")
         ret = lib.lys_print_mem(buf, self.cdata, fmt, str2c(path), 0, 0)
         if ret != 0:
-            raise self.context.error('cannot print module')
+            raise self.context.error("cannot print module")
         try:
             return c2str(buf[0])
         finally:
             lib.free(buf[0])
 
-    def print_file(self, fileobj, fmt='tree', path=None):
+    def print_file(self, fileobj, fmt="tree", path=None):
         fmt = schema_out_format(fmt)
-        ret = lib.lys_print_fd(
-            fileobj.fileno(), self.cdata, fmt, str2c(path), 0, 0)
+        ret = lib.lys_print_fd(fileobj.fileno(), self.cdata, fmt, str2c(path), 0, 0)
         if ret != 0:
-            raise self.context.error('cannot print module')
+            raise self.context.error("cannot print module")
 
-    def parse_data_dict(self, dic, rpc=False, rpcreply=False, strict=False,
-                        data=False, config=False, no_yanglib=False,
-                        validate=True):
+    def parse_data_dict(
+        self,
+        dic,
+        rpc=False,
+        rpcreply=False,
+        strict=False,
+        data=False,
+        config=False,
+        no_yanglib=False,
+        validate=True,
+    ):
         """
-        Convert a python dictionary to a DNode object following the schema of
-        this module. The returned value is always a top-level data node (i.e.:
-        without parent).
+        Convert a python dictionary to a DNode object following the schema of this
+        module. The returned value is always a top-level data node (i.e.: without
+        parent).
 
         :arg dict dic:
             The python dictionary to convert.
@@ -140,31 +143,40 @@ class Module:
         :arg bool rpcreply:
             Data represents RPC or action output parameters.
         :arg bool strict:
-            Instead of ignoring (with a warning message) data without schema
-            definition, raise an error.
+            Instead of ignoring (with a warning message) data without schema definition,
+            raise an error.
         :arg bool data:
-            Complete datastore content with configuration as well as state
-            data. To handle possibly missing (but by default required)
-            ietf-yang-library data, use no_yanglib=True.
+            Complete datastore content with configuration as well as state data. To
+            handle possibly missing (but by default required) ietf-yang-library data,
+            use no_yanglib=True.
         :arg bool config:
             Complete datastore without state data.
         :arg bool no_yanglib:
-            Ignore (possibly) missing ietf-yang-library data. Applicable only
-            with data=True.
+            Ignore (possibly) missing ietf-yang-library data. Applicable only with
+            data=True.
         :arg bool validate:
             If False, do not validate the created data tree.
         """
         from .data import dict_to_dnode  # circular import
-        return dict_to_dnode(dic, self, parent=None,
-                             rpc=rpc, rpcreply=rpcreply, strict=strict,
-                             data=data, config=config, no_yanglib=no_yanglib,
-                             validate=validate)
+
+        return dict_to_dnode(
+            dic,
+            self,
+            parent=None,
+            rpc=rpc,
+            rpcreply=rpcreply,
+            strict=strict,
+            data=data,
+            config=config,
+            no_yanglib=no_yanglib,
+            validate=validate,
+        )
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class Revision:
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     def __init__(self, context, cdata):
         self.context = context
@@ -172,7 +184,7 @@ class Revision:
 
     @property
     def _rev(self):
-        deprecated('_rev', 'cdata', '2.0.0')
+        deprecated("_rev", "cdata", "2.0.0")
         return self.cdata
 
     def date(self):
@@ -201,29 +213,29 @@ class Revision:
 
     def __repr__(self):
         cls = self.__class__
-        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
 
     def __str__(self):
         return self.date()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class Extension:
 
-    __slots__ = ('context', 'cdata', 'cdata_def')
+    __slots__ = ("context", "cdata", "cdata_def")
 
     def __init__(self, context, cdata):
         self.context = context
         self.cdata = cdata
-        self.cdata_def = getattr(cdata, 'def')
+        self.cdata_def = getattr(cdata, "def")
 
     @property
     def _ext(self):
-        deprecated('_ext', 'cdata', '2.0.0')
+        deprecated("_ext", "cdata", "2.0.0")
 
     @property
     def _def(self):
-        deprecated('_def', 'cdata_def', '2.0.0')
+        deprecated("_def", "cdata_def", "2.0.0")
 
     def name(self):
         return c2str(self.cdata_def.name)
@@ -234,21 +246,21 @@ class Extension:
     def module(self):
         module_p = lib.lys_main_module(self.cdata_def.module)
         if not module_p:
-            raise self.context.error('cannot get module')
+            raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
     def __repr__(self):
         cls = self.__class__
-        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
 
     def __str__(self):
         return self.name()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class Type:
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     DER = lib.LY_TYPE_DER
     BINARY = lib.LY_TYPE_BINARY
@@ -271,26 +283,26 @@ class Type:
     INT64 = lib.LY_TYPE_INT64
     UINT64 = lib.LY_TYPE_UINT64
     BASENAMES = {
-        DER: 'derived',
-        BINARY: 'binary',
-        BITS: 'bits',
-        BOOL: 'boolean',
-        DEC64: 'decimal64',
-        EMPTY: 'empty',
-        ENUM: 'enumeration',
-        IDENT: 'identityref',
-        INST: 'instance-id',
-        LEAFREF: 'leafref',
-        STRING: 'string',
-        UNION: 'union',
-        INT8: 'int8',
-        UINT8: 'uint8',
-        INT16: 'int16',
-        UINT16: 'uint16',
-        INT32: 'int32',
-        UINT32: 'uint32',
-        INT64: 'int64',
-        UINT64: 'uint64',
+        DER: "derived",
+        BINARY: "binary",
+        BITS: "bits",
+        BOOL: "boolean",
+        DEC64: "decimal64",
+        EMPTY: "empty",
+        ENUM: "enumeration",
+        IDENT: "identityref",
+        INST: "instance-id",
+        LEAFREF: "leafref",
+        STRING: "string",
+        UNION: "union",
+        INT8: "int8",
+        UINT8: "uint8",
+        INT16: "int16",
+        UINT16: "uint16",
+        INT32: "int32",
+        UINT32: "uint32",
+        INT64: "int64",
+        UINT64: "uint64",
     }
 
     def __init__(self, context, cdata):
@@ -299,7 +311,7 @@ class Type:
 
     @property
     def _type(self):
-        deprecated('_type', 'cdata', '2.0.0')
+        deprecated("_type", "cdata", "2.0.0")
         return self.cdata
 
     def get_bases(self):
@@ -331,7 +343,7 @@ class Type:
             yield b.base()
 
     def basename(self):
-        return self.BASENAMES.get(self.cdata.base, 'unknown')
+        return self.BASENAMES.get(self.cdata.base, "unknown")
 
     def basenames(self):
         for b in self.get_bases():
@@ -385,8 +397,7 @@ class Type:
         for b in self.get_bases():
             yield from b.bits()
 
-    NUM_TYPES = frozenset(
-        (INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
+    NUM_TYPES = frozenset((INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
 
     def range(self):
         if self.cdata.base in self.NUM_TYPES and self.cdata.info.num.range:
@@ -431,9 +442,8 @@ class Type:
             p = self.cdata.info.str.patterns[i]
             if not p:
                 continue
-            # in case of pattern restriction, the first byte has a special
-            # meaning: 0x06 (ACK) for regular match and 0x15 (NACK) for
-            # invert-match
+            # in case of pattern restriction, the first byte has a special meaning:
+            # 0x06 (ACK) for regular match and 0x15 (NACK) for invert-match
             invert_match = p.expr[0] == 0x15
             # yield tuples like:
             #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
@@ -452,7 +462,7 @@ class Type:
     def module(self):
         module_p = lib.lys_main_module(self.cdata.der.module)
         if not module_p:
-            raise self.context.error('cannot get module')
+            raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
     def extensions(self):
@@ -475,16 +485,16 @@ class Type:
 
     def __repr__(self):
         cls = self.__class__
-        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
 
     def __str__(self):
         return self.name()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class Feature:
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     def __init__(self, context, cdata):
         self.context = context
@@ -492,7 +502,7 @@ class Feature:
 
     @property
     def _feature(self):
-        deprecated('_feature', 'cdata', '2.0.0')
+        deprecated("_feature", "cdata", "2.0.0")
         return self.cdata
 
     def name(self):
@@ -520,17 +530,17 @@ class Feature:
     def module(self):
         module_p = lib.lys_main_module(self.cdata.module)
         if not module_p:
-            raise self.context.error('cannot get module')
+            raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
     def __str__(self):
         return self.name()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class IfFeatureExpr:
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     def __init__(self, context, cdata):
         self.context = context
@@ -538,12 +548,12 @@ class IfFeatureExpr:
 
     @property
     def _iffeature(self):
-        deprecated('_iffeature', 'cdata', '2.0.0')
+        deprecated("_iffeature", "cdata", "2.0.0")
         return self.cdata
 
     def _get_operator(self, position):
-        # the ->exp field is a 2bit array of operator values stored under
-        # a uint8_t C array.
+        # the ->exp field is a 2bit array of operator values stored under a uint8_t C
+        # array.
         mask = 0x3  # 2bits mask
         shift = 2 * (position % 4)
         item = self.cdata.expr[position // 4]
@@ -578,18 +588,18 @@ class IfFeatureExpr:
             if op in (IfAndFeatures, IfOrFeatures):
                 return op(self.context, _tree(operands), _tree(operands))
             return op
+
         return _tree(self._operands())
 
     def dump(self):
         return self.tree().dump()
 
     def __str__(self):
-        return str(self.tree()).strip('()')
+        return str(self.tree()).strip("()")
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class IfFeatureExprTree:
-
     def dump(self, indent=0):
         raise NotImplementedError()
 
@@ -597,10 +607,10 @@ class IfFeatureExprTree:
         raise NotImplementedError()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class IfFeature(IfFeatureExprTree):
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     def __init__(self, context, cdata):
         self.context = context
@@ -608,7 +618,7 @@ class IfFeature(IfFeatureExprTree):
 
     @property
     def _feature(self):
-        deprecated('_feature', 'cdata', '2.0.0')
+        deprecated("_feature", "cdata", "2.0.0")
         return self.cdata
 
     def feature(self):
@@ -616,32 +626,32 @@ class IfFeature(IfFeatureExprTree):
 
     def dump(self, indent=0):
         feat = self.feature()
-        return '%s%s [%s]\n' % (' ' * indent, feat.name(), feat.description())
+        return "%s%s [%s]\n" % (" " * indent, feat.name(), feat.description())
 
     def __str__(self):
         return self.feature().name()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class IfNotFeature(IfFeatureExprTree):
 
-    __slots__ = ('context', 'child')
+    __slots__ = ("context", "child")
 
     def __init__(self, context, child):
         self.context = context
         self.child = child
 
     def dump(self, indent=0):
-        return ' ' * indent + 'NOT\n' + self.child.dump(indent + 1)
+        return " " * indent + "NOT\n" + self.child.dump(indent + 1)
 
     def __str__(self):
-        return 'NOT %s' % self.child
+        return "NOT %s" % self.child
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class IfAndFeatures(IfFeatureExprTree):
 
-    __slots__ = ('context', 'a', 'b')
+    __slots__ = ("context", "a", "b")
 
     def __init__(self, context, a, b):
         self.context = context
@@ -649,19 +659,19 @@ class IfAndFeatures(IfFeatureExprTree):
         self.b = b
 
     def dump(self, indent=0):
-        s = ' ' * indent + 'AND\n'
+        s = " " * indent + "AND\n"
         s += self.a.dump(indent + 1)
         s += self.b.dump(indent + 1)
         return s
 
     def __str__(self):
-        return '%s AND %s' % (self.a, self.b)
+        return "%s AND %s" % (self.a, self.b)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class IfOrFeatures(IfFeatureExprTree):
 
-    __slots__ = ('context', 'a', 'b')
+    __slots__ = ("context", "a", "b")
 
     def __init__(self, context, a, b):
         self.context = context
@@ -669,19 +679,19 @@ class IfOrFeatures(IfFeatureExprTree):
         self.b = b
 
     def dump(self, indent=0):
-        s = ' ' * indent + 'OR\n'
+        s = " " * indent + "OR\n"
         s += self.a.dump(indent + 1)
         s += self.b.dump(indent + 1)
         return s
 
     def __str__(self):
-        return '(%s OR %s)' % (self.a, self.b)
+        return "(%s OR %s)" % (self.a, self.b)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class SNode:
 
-    __slots__ = ('context', 'cdata')
+    __slots__ = ("context", "cdata")
 
     CONTAINER = lib.LYS_CONTAINER
     LEAF = lib.LYS_LEAF
@@ -691,13 +701,13 @@ class SNode:
     INPUT = lib.LYS_INPUT
     OUTPUT = lib.LYS_OUTPUT
     KEYWORDS = {
-        CONTAINER: 'container',
-        LEAF: 'leaf',
-        LEAFLIST: 'leaf-list',
-        LIST: 'list',
-        RPC: 'rpc',
-        INPUT: 'input',
-        OUTPUT: 'output',
+        CONTAINER: "container",
+        LEAF: "leaf",
+        LEAFLIST: "leaf-list",
+        LIST: "list",
+        RPC: "rpc",
+        INPUT: "input",
+        OUTPUT: "output",
     }
 
     def __init__(self, context, cdata):
@@ -706,20 +716,20 @@ class SNode:
 
     @property
     def _node(self):
-        deprecated('_node', 'cdata', '2.0.0')
+        deprecated("_node", "cdata", "2.0.0")
         return self.cdata
 
     def nodetype(self):
         return self.cdata.nodetype
 
     def keyword(self):
-        return self.KEYWORDS.get(self.cdata.nodetype, '???')
+        return self.KEYWORDS.get(self.cdata.nodetype, "???")
 
     def name(self):
         return c2str(self.cdata.name)
 
     def fullname(self):
-        return '%s:%s' % (self.module().name(), self.name())
+        return "%s:%s" % (self.module().name(), self.name())
 
     def description(self):
         return c2str(self.cdata.dsc)
@@ -741,15 +751,15 @@ class SNode:
 
     def status(self):
         if self.cdata.flags & lib.LYS_STATUS_OBSLT:
-            return 'obsolete'
+            return "obsolete"
         if self.cdata.flags & lib.LYS_STATUS_DEPRC:
-            return 'deprecated'
-        return 'current'
+            return "deprecated"
+        return "current"
 
     def module(self):
         module_p = lib.lys_node_module(self.cdata)
         if not module_p:
-            raise self.context.error('cannot get module')
+            raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
     def schema_path(self):
@@ -795,7 +805,7 @@ class SNode:
 
     def __repr__(self):
         cls = self.__class__
-        return '<%s.%s: %s>' % (cls.__module__, cls.__name__, str(self))
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
 
     def __str__(self):
         return self.name()
@@ -807,6 +817,7 @@ class SNode:
         def _decorator(nodeclass):
             cls.NODETYPE_CLASS[nodetype] = nodeclass
             return nodeclass
+
         return _decorator
 
     @classmethod
@@ -815,19 +826,19 @@ class SNode:
         return nodecls(context, cdata)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @SNode.register(SNode.LEAF)
 class SLeaf(SNode):
 
-    __slots__ = SNode.__slots__ + ('cdata_leaf',)
+    __slots__ = SNode.__slots__ + ("cdata_leaf",)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
-        self.cdata_leaf = ffi.cast('struct lys_node_leaf *', cdata)
+        self.cdata_leaf = ffi.cast("struct lys_node_leaf *", cdata)
 
     @property
     def _leaf(self):
-        deprecated('_leaf', 'cdata_leaf', '2.0.0')
+        deprecated("_leaf", "cdata_leaf", "2.0.0")
         return self.cdata_leaf
 
     def default(self):
@@ -849,22 +860,22 @@ class SLeaf(SNode):
             yield c2str(self.cdata_leaf.must[i].expr)
 
     def __str__(self):
-        return '%s %s' % (self.name(), self.type().name())
+        return "%s %s" % (self.name(), self.type().name())
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @SNode.register(SNode.LEAFLIST)
 class SLeafList(SNode):
 
-    __slots__ = SNode.__slots__ + ('cdata_leaflist',)
+    __slots__ = SNode.__slots__ + ("cdata_leaflist",)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
-        self.cdata_leaflist = ffi.cast('struct lys_node_leaflist *', cdata)
+        self.cdata_leaflist = ffi.cast("struct lys_node_leaflist *", cdata)
 
     @property
     def _leaflist(self):
-        deprecated('_leaflist', 'cdata_leaflist', '2.0.0')
+        deprecated("_leaflist", "cdata_leaflist", "2.0.0")
         return self.cdata_leaflist
 
     def ordered(self):
@@ -885,22 +896,22 @@ class SLeafList(SNode):
             yield c2str(self.cdata_leaflist.must[i].expr)
 
     def __str__(self):
-        return '%s %s' % (self.name(), self.type().name())
+        return "%s %s" % (self.name(), self.type().name())
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @SNode.register(SNode.CONTAINER)
 class SContainer(SNode):
 
-    __slots__ = SNode.__slots__ + ('cdata_container',)
+    __slots__ = SNode.__slots__ + ("cdata_container",)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
-        self.cdata_container = ffi.cast('struct lys_node_container *', cdata)
+        self.cdata_container = ffi.cast("struct lys_node_container *", cdata)
 
     @property
     def _container(self):
-        deprecated('_container', 'cdata_container', '2.0.0')
+        deprecated("_container", "cdata_container", "2.0.0")
         return self.cdata_container
 
     def presence(self):
@@ -917,19 +928,19 @@ class SContainer(SNode):
         return iter_children(self.context, self.cdata, types=types)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @SNode.register(SNode.LIST)
 class SList(SNode):
 
-    __slots__ = SNode.__slots__ + ('cdata_list',)
+    __slots__ = SNode.__slots__ + ("cdata_list",)
 
     def __init__(self, context, cdata):
         super().__init__(context, cdata)
-        self.cdata_list = ffi.cast('struct lys_node_list *', cdata)
+        self.cdata_list = ffi.cast("struct lys_node_list *", cdata)
 
     @property
     def _list(self):
-        deprecated('_list', 'cdata_list', '2.0.0')
+        deprecated("_list", "cdata_list", "2.0.0")
         return self.cdata_list
 
     def ordered(self):
@@ -939,12 +950,11 @@ class SList(SNode):
         return self.children()
 
     def children(self, skip_keys=False, types=None):
-        return iter_children(
-            self.context, self.cdata, skip_keys=skip_keys, types=types)
+        return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
 
     def keys(self):
         for i in range(self.cdata_list.keys_size):
-            node = ffi.cast('struct lys_node *', self.cdata_list.keys[i])
+            node = ffi.cast("struct lys_node *", self.cdata_list.keys[i])
             yield SLeaf(self.context, node)
 
     def must_conditions(self):
@@ -952,15 +962,13 @@ class SList(SNode):
             yield c2str(self.cdata_list.must[i].expr)
 
     def __str__(self):
-        return '%s [%s]' % (
-            self.name(), ', '.join(k.name() for k in self.keys()))
+        return "%s [%s]" % (self.name(), ", ".join(k.name() for k in self.keys()))
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @SNode.register(SNode.INPUT)
 @SNode.register(SNode.OUTPUT)
 class SRpcInOut(SNode):
-
     def __iter__(self):
         return self.children()
 
@@ -971,26 +979,35 @@ class SRpcInOut(SNode):
         return iter_children(self.context, self.cdata, types=types)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 @SNode.register(SNode.RPC)
 class SRpc(SNode):
-
     def must_conditions(self):
         return ()
 
     def input(self):
         try:
-            return next(iter_children(
-                self.context, self.cdata, types=(self.INPUT,),
-                options=lib.LYS_GETNEXT_WITHINOUT))
+            return next(
+                iter_children(
+                    self.context,
+                    self.cdata,
+                    types=(self.INPUT,),
+                    options=lib.LYS_GETNEXT_WITHINOUT,
+                )
+            )
         except StopIteration:
             return None
 
     def output(self):
         try:
-            return next(iter_children(
-                self.context, self.cdata, types=(self.OUTPUT,),
-                options=lib.LYS_GETNEXT_WITHINOUT))
+            return next(
+                iter_children(
+                    self.context,
+                    self.cdata,
+                    types=(self.OUTPUT,),
+                    options=lib.LYS_GETNEXT_WITHINOUT,
+                )
+            )
         except StopIteration:
             return None
 
@@ -1001,11 +1018,16 @@ class SRpc(SNode):
         return iter_children(self.context, self.cdata, types=types)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def iter_children(context, parent, skip_keys=False, types=None, options=0):
     if types is None:
-        types = (lib.LYS_CONTAINER, lib.LYS_LIST, lib.LYS_RPC,
-                 lib.LYS_LEAF, lib.LYS_LEAFLIST)
+        types = (
+            lib.LYS_CONTAINER,
+            lib.LYS_LIST,
+            lib.LYS_RPC,
+            lib.LYS_LEAF,
+            lib.LYS_LEAFLIST,
+        )
 
     def _skip(node):
         if node.nodetype not in types:
@@ -1014,12 +1036,12 @@ def iter_children(context, parent, skip_keys=False, types=None, options=0):
             return False
         if node.nodetype != lib.LYS_LEAF:
             return False
-        leaf = ffi.cast('struct lys_node_leaf *', node)
+        leaf = ffi.cast("struct lys_node_leaf *", node)
         if lib.lys_is_key(leaf, ffi.NULL):
             return True
         return False
 
-    if ffi.typeof(parent) == ffi.typeof('struct lys_module *'):
+    if ffi.typeof(parent) == ffi.typeof("struct lys_module *"):
         module = parent
         parent = ffi.NULL
     else:
@@ -1032,7 +1054,7 @@ def iter_children(context, parent, skip_keys=False, types=None, options=0):
         child = lib.lys_getnext(child, parent, module, options)
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 # compat
 Container = SContainer
 Leaf = SLeaf

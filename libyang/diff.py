@@ -1,39 +1,34 @@
 # Copyright (c) 2019 6WIND
 # SPDX-License-Identifier: MIT
 
-from .schema import SContainer
-from .schema import SLeaf
-from .schema import SLeafList
-from .schema import SList
-from .schema import SRpc
-from .schema import SRpcInOut
+from .schema import SContainer, SLeaf, SLeafList, SList, SRpc, SRpcInOut
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def schema_diff(ctx_old, ctx_new, exclude_node_cb=None):
     """
-    Compare two libyang :cls:`.Context` objects, for a given set of paths and
-    return all differences.
+    Compare two `libyang.Context` objects, for a given set of paths and return all
+    differences.
 
     :arg Context ctx_old:
         The first context.
     :arg Context ctx_new:
         The second context.
     :arg <func> exclude_node_cb:
-        Optionnal user callback that will be called with each node that is
-        found in each context. If the callback returns a "trueish" value, the
-        node will be excluded from the diff (as well as all its children).
+        Optionnal user callback that will be called with each node that is found in each
+        context. If the callback returns a "trueish" value, the node will be excluded
+        from the diff (as well as all its children).
 
     :return:
-        An iterator that yield :cls:`.SNodeDiff` objects.
+        An iterator that yield `SNodeDiff` objects.
     """
     if exclude_node_cb is None:
         exclude_node_cb = lambda n: False
 
     def flatten(node, dic):
         """
-        Flatten a node and all its children into a dict (indexed by their
-        schema xpath). This function is recursive.
+        Flatten a node and all its children into a dict (indexed by their schema xpath).
+        This function is recursive.
         """
         if exclude_node_cb(node):
             return
@@ -68,40 +63,43 @@ def schema_diff(ctx_old, ctx_new, exclude_node_cb=None):
         yield from diffs[path]
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class SNodeDiff:
     pass
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class SNodeRemoved(SNodeDiff):
 
-    __slots__ = ('node',)
+    __slots__ = ("node",)
 
     def __init__(self, node):
         self.node = node
 
     def __str__(self):
-        return '-%s: removed status=%s %s' % (
-            self.node.schema_path(), self.node.status(), self.node.keyword())
+        return "-%s: removed status=%s %s" % (
+            self.node.schema_path(),
+            self.node.status(),
+            self.node.keyword(),
+        )
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class SNodeAdded(SNodeDiff):
 
-    __slots__ = ('node',)
+    __slots__ = ("node",)
 
     def __init__(self, node):
         self.node = node
 
     def __str__(self):
-        return '+%s: added %s' % (self.node.schema_path(), self.node.keyword())
+        return "+%s: added %s" % (self.node.schema_path(), self.node.keyword())
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class SNodeAttributeChanged(SNodeDiff):
 
-    __slots__ = ('old', 'new', 'value')
+    __slots__ = ("old", "new", "value")
 
     def __init__(self, old, new, value=None):
         self.old = old
@@ -109,57 +107,163 @@ class SNodeAttributeChanged(SNodeDiff):
         self.value = value
 
     def __str__(self):
-        if self.__class__.__name__.endswith('Added'):
-            sign = '+'
+        if self.__class__.__name__.endswith("Added"):
+            sign = "+"
         else:
-            sign = '-'
-        s = '%s%s: %s' % (sign, self.new.schema_path(), self.__class__.__name__)
+            sign = "-"
+        s = "%s%s: %s" % (sign, self.new.schema_path(), self.__class__.__name__)
         if self.value is not None:
-            str_val = str(self.value).replace('"', '\\"').replace('\n', '\\n')
+            str_val = str(self.value).replace('"', '\\"').replace("\n", "\\n")
             s += ' "%s"' % str_val
         return s
 
 
-#------------------------------------------------------------------------------
-class BaseTypeRemoved(SNodeAttributeChanged): pass
-class BaseTypeAdded(SNodeAttributeChanged): pass
-class BitRemoved(SNodeAttributeChanged): pass
-class BitAdded(SNodeAttributeChanged): pass
-class ConfigFalseRemoved(SNodeAttributeChanged): pass
-class ConfigFalseAdded(SNodeAttributeChanged): pass
-class DefaultRemoved(SNodeAttributeChanged): pass
-class DefaultAdded(SNodeAttributeChanged): pass
-class DescriptionRemoved(SNodeAttributeChanged): pass
-class DescriptionAdded(SNodeAttributeChanged): pass
-class EnumRemoved(SNodeAttributeChanged): pass
-class EnumAdded(SNodeAttributeChanged): pass
-class ExtensionRemoved(SNodeAttributeChanged): pass
-class ExtensionAdded(SNodeAttributeChanged): pass
-class KeyRemoved(SNodeAttributeChanged): pass
-class KeyAdded(SNodeAttributeChanged): pass
-class MandatoryRemoved(SNodeAttributeChanged): pass
-class MandatoryAdded(SNodeAttributeChanged): pass
-class MustRemoved(SNodeAttributeChanged): pass
-class MustAdded(SNodeAttributeChanged): pass
-class NodeTypeAdded(SNodeAttributeChanged): pass
-class NodeTypeRemoved(SNodeAttributeChanged): pass
-class RangeRemoved(SNodeAttributeChanged): pass
-class RangeAdded(SNodeAttributeChanged): pass
-class OrderedByUserRemoved(SNodeAttributeChanged): pass
-class OrderedByUserAdded(SNodeAttributeChanged): pass
-class PresenceRemoved(SNodeAttributeChanged): pass
-class PresenceAdded(SNodeAttributeChanged): pass
-class StatusRemoved(SNodeAttributeChanged): pass
-class StatusAdded(SNodeAttributeChanged): pass
-class LengthRemoved(SNodeAttributeChanged): pass
-class LengthAdded(SNodeAttributeChanged): pass
-class PatternRemoved(SNodeAttributeChanged): pass
-class PatternAdded(SNodeAttributeChanged): pass
-class UnitsRemoved(SNodeAttributeChanged): pass
-class UnitsAdded(SNodeAttributeChanged): pass  # noqa: E302, E701
+# -------------------------------------------------------------------------------------
+class BaseTypeRemoved(SNodeAttributeChanged):
+    pass
 
 
-#------------------------------------------------------------------------------
+class BaseTypeAdded(SNodeAttributeChanged):
+    pass
+
+
+class BitRemoved(SNodeAttributeChanged):
+    pass
+
+
+class BitAdded(SNodeAttributeChanged):
+    pass
+
+
+class ConfigFalseRemoved(SNodeAttributeChanged):
+    pass
+
+
+class ConfigFalseAdded(SNodeAttributeChanged):
+    pass
+
+
+class DefaultRemoved(SNodeAttributeChanged):
+    pass
+
+
+class DefaultAdded(SNodeAttributeChanged):
+    pass
+
+
+class DescriptionRemoved(SNodeAttributeChanged):
+    pass
+
+
+class DescriptionAdded(SNodeAttributeChanged):
+    pass
+
+
+class EnumRemoved(SNodeAttributeChanged):
+    pass
+
+
+class EnumAdded(SNodeAttributeChanged):
+    pass
+
+
+class ExtensionRemoved(SNodeAttributeChanged):
+    pass
+
+
+class ExtensionAdded(SNodeAttributeChanged):
+    pass
+
+
+class KeyRemoved(SNodeAttributeChanged):
+    pass
+
+
+class KeyAdded(SNodeAttributeChanged):
+    pass
+
+
+class MandatoryRemoved(SNodeAttributeChanged):
+    pass
+
+
+class MandatoryAdded(SNodeAttributeChanged):
+    pass
+
+
+class MustRemoved(SNodeAttributeChanged):
+    pass
+
+
+class MustAdded(SNodeAttributeChanged):
+    pass
+
+
+class NodeTypeAdded(SNodeAttributeChanged):
+    pass
+
+
+class NodeTypeRemoved(SNodeAttributeChanged):
+    pass
+
+
+class RangeRemoved(SNodeAttributeChanged):
+    pass
+
+
+class RangeAdded(SNodeAttributeChanged):
+    pass
+
+
+class OrderedByUserRemoved(SNodeAttributeChanged):
+    pass
+
+
+class OrderedByUserAdded(SNodeAttributeChanged):
+    pass
+
+
+class PresenceRemoved(SNodeAttributeChanged):
+    pass
+
+
+class PresenceAdded(SNodeAttributeChanged):
+    pass
+
+
+class StatusRemoved(SNodeAttributeChanged):
+    pass
+
+
+class StatusAdded(SNodeAttributeChanged):
+    pass
+
+
+class LengthRemoved(SNodeAttributeChanged):
+    pass
+
+
+class LengthAdded(SNodeAttributeChanged):
+    pass
+
+
+class PatternRemoved(SNodeAttributeChanged):
+    pass
+
+
+class PatternAdded(SNodeAttributeChanged):
+    pass
+
+
+class UnitsRemoved(SNodeAttributeChanged):
+    pass
+
+
+class UnitsAdded(SNodeAttributeChanged):
+    pass
+
+
+# -------------------------------------------------------------------------------------
 def snode_changes(old, new):
 
     if old.nodetype() != new.nodetype():
@@ -207,9 +311,9 @@ def snode_changes(old, new):
             yield ExtensionRemoved(old, new, old_exts[k])
             yield ExtensionAdded(old, new, new_exts[k])
 
-    if (isinstance(old, SLeaf) and isinstance(new, SLeaf)) or \
-            (isinstance(old, SLeafList) and isinstance(new, SLeafList)):
-
+    if (isinstance(old, SLeaf) and isinstance(new, SLeaf)) or (
+        isinstance(old, SLeafList) and isinstance(new, SLeafList)
+    ):
         old_bases = set(old.type().basenames())
         new_bases = set(new.type().basenames())
         for b in old_bases - new_bases:
@@ -230,17 +334,16 @@ def snode_changes(old, new):
         for l in new_lengths - old_lengths:
             yield LengthAdded(old, new, l)
 
-        # Multiple "pattern" statements on a single type are ANDed together
-        # (i.e. they must all match). However, when a leaf type is an union of
-        # multiple string typedefs with individual "pattern" statements, the
-        # patterns are ORed together (i.e. one of them must match).
+        # Multiple "pattern" statements on a single type are ANDed together (i.e. they
+        # must all match). However, when a leaf type is an union of multiple string
+        # typedefs with individual "pattern" statements, the patterns are ORed together
+        # (i.e. one of them must match).
         #
-        # This is not handled properly here as we flatten all patterns in a
-        # single set and consider there is a difference if we remove/add one of
-        # them.
+        # This is not handled properly here as we flatten all patterns in a single set
+        # and consider there is a difference if we remove/add one of them.
         #
-        # The difference does not hold any information about which union branch
-        # it relates to. This is way too complex.
+        # The difference does not hold any information about which union branch it
+        # relates to. This is way too complex.
         old_patterns = set(old.type().all_patterns())
         new_patterns = set(new.type().all_patterns())
         for p in old_patterns - new_patterns:

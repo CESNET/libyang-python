@@ -12,14 +12,15 @@ import setuptools
 import setuptools.command.sdist
 
 
-#------------------------------------------------------------------------------
-if os.environ.get('LIBYANG_INSTALL', 'system') == 'embed':
+# -------------------------------------------------------------------------------------
+if os.environ.get("LIBYANG_INSTALL", "system") == "embed":
     raise NotImplementedError(
-        'LIBYANG_INSTALL=embed is no longer supported. '
-        'Please install libyang separately first.')
+        "LIBYANG_INSTALL=embed is no longer supported. "
+        "Please install libyang separately first."
+    )
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def git_describe_to_pep440(version):
     """
     ``git describe`` produces versions in the form: `v0.9.8-20-gf0f45ca` where
@@ -28,35 +29,36 @@ def git_describe_to_pep440(version):
     version 0.9.9.dev20 (increment last digit and add dev before 20)
     """
     match = re.search(
-        r'''
+        r"""
         v(?P<major>\d+)\.
         (?P<minor>\d+)\.
         (?P<patch>\d+)
         (\.post(?P<post>\d+))?
         (-(?P<dev>\d+))?(-g(?P<commit>.+))?
-        ''',
+        """,
         version,
-        flags=re.VERBOSE)
+        flags=re.VERBOSE,
+    )
     if not match:
-        raise ValueError('unknown tag format')
+        raise ValueError("unknown tag format")
     dic = {
-        'major': int(match.group('major')),
-        'minor': int(match.group('minor')),
-        'patch': int(match.group('patch')),
+        "major": int(match.group("major")),
+        "minor": int(match.group("minor")),
+        "patch": int(match.group("patch")),
     }
-    fmt = '{major}.{minor}.{patch}'
-    if match.group('dev'):
-        dic['patch'] += 1
-        dic['dev'] = int(match.group('dev'))
-        fmt += '.dev{dev}'
-    elif match.group('post'):
-        dic['post'] = int(match.group('post'))
-        fmt += '.post{post}'
+    fmt = "{major}.{minor}.{patch}"
+    if match.group("dev"):
+        dic["patch"] += 1
+        dic["dev"] = int(match.group("dev"))
+        fmt += ".dev{dev}"
+    elif match.group("post"):
+        dic["post"] = int(match.group("post"))
+        fmt += ".post{post}"
     return fmt.format(**dic)
 
 
-#------------------------------------------------------------------------------
-def get_version_from_archive_id(git_archive_id='$Format:%ct %d$'):
+# -------------------------------------------------------------------------------------
+def get_version_from_archive_id(git_archive_id="$Format:%ct %d$"):
     """
     Extract the tag if a source is from git archive.
 
@@ -69,12 +71,12 @@ def get_version_from_archive_id(git_archive_id='$Format:%ct %d$'):
     See man gitattributes(5) and git-log(1) (PRETTY FORMATS) for more details.
     """
     # mangle the magic string to make sure it is not replaced by git archive
-    if git_archive_id.startswith('$For''mat:'):
-        raise ValueError('source was not modified by git archive')
+    if git_archive_id.startswith("$For" "mat:"):
+        raise ValueError("source was not modified by git archive")
 
     # source was modified by git archive, try to parse the version from
     # the value of git_archive_id
-    match = re.search(r'tag:\s*v([^,)]+)', git_archive_id)
+    match = re.search(r"tag:\s*v([^,)]+)", git_archive_id)
     if match:
         # archived revision is tagged, use the tag
         return git_describe_to_pep440(match.group(1))
@@ -82,19 +84,19 @@ def get_version_from_archive_id(git_archive_id='$Format:%ct %d$'):
     # archived revision is not tagged, use the commit date
     tstamp = git_archive_id.strip().split()[0]
     d = datetime.datetime.utcfromtimestamp(int(tstamp))
-    return d.strftime('%Y.%m.%d.dev0')
+    return d.strftime("%Y.%m.%d.dev0")
 
 
-#------------------------------------------------------------------------------
-def read_file(fpath, encoding='utf-8'):
-    with open(fpath, 'r', encoding=encoding) as f:
+# -------------------------------------------------------------------------------------
+def read_file(fpath, encoding="utf-8"):
+    with open(fpath, "r", encoding=encoding) as f:
         return f.read().strip()
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def get_version():
     try:
-        return read_file('libyang/VERSION')
+        return read_file("libyang/VERSION")
     except IOError:
         pass
     try:
@@ -102,61 +104,54 @@ def get_version():
     except ValueError:
         pass
     try:
-        if os.path.isdir('.git'):
+        if os.path.isdir(".git"):
             out = subprocess.check_output(
-                ['git', 'describe', '--tags', '--always'],
-                stderr=subprocess.DEVNULL)
-            return git_describe_to_pep440(out.decode('utf-8').strip())
+                ["git", "describe", "--tags", "--always"], stderr=subprocess.DEVNULL
+            )
+            return git_describe_to_pep440(out.decode("utf-8").strip())
     except Exception:
         pass
-    return '0.0.0'
+    return "0.0.0"
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 class SDistCommand(setuptools.command.sdist.sdist):
-
     def make_release_tree(self, base_dir, files):
         super().make_release_tree(base_dir, files)
-        version_file = os.path.join(base_dir, 'libyang/VERSION')
+        version_file = os.path.join(base_dir, "libyang/VERSION")
         self.execute(
             distutils.file_util.write_file,
             (version_file, [self.distribution.metadata.version]),
-            'Writing %s' % version_file)
+            "Writing %s" % version_file,
+        )
 
 
-#------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 setuptools.setup(
-    name='libyang',
+    name="libyang",
     version=get_version(),
-    description='CFFI bindings to libyang',
-    long_description=read_file('README.rst'),
-    url='https://github.com/CESNET/libyang-python',
-    license='MIT',
-    author='Robin Jarry',
-    author_email='robin@jarry.cc',
-    keywords=['libyang', 'cffi'],
+    description="CFFI bindings to libyang",
+    long_description=read_file("README.rst"),
+    url="https://github.com/CESNET/libyang-python",
+    license="MIT",
+    author="Robin Jarry",
+    author_email="robin@jarry.cc",
+    keywords=["libyang", "cffi"],
     classifiers=[
-        'Development Status :: 4 - Beta',
-        'Environment :: Console',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: Unix',
-        'Programming Language :: Python :: 3',
-        'Topic :: Software Development :: Libraries',
+        "Development Status :: 4 - Beta",
+        "Environment :: Console",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: Unix",
+        "Programming Language :: Python :: 3",
+        "Topic :: Software Development :: Libraries",
     ],
-    packages=['libyang'],
+    packages=["libyang"],
     zip_safe=False,
     include_package_data=True,
-    python_requires='>=3.5',
-    setup_requires=[
-        'setuptools',
-        'cffi; platform_python_implementation != "PyPy"',
-    ],
-    install_requires=[
-        'cffi; platform_python_implementation != "PyPy"',
-    ],
-    cffi_modules=['cffi/build.py:BUILDER'],
-    cmdclass={
-        'sdist': SDistCommand,
-    },
+    python_requires=">=3.5",
+    setup_requires=["setuptools", 'cffi; platform_python_implementation != "PyPy"'],
+    install_requires=['cffi; platform_python_implementation != "PyPy"'],
+    cffi_modules=["cffi/build.py:BUILDER"],
+    cmdclass={"sdist": SDistCommand},
 )

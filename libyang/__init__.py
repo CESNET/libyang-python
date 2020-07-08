@@ -4,6 +4,7 @@
 
 import logging
 import os
+from typing import IO, Any, Iterator, Optional, Union
 
 from _libyang import ffi, lib
 from .data import DNode, data_format, parser_flags, path_flags
@@ -21,7 +22,11 @@ class Context:
     __slots__ = ("cdata",)
 
     def __init__(
-        self, search_path=None, disable_searchdir_cwd=True, pointer=None, cdata=None
+        self,
+        search_path: Optional[str] = None,
+        disable_searchdir_cwd: bool = True,
+        pointer=None,  # C type: "struct ly_ctx *"
+        cdata=None,  # C type: "struct ly_ctx *"
     ):
         if pointer is not None:
             deprecated("pointer=", "cdata=", "2.0.0")
@@ -70,7 +75,7 @@ class Context:
     def __exit__(self, *args, **kwargs):
         self.destroy()
 
-    def error(self, msg, *args):
+    def error(self, msg: str, *args) -> LibyangError:
         msg %= args
 
         if self.cdata:
@@ -85,7 +90,7 @@ class Context:
 
         return LibyangError(msg)
 
-    def parse_module_file(self, fileobj, fmt="yang"):
+    def parse_module_file(self, fileobj: IO, fmt: str = "yang") -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         fmt = schema_in_format(fmt)
@@ -95,7 +100,7 @@ class Context:
 
         return Module(self, mod)
 
-    def parse_module_str(self, s, fmt="yang"):
+    def parse_module_str(self, s: str, fmt: str = "yang") -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         fmt = schema_in_format(fmt)
@@ -105,7 +110,7 @@ class Context:
 
         return Module(self, mod)
 
-    def load_module(self, name):
+    def load_module(self, name: str) -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         mod = lib.ly_ctx_load_module(self.cdata, str2c(name), ffi.NULL)
@@ -114,7 +119,7 @@ class Context:
 
         return Module(self, mod)
 
-    def get_module(self, name):
+    def get_module(self, name: str) -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         mod = lib.ly_ctx_get_module(self.cdata, str2c(name), ffi.NULL, False)
@@ -123,7 +128,7 @@ class Context:
 
         return Module(self, mod)
 
-    def find_path(self, path):
+    def find_path(self, path: str) -> Iterator[SNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         node_set = lib.ly_ctx_find_path(self.cdata, str2c(path))
@@ -137,14 +142,14 @@ class Context:
 
     def create_data_path(
         self,
-        path,
-        parent=None,
-        value=None,
-        update=True,
-        no_parent_ret=True,
-        rpc_output=False,
-        force_return_value=True,
-    ):
+        path: str,
+        parent: Optional[DNode] = None,
+        value: Any = None,
+        update: bool = True,
+        no_parent_ret: bool = True,
+        rpc_output: bool = False,
+        force_return_value: bool = True,
+    ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         lib.lypy_set_errno(0)
@@ -191,17 +196,17 @@ class Context:
 
     def parse_data_mem(
         self,
-        d,
-        fmt,
-        data=False,
-        config=False,
-        get=False,
-        strict=False,
-        trusted=False,
-        no_yanglib=False,
-        rpc=False,
-        rpcreply=False,
-    ):
+        d: Union[str, bytes],
+        fmt: str,
+        data: bool = False,
+        config: bool = False,
+        get: bool = False,
+        strict: bool = False,
+        trusted: bool = False,
+        no_yanglib: bool = False,
+        rpc: bool = False,
+        rpcreply: bool = False,
+    ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         flags = parser_flags(
@@ -229,17 +234,17 @@ class Context:
 
     def parse_data_file(
         self,
-        fileobj,
-        fmt,
-        data=False,
-        config=False,
-        get=False,
-        strict=False,
-        trusted=False,
-        no_yanglib=False,
-        rpc=False,
-        rpcreply=False,
-    ):
+        fileobj: IO,
+        fmt: str,
+        data: bool = False,
+        config: bool = False,
+        get: bool = False,
+        strict: bool = False,
+        trusted: bool = False,
+        no_yanglib: bool = False,
+        rpc: bool = False,
+        rpcreply: bool = False,
+    ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         flags = parser_flags(
@@ -261,7 +266,7 @@ class Context:
             raise self.error("failed to parse data tree")
         return DNode.new(self, dnode)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Module]:
         """
         Return an iterator that yields all implemented modules from the context
         """
@@ -294,11 +299,11 @@ def libyang_c_logging_callback(level, msg, path):
     LOG.log(LOG_LEVELS.get(level, logging.NOTSET), fmt, *args)
 
 
-def configure_logging(enable_py_logger, level=logging.ERROR):
+def configure_logging(enable_py_logger: bool, level: int = logging.ERROR) -> None:
     """
     Configure libyang logging behaviour.
 
-    :arg bool enable_py_logger:
+    :arg enable_py_logger:
         If False, configure libyang to store the errors in the context until they are
         consumed when Context.error() is called. This is the default behaviour.
 
@@ -306,7 +311,7 @@ def configure_logging(enable_py_logger, level=logging.ERROR):
         will be processed according to the python logging configuration. Note that by
         default, the "libyang" python logger is created with a NullHandler() which means
         that all messages are lost until another handler is configured for that logger.
-    :arg int level:
+    :arg level:
         Python logging level. By default only ERROR messages are stored/logged.
     """
     for ly_lvl, py_lvl in LOG_LEVELS.items():

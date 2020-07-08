@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
+from typing import IO, Any, Dict, Iterator, Optional, Union
 
 from _libyang import ffi, lib
 from .schema import Module, SContainer, SLeaf, SLeafList, SList, SNode, SRpc, Type
@@ -13,12 +14,12 @@ LOG = logging.getLogger(__name__)
 
 # -------------------------------------------------------------------------------------
 def printer_flags(
-    with_siblings=False,
-    pretty=False,
-    keep_empty_containers=False,
-    trim_default_values=False,
-    include_implicit_defaults=False,
-):
+    with_siblings: bool = False,
+    pretty: bool = False,
+    keep_empty_containers: bool = False,
+    trim_default_values: bool = False,
+    include_implicit_defaults: bool = False,
+) -> int:
     flags = 0
     if with_siblings:
         flags |= lib.LYP_WITHSIBLINGS
@@ -34,7 +35,7 @@ def printer_flags(
 
 
 # -------------------------------------------------------------------------------------
-def data_format(fmt_string):
+def data_format(fmt_string: str) -> int:
     if fmt_string == "json":
         return lib.LYD_JSON
     if fmt_string == "xml":
@@ -45,7 +46,9 @@ def data_format(fmt_string):
 
 
 # -------------------------------------------------------------------------------------
-def path_flags(update=False, rpc_output=False, no_parent_ret=False):
+def path_flags(
+    update: bool = False, rpc_output: bool = False, no_parent_ret: bool = False
+) -> int:
     flags = 0
     if update:
         flags |= lib.LYD_PATH_OPT_UPDATE
@@ -58,18 +61,18 @@ def path_flags(update=False, rpc_output=False, no_parent_ret=False):
 
 # -------------------------------------------------------------------------------------
 def parser_flags(
-    data=False,
-    config=False,
-    get=False,
-    strict=False,
-    trusted=False,
-    no_yanglib=False,
-    rpc=False,
-    rpcreply=False,
-    destruct=False,
-    no_siblings=False,
-    explicit=False,
-):
+    data: bool = False,
+    config: bool = False,
+    get: bool = False,
+    strict: bool = False,
+    trusted: bool = False,
+    no_yanglib: bool = False,
+    rpc: bool = False,
+    rpcreply: bool = False,
+    destruct: bool = False,
+    no_siblings: bool = False,
+    explicit: bool = False,
+) -> int:
     flags = 0
     if data:
         flags |= lib.LYD_OPT_DATA
@@ -104,51 +107,51 @@ class DNode:
 
     __slots__ = ("context", "cdata")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         """
-        :arg Context context:
+        :arg context:
             The libyang.Context python object.
-        :arg struct lyd_node * cdata:
+        :arg cdata:
             The pointer to the C structure allocated by libyang.so.
         """
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lyd_node *"
 
     @property
     def _node(self):
         deprecated("_node", "cdata", "2.0.0")
         return self.cdata
 
-    def name(self):
+    def name(self) -> str:
         return c2str(self.cdata.schema.name)
 
-    def module(self):
+    def module(self) -> Module:
         mod = lib.lyd_node_module(self.cdata)
         if not mod:
             raise self.context.error("cannot get module")
         return Module(self.context, mod)
 
-    def schema(self):
+    def schema(self) -> SNode:
         return SNode.new(self.context, self.cdata.schema)
 
-    def parent(self):
+    def parent(self) -> Optional["DNode"]:
         if not self.cdata.parent:
             return None
         return self.new(self.context, self.cdata.parent)
 
-    def root(self):
+    def root(self) -> "DNode":
         node = self
         while node.parent() is not None:
             node = node.parent()
         return node
 
-    def first_sibling(self):
+    def first_sibling(self) -> "DNode":
         n = lib.lyd_first_sibling(self.cdata)
         if n == self.cdata:
             return self
         return self.new(self.context, n)
 
-    def siblings(self, include_self=True):
+    def siblings(self, include_self: bool = True) -> Iterator["DNode"]:
         n = lib.lyd_first_sibling(self.cdata)
         while n:
             if n == self.cdata:
@@ -158,13 +161,13 @@ class DNode:
                 yield self.new(self.context, n)
             n = n.next
 
-    def find_one(self, xpath):
+    def find_one(self, xpath: str) -> Optional["DNode"]:
         try:
             return next(self.find_all(xpath))
         except StopIteration:
             return None
 
-    def find_all(self, xpath):
+    def find_all(self, xpath: str) -> Iterator["DNode"]:
         node_set = lib.lyd_find_path(self.cdata, str2c(xpath))
         if not node_set:
             raise self.context.error("cannot find path")
@@ -174,7 +177,7 @@ class DNode:
         finally:
             lib.ly_set_free(node_set)
 
-    def path(self):
+    def path(self) -> str:
         path = lib.lyd_path(self.cdata)
         try:
             return c2str(path)
@@ -183,13 +186,13 @@ class DNode:
 
     def validate(
         self,
-        data=False,
-        config=False,
-        get=False,
-        rpc=False,
-        rpcreply=False,
-        no_yanglib=False,
-    ):
+        data: bool = False,
+        config: bool = False,
+        get: bool = False,
+        rpc: bool = False,
+        rpcreply: bool = False,
+        no_yanglib: bool = False,
+    ) -> None:
         if self.cdata.parent:
             raise self.context.error("validation is only supported on top-level nodes")
         flags = parser_flags(
@@ -206,7 +209,13 @@ class DNode:
         if ret != 0:
             raise self.context.error("validation failed")
 
-    def merge(self, source, destruct=False, no_siblings=False, explicit=False):
+    def merge(
+        self,
+        source: "DNode",
+        destruct: bool = False,
+        no_siblings: bool = False,
+        explicit: bool = False,
+    ) -> None:
         flags = parser_flags(
             destruct=destruct, no_siblings=no_siblings, explicit=explicit
         )
@@ -216,13 +225,13 @@ class DNode:
 
     def print_mem(
         self,
-        fmt,
-        with_siblings=False,
-        pretty=False,
-        include_implicit_defaults=False,
-        trim_default_values=False,
-        keep_empty_containers=False,
-    ):
+        fmt: str,
+        with_siblings: bool = False,
+        pretty: bool = False,
+        include_implicit_defaults: bool = False,
+        trim_default_values: bool = False,
+        keep_empty_containers: bool = False,
+    ) -> Union[str, bytes]:
         flags = printer_flags(
             with_siblings=with_siblings,
             pretty=pretty,
@@ -245,14 +254,14 @@ class DNode:
 
     def print_file(
         self,
-        fileobj,
-        fmt,
-        with_siblings=False,
-        pretty=False,
-        include_implicit_defaults=False,
-        trim_default_values=False,
-        keep_empty_containers=False,
-    ):
+        fileobj: IO,
+        fmt: str,
+        with_siblings: bool = False,
+        pretty: bool = False,
+        include_implicit_defaults: bool = False,
+        trim_default_values: bool = False,
+        keep_empty_containers: bool = False,
+    ) -> None:
         flags = printer_flags(
             with_siblings=with_siblings,
             pretty=pretty,
@@ -267,18 +276,16 @@ class DNode:
 
     def print_dict(
         self,
-        strip_prefixes=True,
-        absolute=True,
-        with_siblings=False,
-        include_implicit_defaults=False,
-        trim_default_values=False,
-        keep_empty_containers=False,
-    ):
+        strip_prefixes: bool = True,
+        absolute: bool = True,
+        with_siblings: bool = False,
+        include_implicit_defaults: bool = False,
+        trim_default_values: bool = False,
+        keep_empty_containers: bool = False,
+    ) -> Dict[str, Any]:
         """
         Convert a DNode object to a python dictionary.
 
-        :arg DNode dnode:
-            The data node to convert.
         :arg bool strip_prefixes:
             If True (the default), module prefixes are stripped from dictionary keys. If
             False, dictionary keys are in the form ``<module>:<name>``.
@@ -335,15 +342,15 @@ class DNode:
 
     def merge_data_dict(
         self,
-        dic,
-        rpc=False,
-        rpcreply=False,
-        strict=False,
-        data=False,
-        config=False,
-        no_yanglib=False,
-        validate=True,
-    ):
+        dic: Dict[str, Any],
+        rpc: bool = False,
+        rpcreply: bool = False,
+        strict: bool = False,
+        data: bool = False,
+        config: bool = False,
+        no_yanglib: bool = False,
+        validate: bool = True,
+    ) -> Optional["DNode"]:
         """
         Merge a python dictionary into this node. The returned value is the first
         created node.
@@ -383,7 +390,7 @@ class DNode:
             validate=validate,
         )
 
-    def free(self, with_siblings=True):
+    def free(self, with_siblings: bool = True) -> None:
         try:
             if with_siblings:
                 lib.lyd_free_withsiblings(self.cdata)
@@ -411,7 +418,7 @@ class DNode:
         return _decorator
 
     @classmethod
-    def new(cls, context, cdata):
+    def new(cls, context: "libyang.Context", cdata) -> "DNode":
         cdata = ffi.cast("struct lyd_node *", cdata)
         nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, DNode)
         return nodecls(context, cdata)
@@ -420,12 +427,14 @@ class DNode:
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.CONTAINER)
 class DContainer(DNode):
-    def create_path(self, path, value=None, rpc_output=False):
+    def create_path(
+        self, path: str, value: Any = None, rpc_output: bool = False
+    ) -> Optional[DNode]:
         return self.context.create_data_path(
             path, parent=self, value=value, rpc_output=rpc_output
         )
 
-    def children(self):
+    def children(self) -> Iterator[DNode]:
         child = self.cdata.child
         while child:
             yield DNode.new(self.context, child)
@@ -453,7 +462,7 @@ class DLeaf(DNode):
 
     __slots__ = DNode.__slots__ + ("cdata_leaf",)
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaf = ffi.cast("struct lyd_node_leaf_list *", cdata)
 
@@ -462,7 +471,7 @@ class DLeaf(DNode):
         deprecated("_leaf", "cdata_leaf", "2.0.0")
         return self.cdata_leaf
 
-    def value(self):
+    def value(self) -> Any:
         if self.cdata_leaf.value_type == Type.EMPTY:
             return None
         if self.cdata_leaf.value_type in Type.NUM_TYPES:
@@ -493,45 +502,45 @@ class DLeafList(DLeaf):
 
 # -------------------------------------------------------------------------------------
 def dict_to_dnode(
-    dic,
-    module,
-    parent=None,
-    rpc=False,
-    rpcreply=False,
-    strict=False,
-    data=False,
-    config=False,
-    no_yanglib=False,
-    validate=True,
-):
+    dic: Dict[str, Any],
+    module: Module,
+    parent: Optional[DNode] = None,
+    rpc: bool = False,
+    rpcreply: bool = False,
+    strict: bool = False,
+    data: bool = False,
+    config: bool = False,
+    no_yanglib: bool = False,
+    validate: bool = True,
+) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
     value is the first created node. If parent is not set, a top-level node is returned.
 
-    :arg dict dic:
+    :arg dic:
         The python dictionary to convert.
-    :arg Module module:
+    :arg module:
         The libyang Module object associated with the dictionary.
-    :arg DNode parent:
+    :arg parent:
         Optional parent to update. If not specified a new top-level DNode will be
         created.
-    :arg bool rpc:
+    :arg rpc:
         Data represents RPC or action input parameters.
-    :arg bool rpcreply:
+    :arg rpcreply:
         Data represents RPC or action output parameters.
-    :arg bool strict:
+    :arg strict:
         Instead of ignoring (with a warning message) data without schema definition,
         raise an error.
-    :arg bool data:
+    :arg data:
         Complete datastore content with configuration as well as state data. To handle
         possibly missing (but by default required) ietf-yang-library data, use
         no_yanglib=True.
-    :arg bool config:
+    :arg config:
         Complete datastore without state data.
-    :arg bool no_yanglib:
+    :arg no_yanglib:
         Ignore (possibly) missing ietf-yang-library data. Applicable only with
         data=True.
-    :arg bool validate:
+    :arg validate:
         If False, do not validate the modified tree before returning. The validation is
         performed on the top of the data tree.
     """

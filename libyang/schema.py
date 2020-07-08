@@ -1,12 +1,14 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # SPDX-License-Identifier: MIT
 
+from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
+
 from _libyang import ffi, lib
 from .util import c2str, deprecated, str2c
 
 
 # -------------------------------------------------------------------------------------
-def schema_in_format(fmt_string):
+def schema_in_format(fmt_string: str) -> int:
     if fmt_string == "yang":
         return lib.LYS_IN_YANG
     if fmt_string == "yin":
@@ -15,7 +17,7 @@ def schema_in_format(fmt_string):
 
 
 # -------------------------------------------------------------------------------------
-def schema_out_format(fmt_string):
+def schema_out_format(fmt_string: str) -> int:
     if fmt_string == "yang":
         return lib.LYS_OUT_YANG
     if fmt_string == "yin":
@@ -34,76 +36,78 @@ class Module:
 
     __slots__ = ("context", "cdata")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_module *"
 
     @property
     def _module(self):
         deprecated("_module", "cdata", "2.0.0")
         return self.cdata
 
-    def name(self):
+    def name(self) -> str:
         return c2str(self.cdata.name)
 
-    def prefix(self):
+    def prefix(self) -> str:
         return c2str(self.cdata.prefix)
 
-    def description(self):
+    def description(self) -> Optional[str]:
         return c2str(self.cdata.dsc)
 
-    def filepath(self):
+    def filepath(self) -> Optional[str]:
         return c2str(self.cdata.filepath)
 
-    def implemented(self):
+    def implemented(self) -> bool:
         return bool(lib.lypy_module_implemented(self.cdata))
 
-    def feature_enable(self, name):
+    def feature_enable(self, name: str) -> None:
         ret = lib.lys_features_enable(self.cdata, str2c(name))
         if ret != 0:
             raise self.context.error("no such feature: %r" % name)
 
-    def feature_enable_all(self):
+    def feature_enable_all(self) -> None:
         self.feature_enable("*")
 
-    def feature_disable(self, name):
+    def feature_disable(self, name: str) -> None:
         ret = lib.lys_features_disable(self.cdata, str2c(name))
         if ret != 0:
             raise self.context.error("no such feature: %r" % name)
 
-    def feature_disable_all(self):
+    def feature_disable_all(self) -> None:
         self.feature_disable("*")
 
-    def feature_state(self, name):
+    def feature_state(self, name: str) -> bool:
         ret = lib.lys_features_state(self.cdata, str2c(name))
         if ret < 0:
             raise self.context.error("no such feature: %r" % name)
         return bool(ret)
 
-    def features(self):
+    def features(self) -> Iterator["Feature"]:
         for i in range(self.cdata.features_size):
             yield Feature(self.context, self.cdata.features[i])
 
-    def get_feature(self, name):
+    def get_feature(self, name: str) -> "Feature":
         for f in self.features():
             if f.name() == name:
                 return f
         raise self.context.error("no such feature: %r" % name)
 
-    def revisions(self):
+    def revisions(self) -> Iterator["Revision"]:
         for i in range(self.cdata.rev_size):
             yield Revision(self.context, self.cdata.rev[i])
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["SNode"]:
         return self.children()
 
-    def children(self, types=None):
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator["SNode"]:
         return iter_children(self.context, self.cdata, types=types)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name()
 
-    def print_mem(self, fmt="tree", path=None):
+    def print_mem(
+        self, fmt: str = "tree", path: Optional[str] = None
+    ) -> Union[str, bytes]:
         fmt = schema_out_format(fmt)
         buf = ffi.new("char **")
         ret = lib.lys_print_mem(buf, self.cdata, fmt, str2c(path), 0, 0)
@@ -114,7 +118,9 @@ class Module:
         finally:
             lib.free(buf[0])
 
-    def print_file(self, fileobj, fmt="tree", path=None):
+    def print_file(
+        self, fileobj: IO, fmt: str = "tree", path: Optional[str] = None
+    ) -> None:
         fmt = schema_out_format(fmt)
         ret = lib.lys_print_fd(fileobj.fileno(), self.cdata, fmt, str2c(path), 0, 0)
         if ret != 0:
@@ -122,39 +128,39 @@ class Module:
 
     def parse_data_dict(
         self,
-        dic,
-        rpc=False,
-        rpcreply=False,
-        strict=False,
-        data=False,
-        config=False,
-        no_yanglib=False,
-        validate=True,
-    ):
+        dic: Dict[str, Any],
+        rpc: bool = False,
+        rpcreply: bool = False,
+        strict: bool = False,
+        data: bool = False,
+        config: bool = False,
+        no_yanglib: bool = False,
+        validate: bool = True,
+    ) -> "libyang.data.DNode":
         """
         Convert a python dictionary to a DNode object following the schema of this
         module. The returned value is always a top-level data node (i.e.: without
         parent).
 
-        :arg dict dic:
+        :arg dic:
             The python dictionary to convert.
-        :arg bool rpc:
+        :arg rpc:
             Data represents RPC or action input parameters.
-        :arg bool rpcreply:
+        :arg rpcreply:
             Data represents RPC or action output parameters.
-        :arg bool strict:
+        :arg strict:
             Instead of ignoring (with a warning message) data without schema definition,
             raise an error.
-        :arg bool data:
+        :arg data:
             Complete datastore content with configuration as well as state data. To
             handle possibly missing (but by default required) ietf-yang-library data,
             use no_yanglib=True.
-        :arg bool config:
+        :arg config:
             Complete datastore without state data.
-        :arg bool no_yanglib:
+        :arg no_yanglib:
             Ignore (possibly) missing ietf-yang-library data. Applicable only with
             data=True.
-        :arg bool validate:
+        :arg validate:
             If False, do not validate the created data tree.
         """
         from .data import dict_to_dnode  # circular import
@@ -178,29 +184,31 @@ class Revision:
 
     __slots__ = ("context", "cdata")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_revision *"
 
     @property
     def _rev(self):
         deprecated("_rev", "cdata", "2.0.0")
         return self.cdata
 
-    def date(self):
+    def date(self) -> str:
         return c2str(self.cdata.date)
 
-    def description(self):
+    def description(self) -> Optional[str]:
         return c2str(self.cdata.dsc)
 
-    def reference(self):
+    def reference(self) -> Optional[str]:
         return c2str(self.cdata.ref)
 
-    def extensions(self):
+    def extensions(self) -> Iterator["Extension"]:
         for i in range(self.cdata.ext_size):
             yield Extension(self.context, self.cdata.ext[i])
 
-    def get_extension(self, name, prefix=None, arg_value=None):
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional["Extension"]:
         for ext in self.extensions():
             if ext.name() != name:
                 continue
@@ -224,9 +232,9 @@ class Extension:
 
     __slots__ = ("context", "cdata", "cdata_def")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_ext_instance *"
         self.cdata_def = getattr(cdata, "def")
 
     @property
@@ -237,13 +245,13 @@ class Extension:
     def _def(self):
         deprecated("_def", "cdata_def", "2.0.0")
 
-    def name(self):
+    def name(self) -> str:
         return c2str(self.cdata_def.name)
 
-    def argument(self):
+    def argument(self) -> Optional[str]:
         return c2str(self.cdata.arg_value)
 
-    def module(self):
+    def module(self) -> Module:
         module_p = lib.lys_main_module(self.cdata_def.module)
         if not module_p:
             raise self.context.error("cannot get module")
@@ -305,16 +313,16 @@ class Type:
         UINT64: "uint64",
     }
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_type *"
 
     @property
     def _type(self):
         deprecated("_type", "cdata", "2.0.0")
         return self.cdata
 
-    def get_bases(self):
+    def get_bases(self) -> Iterator["Type"]:
         if self.cdata.base == lib.LY_TYPE_DER:
             yield from self.derived_type().get_bases()
         elif self.cdata.base == lib.LY_TYPE_LEAFREF:
@@ -325,42 +333,42 @@ class Type:
         else:  # builtin type
             yield self
 
-    def name(self):
+    def name(self) -> str:
         if self.cdata.der:
             return c2str(self.cdata.der.name)
         return self.basename()
 
-    def description(self):
+    def description(self) -> Optional[str]:
         if self.cdata.der:
             return c2str(self.cdata.der.dsc)
         return None
 
-    def base(self):
+    def base(self) -> int:
         return self.cdata.base
 
-    def bases(self):
+    def bases(self) -> Iterator[int]:
         for b in self.get_bases():
             yield b.base()
 
-    def basename(self):
+    def basename(self) -> str:
         return self.BASENAMES.get(self.cdata.base, "unknown")
 
-    def basenames(self):
+    def basenames(self) -> Iterator[str]:
         for b in self.get_bases():
             yield b.basename()
 
-    def derived_type(self):
+    def derived_type(self) -> Optional["Type"]:
         if not self.cdata.der:
             return None
         return Type(self.context, ffi.addressof(self.cdata.der.type))
 
-    def leafref_type(self):
+    def leafref_type(self) -> Optional["Type"]:
         if self.cdata.base != self.LEAFREF:
             return None
         lref = self.cdata.info.lref
         return Type(self.context, ffi.addressof(lref.target.type))
 
-    def union_types(self):
+    def union_types(self) -> Iterator["Type"]:
         if self.cdata.base != self.UNION:
             return
         t = self.cdata
@@ -369,7 +377,7 @@ class Type:
         for i in range(t.info.uni.count):
             yield Type(self.context, t.info.uni.types[i])
 
-    def enums(self):
+    def enums(self) -> Iterator[Tuple[str, Optional[str]]]:
         if self.cdata.base != self.ENUM:
             return
         t = self.cdata
@@ -379,11 +387,11 @@ class Type:
             e = t.info.enums.enm[i]
             yield c2str(e.name), c2str(e.dsc)
 
-    def all_enums(self):
+    def all_enums(self) -> Iterator[Tuple[str, Optional[str]]]:
         for b in self.get_bases():
             yield from b.enums()
 
-    def bits(self):
+    def bits(self) -> Iterator[Tuple[str, Optional[str]]]:
         if self.cdata.base != self.BITS:
             return
         t = self.cdata
@@ -393,13 +401,13 @@ class Type:
             b = t.info.bits.bit[i]
             yield c2str(b.name), c2str(b.dsc)
 
-    def all_bits(self):
+    def all_bits(self) -> Iterator[Tuple[str, Optional[str]]]:
         for b in self.get_bases():
             yield from b.bits()
 
     NUM_TYPES = frozenset((INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
 
-    def range(self):
+    def range(self) -> Optional[str]:
         if self.cdata.base in self.NUM_TYPES and self.cdata.info.num.range:
             return c2str(self.cdata.info.num.range.expr)
         if self.cdata.base == self.DEC64 and self.cdata.info.dec64.range:
@@ -408,7 +416,7 @@ class Type:
             return self.derived_type().range()
         return None
 
-    def all_ranges(self):
+    def all_ranges(self) -> Iterator[str]:
         if self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_ranges()
@@ -417,7 +425,7 @@ class Type:
             if rng is not None:
                 yield rng
 
-    def length(self):
+    def length(self) -> Optional[str]:
         if self.cdata.base == self.STRING and self.cdata.info.str.length:
             return c2str(self.cdata.info.str.length.expr)
         if self.cdata.base == self.BINARY and self.cdata.info.binary.length:
@@ -426,7 +434,7 @@ class Type:
             return self.derived_type().length()
         return None
 
-    def all_lengths(self):
+    def all_lengths(self) -> Iterator[str]:
         if self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_lengths()
@@ -435,7 +443,7 @@ class Type:
             if length is not None:
                 yield length
 
-    def patterns(self):
+    def patterns(self) -> Iterator[Tuple[str, bool]]:
         if self.cdata.base != self.STRING:
             return
         for i in range(self.cdata.info.str.pat_count):
@@ -452,27 +460,29 @@ class Type:
         if self.cdata.der:
             yield from self.derived_type().patterns()
 
-    def all_patterns(self):
+    def all_patterns(self) -> Iterator[Tuple[str, bool]]:
         if self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_patterns()
         else:
             yield from self.patterns()
 
-    def module(self):
+    def module(self) -> Module:
         module_p = lib.lys_main_module(self.cdata.der.module)
         if not module_p:
             raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
-    def extensions(self):
+    def extensions(self) -> Iterator[Extension]:
         for i in range(self.cdata.ext_size):
             yield Extension(self.context, self.cdata.ext[i])
         if self.cdata.parent:
             for i in range(self.cdata.parent.ext_size):
                 yield Extension(self.context, self.cdata.parent.ext[i])
 
-    def get_extension(self, name, prefix=None, arg_value=None):
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional[Extension]:
         for ext in self.extensions():
             if ext.name() != name:
                 continue
@@ -496,38 +506,38 @@ class Feature:
 
     __slots__ = ("context", "cdata")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_feature *"
 
     @property
     def _feature(self):
         deprecated("_feature", "cdata", "2.0.0")
         return self.cdata
 
-    def name(self):
+    def name(self) -> str:
         return c2str(self.cdata.name)
 
-    def description(self):
+    def description(self) -> Optional[str]:
         return c2str(self.cdata.dsc)
 
-    def reference(self):
+    def reference(self) -> Optional[str]:
         return c2str(self.cdata.ref)
 
-    def state(self):
+    def state(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_FENABLED)
 
-    def deprecated(self):
+    def deprecated(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
 
-    def obsolete(self):
+    def obsolete(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
 
-    def if_features(self):
+    def if_features(self) -> Iterator["IfFeatureExpr"]:
         for i in range(self.cdata.iffeature_size):
             yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
 
-    def module(self):
+    def module(self) -> Module:
         module_p = lib.lys_main_module(self.cdata.module)
         if not module_p:
             raise self.context.error("cannot get module")
@@ -542,16 +552,16 @@ class IfFeatureExpr:
 
     __slots__ = ("context", "cdata")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_iffeature *"
 
     @property
     def _iffeature(self):
         deprecated("_iffeature", "cdata", "2.0.0")
         return self.cdata
 
-    def _get_operator(self, position):
+    def _get_operator(self, position: int) -> int:
         # the ->exp field is a 2bit array of operator values stored under a uint8_t C
         # array.
         mask = 0x3  # 2bits mask
@@ -560,7 +570,7 @@ class IfFeatureExpr:
         result = item & (mask << shift)
         return result >> shift
 
-    def _operands(self):
+    def _operands(self) -> Iterator[Union["IfFeature", type]]:
         op_index = 0
         ft_index = 0
         expected = 1
@@ -580,7 +590,7 @@ class IfFeatureExpr:
                 yield IfOrFeatures
                 expected += 1
 
-    def tree(self):
+    def tree(self) -> "IfFeatureExprTree":
         def _tree(operands):
             op = next(operands)
             if op is IfNotFeature:
@@ -591,7 +601,7 @@ class IfFeatureExpr:
 
         return _tree(self._operands())
 
-    def dump(self):
+    def dump(self) -> str:
         return self.tree().dump()
 
     def __str__(self):
@@ -600,7 +610,7 @@ class IfFeatureExpr:
 
 # -------------------------------------------------------------------------------------
 class IfFeatureExprTree:
-    def dump(self, indent=0):
+    def dump(self, indent: int = 0) -> str:
         raise NotImplementedError()
 
     def __str__(self):
@@ -612,19 +622,19 @@ class IfFeature(IfFeatureExprTree):
 
     __slots__ = ("context", "cdata")
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_feature *"
 
     @property
     def _feature(self):
         deprecated("_feature", "cdata", "2.0.0")
         return self.cdata
 
-    def feature(self):
+    def feature(self) -> Feature:
         return Feature(self.context, self.cdata)
 
-    def dump(self, indent=0):
+    def dump(self, indent: int = 0) -> str:
         feat = self.feature()
         return "%s%s [%s]\n" % (" " * indent, feat.name(), feat.description())
 
@@ -637,11 +647,11 @@ class IfNotFeature(IfFeatureExprTree):
 
     __slots__ = ("context", "child")
 
-    def __init__(self, context, child):
+    def __init__(self, context: "libyang.Context", child: IfFeatureExprTree):
         self.context = context
         self.child = child
 
-    def dump(self, indent=0):
+    def dump(self, indent: int = 0) -> str:
         return " " * indent + "NOT\n" + self.child.dump(indent + 1)
 
     def __str__(self):
@@ -653,12 +663,14 @@ class IfAndFeatures(IfFeatureExprTree):
 
     __slots__ = ("context", "a", "b")
 
-    def __init__(self, context, a, b):
+    def __init__(
+        self, context: "libyang.Context", a: IfFeatureExprTree, b: IfFeatureExprTree
+    ):
         self.context = context
         self.a = a
         self.b = b
 
-    def dump(self, indent=0):
+    def dump(self, indent: int = 0) -> str:
         s = " " * indent + "AND\n"
         s += self.a.dump(indent + 1)
         s += self.b.dump(indent + 1)
@@ -673,12 +685,14 @@ class IfOrFeatures(IfFeatureExprTree):
 
     __slots__ = ("context", "a", "b")
 
-    def __init__(self, context, a, b):
+    def __init__(
+        self, context: "libyang.Context", a: IfFeatureExprTree, b: IfFeatureExprTree
+    ):
         self.context = context
         self.a = a
         self.b = b
 
-    def dump(self, indent=0):
+    def dump(self, indent: int = 0) -> str:
         s = " " * indent + "OR\n"
         s += self.a.dump(indent + 1)
         s += self.b.dump(indent + 1)
@@ -710,77 +724,82 @@ class SNode:
         OUTPUT: "output",
     }
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata
+        self.cdata = cdata  # C type: "struct lys_node *"
 
     @property
     def _node(self):
         deprecated("_node", "cdata", "2.0.0")
         return self.cdata
 
-    def nodetype(self):
+    def nodetype(self) -> int:
         return self.cdata.nodetype
 
-    def keyword(self):
+    def keyword(self) -> str:
         return self.KEYWORDS.get(self.cdata.nodetype, "???")
 
-    def name(self):
+    def name(self) -> str:
         return c2str(self.cdata.name)
 
-    def fullname(self):
+    def fullname(self) -> str:
         return "%s:%s" % (self.module().name(), self.name())
 
-    def description(self):
+    def description(self) -> Optional[str]:
         return c2str(self.cdata.dsc)
 
-    def config_set(self):
+    def config_set(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_CONFIG_SET)
 
-    def config_false(self):
+    def config_false(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_CONFIG_R)
 
-    def mandatory(self):
+    def mandatory(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_MAND_TRUE)
 
-    def deprecated(self):
+    def deprecated(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
 
-    def obsolete(self):
+    def obsolete(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
 
-    def status(self):
+    def status(self) -> str:
         if self.cdata.flags & lib.LYS_STATUS_OBSLT:
             return "obsolete"
         if self.cdata.flags & lib.LYS_STATUS_DEPRC:
             return "deprecated"
         return "current"
 
-    def module(self):
+    def module(self) -> Module:
         module_p = lib.lys_node_module(self.cdata)
         if not module_p:
             raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
-    def schema_path(self):
+    def schema_path(self) -> str:
         try:
             s = lib.lys_path(self.cdata, 0)
             return c2str(s)
         finally:
             lib.free(s)
 
-    def data_path(self, key_placeholder="'%s'"):
+    def data_path(self, key_placeholder: str = "'%s'") -> str:
         try:
             s = lib.lys_data_path_pattern(self.cdata, str2c(key_placeholder))
             return c2str(s)
         finally:
             lib.free(s)
 
-    def extensions(self):
+    def extensions(self) -> Iterator[Extension]:
         for i in range(self.cdata.ext_size):
             yield Extension(self.context, self.cdata.ext[i])
 
-    def get_extension(self, name, prefix=None, arg_value=None):
+    def must_conditions(self) -> Iterator[str]:
+        return iter(())
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional[Extension]:
         for ext in self.extensions():
             if ext.name() != name:
                 continue
@@ -791,11 +810,11 @@ class SNode:
             return ext
         return None
 
-    def if_features(self):
+    def if_features(self) -> Iterator[IfFeatureExpr]:
         for i in range(self.cdata.iffeature_size):
             yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
 
-    def parent(self):
+    def parent(self) -> Optional["SNode"]:
         parent_p = lib.lys_parent(self.cdata)
         while parent_p and parent_p.nodetype not in SNode.NODETYPE_CLASS:
             parent_p = lib.lys_parent(parent_p)
@@ -821,7 +840,7 @@ class SNode:
         return _decorator
 
     @classmethod
-    def new(cls, context, cdata):
+    def new(cls, context: "libyang.Context", cdata) -> "SNode":
         nodecls = cls.NODETYPE_CLASS.get(cdata.nodetype, SNode)
         return nodecls(context, cdata)
 
@@ -832,7 +851,7 @@ class SLeaf(SNode):
 
     __slots__ = SNode.__slots__ + ("cdata_leaf",)
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaf = ffi.cast("struct lys_node_leaf *", cdata)
 
@@ -841,21 +860,21 @@ class SLeaf(SNode):
         deprecated("_leaf", "cdata_leaf", "2.0.0")
         return self.cdata_leaf
 
-    def default(self):
+    def default(self) -> Optional[str]:
         return c2str(self.cdata_leaf.dflt)
 
-    def units(self):
+    def units(self) -> Optional[str]:
         return c2str(self.cdata_leaf.units)
 
-    def type(self):
+    def type(self) -> Type:
         return Type(self.context, ffi.addressof(self.cdata_leaf.type))
 
-    def is_key(self):
+    def is_key(self) -> bool:
         if lib.lys_is_key(self.cdata_leaf, ffi.NULL):
             return True
         return False
 
-    def must_conditions(self):
+    def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_leaf.must_size):
             yield c2str(self.cdata_leaf.must[i].expr)
 
@@ -869,7 +888,7 @@ class SLeafList(SNode):
 
     __slots__ = SNode.__slots__ + ("cdata_leaflist",)
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaflist = ffi.cast("struct lys_node_leaflist *", cdata)
 
@@ -878,20 +897,20 @@ class SLeafList(SNode):
         deprecated("_leaflist", "cdata_leaflist", "2.0.0")
         return self.cdata_leaflist
 
-    def ordered(self):
+    def ordered(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_USERORDERED)
 
-    def units(self):
+    def units(self) -> Optional[str]:
         return c2str(self.cdata_leaflist.units)
 
-    def type(self):
+    def type(self) -> Type:
         return Type(self.context, ffi.addressof(self.cdata_leaflist.type))
 
-    def defaults(self):
+    def defaults(self) -> Iterator[str]:
         for i in range(self.cdata_leaflist.dflt_size):
             yield c2str(self.cdata_leaflist.dflt[i])
 
-    def must_conditions(self):
+    def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_leaflist.must_size):
             yield c2str(self.cdata_leaflist.must[i].expr)
 
@@ -905,7 +924,7 @@ class SContainer(SNode):
 
     __slots__ = SNode.__slots__ + ("cdata_container",)
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_container = ffi.cast("struct lys_node_container *", cdata)
 
@@ -914,17 +933,17 @@ class SContainer(SNode):
         deprecated("_container", "cdata_container", "2.0.0")
         return self.cdata_container
 
-    def presence(self):
+    def presence(self) -> Optional[str]:
         return c2str(self.cdata_container.presence)
 
-    def must_conditions(self):
+    def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_container.must_size):
             yield c2str(self.cdata_container.must[i].expr)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types=None):
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
         return iter_children(self.context, self.cdata, types=types)
 
 
@@ -934,7 +953,7 @@ class SList(SNode):
 
     __slots__ = SNode.__slots__ + ("cdata_list",)
 
-    def __init__(self, context, cdata):
+    def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_list = ffi.cast("struct lys_node_list *", cdata)
 
@@ -943,21 +962,23 @@ class SList(SNode):
         deprecated("_list", "cdata_list", "2.0.0")
         return self.cdata_list
 
-    def ordered(self):
+    def ordered(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_USERORDERED)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, skip_keys=False, types=None):
+    def children(
+        self, skip_keys: bool = False, types: Optional[Tuple[int, ...]] = None
+    ) -> Iterator[SNode]:
         return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
 
-    def keys(self):
+    def keys(self) -> Iterator[SNode]:
         for i in range(self.cdata_list.keys_size):
             node = ffi.cast("struct lys_node *", self.cdata_list.keys[i])
             yield SLeaf(self.context, node)
 
-    def must_conditions(self):
+    def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_list.must_size):
             yield c2str(self.cdata_list.must[i].expr)
 
@@ -969,23 +990,17 @@ class SList(SNode):
 @SNode.register(SNode.INPUT)
 @SNode.register(SNode.OUTPUT)
 class SRpcInOut(SNode):
-    def __iter__(self):
+    def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def must_conditions(self):
-        return ()
-
-    def children(self, types=None):
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
         return iter_children(self.context, self.cdata, types=types)
 
 
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.RPC)
 class SRpc(SNode):
-    def must_conditions(self):
-        return ()
-
-    def input(self):
+    def input(self) -> Optional[SRpcInOut]:
         try:
             return next(
                 iter_children(
@@ -998,7 +1013,7 @@ class SRpc(SNode):
         except StopIteration:
             return None
 
-    def output(self):
+    def output(self) -> Optional[SRpcInOut]:
         try:
             return next(
                 iter_children(
@@ -1011,15 +1026,21 @@ class SRpc(SNode):
         except StopIteration:
             return None
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types=None):
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
         return iter_children(self.context, self.cdata, types=types)
 
 
 # -------------------------------------------------------------------------------------
-def iter_children(context, parent, skip_keys=False, types=None, options=0):
+def iter_children(
+    context: "libyang.Context",
+    parent,  # C type: Union["struct lys_module *", "struct lys_node *"]
+    skip_keys: bool = False,
+    types: Optional[Tuple[int, ...]] = None,
+    options: int = 0,
+) -> Iterator[SNode]:
     if types is None:
         types = (
             lib.LYS_CONTAINER,
@@ -1029,7 +1050,7 @@ def iter_children(context, parent, skip_keys=False, types=None, options=0):
             lib.LYS_LEAFLIST,
         )
 
-    def _skip(node):
+    def _skip(node) -> bool:
         if node.nodetype not in types:
             return True
         if not skip_keys:

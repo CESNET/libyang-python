@@ -1,20 +1,27 @@
 # Copyright (c) 2019 6WIND
 # SPDX-License-Identifier: MIT
 
-from .schema import SContainer, SLeaf, SLeafList, SList, SRpc, SRpcInOut
+from typing import Any, Callable, Iterator, Optional
+
+from . import Context
+from .schema import SContainer, SLeaf, SLeafList, SList, SNode, SRpc, SRpcInOut
 
 
 # -------------------------------------------------------------------------------------
-def schema_diff(ctx_old, ctx_new, exclude_node_cb=None):
+def schema_diff(
+    ctx_old: Context,
+    ctx_new: Context,
+    exclude_node_cb: Optional[Callable[[SNode], bool]] = None,
+) -> Iterator["SNodeDiff"]:
     """
-    Compare two `libyang.Context` objects, for a given set of paths and return all
+    Compare two libyang Context objects, for a given set of paths and return all
     differences.
 
-    :arg Context ctx_old:
+    :arg ctx_old:
         The first context.
-    :arg Context ctx_new:
+    :arg ctx_new:
         The second context.
-    :arg <func> exclude_node_cb:
+    :arg exclude_node_cb:
         Optionnal user callback that will be called with each node that is found in each
         context. If the callback returns a "trueish" value, the node will be excluded
         from the diff (as well as all its children).
@@ -73,7 +80,7 @@ class SNodeRemoved(SNodeDiff):
 
     __slots__ = ("node",)
 
-    def __init__(self, node):
+    def __init__(self, node: SNode):
         self.node = node
 
     def __str__(self):
@@ -89,7 +96,7 @@ class SNodeAdded(SNodeDiff):
 
     __slots__ = ("node",)
 
-    def __init__(self, node):
+    def __init__(self, node: SNode):
         self.node = node
 
     def __str__(self):
@@ -101,7 +108,7 @@ class SNodeAttributeChanged(SNodeDiff):
 
     __slots__ = ("old", "new", "value")
 
-    def __init__(self, old, new, value=None):
+    def __init__(self, old: SNode, new: SNode, value: Any = None):
         self.old = old
         self.new = new
         self.value = value
@@ -264,7 +271,7 @@ class UnitsAdded(SNodeAttributeChanged):
 
 
 # -------------------------------------------------------------------------------------
-def snode_changes(old, new):
+def snode_changes(old: SNode, new: SNode) -> Iterator[SNodeDiff]:
 
     if old.nodetype() != new.nodetype():
         yield NodeTypeRemoved(old, new, old.keyword())

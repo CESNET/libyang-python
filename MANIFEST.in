@@ -2,6 +2,7 @@ include cffi/build.py
 include cffi/cdefs.h
 include cffi/source.c
 include libyang/*.py
+include libyang/py.typed
 include libyang/VERSION
 include setup.py
 include setup.cfg

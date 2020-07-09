@@ -228,10 +228,10 @@ Here are the steps for submitting a change in the code base:
 
    __ https://black.readthedocs.io/en/stable/the_black_code_style.html
 
-   Your contribution must be licensed under the `BSD 3-Clause "New" or "Revised"
-   License`__. At least one copyright notice is expected in new files.
+   Your contribution must be licensed under the `MIT License`__ . At least one
+   copyright notice is expected in new files.
 
-   __ https://spdx.org/licenses/BSD-3-Clause.html
+   __ https://spdx.org/licenses/MIT.html
 
 #. If you are adding a new feature or fixing a bug, please consider adding or
    updating unit tests.

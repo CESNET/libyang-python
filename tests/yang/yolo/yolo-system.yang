@@ -40,6 +40,12 @@ module yolo-system {
       type types:host;
     }
 
+    leaf hostname-ref {
+      type leafref {
+        path "../hostname";
+      }
+    }
+
     leaf deprecated-leaf {
       status deprecated;
       description

@@ -164,6 +164,24 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
+    def test_data_parse_duplicate_data_type(self):
+        with self.assertRaises(ValueError):
+            self.ctx.parse_data_mem("", "xml", edit=True, rpc=True)
+
+    XML_EDIT = """<conf xmlns="urn:yang:yolo:system">
+  <hostname-ref>notdefined</hostname-ref>
+</conf>
+"""
+
+    def test_data_parse_edit(self):
+        dnode = self.ctx.parse_data_mem(self.XML_EDIT, "xml", edit=True)
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            xml = dnode.print_mem("xml", pretty=True)
+            self.assertEqual(xml, self.XML_EDIT)
+        finally:
+            dnode.free()
+
     def test_data_create_paths(self):
         state = self.ctx.create_data_path("/yolo-system:state")
         try:
@@ -251,6 +269,18 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+
+    DICT_EDIT = {"conf": {"hostname-ref": "notdefined"}}
+
+    def test_data_from_dict_edit(self):
+        module = self.ctx.get_module("yolo-system")
+        dnode = module.parse_data_dict(self.DICT_EDIT, strict=True, edit=True)
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            xml = dnode.print_mem("xml", pretty=True)
+        finally:
+            dnode.free()
+        self.assertEqual(xml, self.XML_EDIT)
 
     def test_data_from_dict_invalid(self):
         module = self.ctx.get_module("yolo-system")

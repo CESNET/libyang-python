@@ -201,11 +201,13 @@ class Context:
         data: bool = False,
         config: bool = False,
         get: bool = False,
+        getconfig: bool = False,
+        edit: bool = False,
+        rpc: bool = False,
+        rpcreply: bool = False,
         strict: bool = False,
         trusted: bool = False,
         no_yanglib: bool = False,
-        rpc: bool = False,
-        rpcreply: bool = False,
     ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -213,11 +215,13 @@ class Context:
             data=data,
             config=config,
             get=get,
+            getconfig=getconfig,
+            edit=edit,
+            rpc=rpc,
+            rpcreply=rpcreply,
             strict=strict,
             trusted=trusted,
             no_yanglib=no_yanglib,
-            rpc=rpc,
-            rpcreply=rpcreply,
         )
         fmt = data_format(fmt)
         if fmt == lib.LYD_LYB:
@@ -239,11 +243,13 @@ class Context:
         data: bool = False,
         config: bool = False,
         get: bool = False,
+        getconfig: bool = False,
+        edit: bool = False,
+        rpc: bool = False,
+        rpcreply: bool = False,
         strict: bool = False,
         trusted: bool = False,
         no_yanglib: bool = False,
-        rpc: bool = False,
-        rpcreply: bool = False,
     ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -251,11 +257,13 @@ class Context:
             data=data,
             config=config,
             get=get,
+            getconfig=getconfig,
+            edit=edit,
+            rpc=rpc,
+            rpcreply=rpcreply,
             strict=strict,
             trusted=trusted,
             no_yanglib=no_yanglib,
-            rpc=rpc,
-            rpcreply=rpcreply,
         )
         fmt = data_format(fmt)
         args = []

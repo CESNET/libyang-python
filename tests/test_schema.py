@@ -198,11 +198,11 @@ class ContainerTest(unittest.TestCase):
 
     def test_cont_iter(self):
         children = list(iter(self.container))
-        self.assertEqual(len(children), 7)
+        self.assertEqual(len(children), 8)
 
     def test_cont_children_leafs(self):
         leafs = list(self.container.children(types=(SNode.LEAF,)))
-        self.assertEqual(len(leafs), 5)
+        self.assertEqual(len(leafs), 6)
 
     def test_cont_parent(self):
         self.assertIsNone(self.container.parent())

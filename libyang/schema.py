@@ -129,11 +129,14 @@ class Module:
     def parse_data_dict(
         self,
         dic: Dict[str, Any],
+        data: bool = False,
+        config: bool = False,
+        get: bool = False,
+        getconfig: bool = False,
+        edit: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
         strict: bool = False,
-        data: bool = False,
-        config: bool = False,
         no_yanglib: bool = False,
         validate: bool = True,
     ) -> "libyang.data.DNode":
@@ -144,6 +147,18 @@ class Module:
 
         :arg dic:
             The python dictionary to convert.
+        :arg data:
+            Complete datastore content with configuration as well as state data. To
+            handle possibly missing (but by default required) ietf-yang-library data,
+            use no_yanglib=True.
+        :arg config:
+            Complete datastore without state data.
+        :arg get:
+            Data content from a reply message to the NETCONF <get> operation.
+        :arg getconfig:
+            Data content from a reply message to the NETCONF <get-config> operation.
+        :arg edit:
+            Content of the NETCONF <edit-config> config element.
         :arg rpc:
             Data represents RPC or action input parameters.
         :arg rpcreply:
@@ -151,12 +166,6 @@ class Module:
         :arg strict:
             Instead of ignoring (with a warning message) data without schema definition,
             raise an error.
-        :arg data:
-            Complete datastore content with configuration as well as state data. To
-            handle possibly missing (but by default required) ietf-yang-library data,
-            use no_yanglib=True.
-        :arg config:
-            Complete datastore without state data.
         :arg no_yanglib:
             Ignore (possibly) missing ietf-yang-library data. Applicable only with
             data=True.
@@ -169,11 +178,14 @@ class Module:
             dic,
             self,
             parent=None,
+            data=data,
+            config=config,
+            get=get,
+            getconfig=getconfig,
+            edit=edit,
             rpc=rpc,
             rpcreply=rpcreply,
             strict=strict,
-            data=data,
-            config=config,
             no_yanglib=no_yanglib,
             validate=validate,
         )

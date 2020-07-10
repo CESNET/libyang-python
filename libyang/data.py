@@ -64,15 +64,21 @@ def parser_flags(
     data: bool = False,
     config: bool = False,
     get: bool = False,
+    getconfig: bool = False,
+    edit: bool = False,
+    rpc: bool = False,
+    rpcreply: bool = False,
     strict: bool = False,
     trusted: bool = False,
     no_yanglib: bool = False,
-    rpc: bool = False,
-    rpcreply: bool = False,
     destruct: bool = False,
     no_siblings: bool = False,
     explicit: bool = False,
 ) -> int:
+    if (data, config, get, getconfig, edit, rpc, rpcreply).count(True) > 1:
+        raise ValueError(
+            "Only one of data, config, get, getconfig, edit, rpc, rpcreply can be True"
+        )
     flags = 0
     if data:
         flags |= lib.LYD_OPT_DATA
@@ -80,16 +86,20 @@ def parser_flags(
         flags |= lib.LYD_OPT_CONFIG
     if get:
         flags |= lib.LYD_OPT_GET
+    if getconfig:
+        flags |= lib.LYD_OPT_GETCONFIG
+    if edit:
+        flags |= lib.LYD_OPT_EDIT
+    if rpc:
+        flags |= lib.LYD_OPT_RPC
+    if rpcreply:
+        flags |= lib.LYD_OPT_RPCREPLY
     if strict:
         flags |= lib.LYD_OPT_STRICT
     if trusted:
         flags |= lib.LYD_OPT_TRUSTED
     if no_yanglib:
         flags |= lib.LYD_OPT_DATA_NO_YANGLIB
-    if rpc:
-        flags |= lib.LYD_OPT_RPC
-    if rpcreply:
-        flags |= lib.LYD_OPT_RPCREPLY
     if destruct:
         flags |= lib.LYD_OPT_DESTRUCT
     if no_siblings:
@@ -189,6 +199,8 @@ class DNode:
         data: bool = False,
         config: bool = False,
         get: bool = False,
+        getconfig: bool = False,
+        edit: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
         no_yanglib: bool = False,
@@ -199,6 +211,8 @@ class DNode:
             data=data,
             config=config,
             get=get,
+            getconfig=getconfig,
+            edit=edit,
             rpc=rpc,
             rpcreply=rpcreply,
             no_yanglib=no_yanglib,
@@ -343,11 +357,14 @@ class DNode:
     def merge_data_dict(
         self,
         dic: Dict[str, Any],
+        data: bool = False,
+        config: bool = False,
+        get: bool = False,
+        getconfig: bool = False,
+        edit: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
         strict: bool = False,
-        data: bool = False,
-        config: bool = False,
         no_yanglib: bool = False,
         validate: bool = True,
     ) -> Optional["DNode"]:
@@ -355,25 +372,31 @@ class DNode:
         Merge a python dictionary into this node. The returned value is the first
         created node.
 
-        :arg dict dic:
+        :arg dic:
             The python dictionary to convert.
-        :arg bool rpc:
-            Data represents RPC or action input parameters.
-        :arg bool rpcreply:
-            Data represents RPC or action output parameters.
-        :arg bool strict:
-            Instead of ignoring (with a warning message) data without schema
-            definition, raise an error.
-        :arg bool data:
+        :arg data:
             Complete datastore content with configuration as well as state data. To
             handle possibly missing (but by default required) ietf-yang-library data,
             use no_yanglib=True.
-        :arg bool config:
+        :arg config:
             Complete datastore without state data.
-        :arg bool no_yanglib:
+        :arg get:
+            Data content from a reply message to the NETCONF <get> operation.
+        :arg getconfig:
+            Data content from a reply message to the NETCONF <get-config> operation.
+        :arg edit:
+            Content of the NETCONF <edit-config> config element.
+        :arg rpc:
+            Data represents RPC or action input parameters.
+        :arg rpcreply:
+            Data represents RPC or action output parameters.
+        :arg strict:
+            Instead of ignoring (with a warning message) data without schema
+            definition, raise an error.
+        :arg no_yanglib:
             Ignore (possibly) missing ietf-yang-library data. Applicable only with
             data=True.
-        :arg bool validate:
+        :arg validate:
             If False, do not validate the modified tree before returning. The validation
             is performed on the top of the modified data tree.
         """
@@ -381,11 +404,14 @@ class DNode:
             dic,
             self.module(),
             parent=self,
+            data=data,
+            config=config,
+            get=get,
+            getconfig=getconfig,
+            edit=edit,
             rpc=rpc,
             rpcreply=rpcreply,
             strict=strict,
-            data=data,
-            config=config,
             no_yanglib=no_yanglib,
             validate=validate,
         )
@@ -505,11 +531,14 @@ def dict_to_dnode(
     dic: Dict[str, Any],
     module: Module,
     parent: Optional[DNode] = None,
+    data: bool = False,
+    config: bool = False,
+    get: bool = False,
+    getconfig: bool = False,
+    edit: bool = False,
     rpc: bool = False,
     rpcreply: bool = False,
     strict: bool = False,
-    data: bool = False,
-    config: bool = False,
     no_yanglib: bool = False,
     validate: bool = True,
 ) -> Optional[DNode]:
@@ -524,6 +553,18 @@ def dict_to_dnode(
     :arg parent:
         Optional parent to update. If not specified a new top-level DNode will be
         created.
+    :arg data:
+        Complete datastore content with configuration as well as state data. To handle
+        possibly missing (but by default required) ietf-yang-library data, use
+        no_yanglib=True.
+    :arg config:
+        Complete datastore without state data.
+    :arg get:
+        Data content from a reply message to the NETCONF <get> operation.
+    :arg getconfig:
+        Data content from a reply message to the NETCONF <get-config> operation.
+    :arg edit:
+        Content of the NETCONF <edit-config> config element.
     :arg rpc:
         Data represents RPC or action input parameters.
     :arg rpcreply:
@@ -531,12 +572,6 @@ def dict_to_dnode(
     :arg strict:
         Instead of ignoring (with a warning message) data without schema definition,
         raise an error.
-    :arg data:
-        Complete datastore content with configuration as well as state data. To handle
-        possibly missing (but by default required) ietf-yang-library data, use
-        no_yanglib=True.
-    :arg config:
-        Complete datastore without state data.
     :arg no_yanglib:
         Ignore (possibly) missing ietf-yang-library data. Applicable only with
         data=True.
@@ -718,10 +753,13 @@ def dict_to_dnode(
             result = DNode.new(module.context, created[0])
             if validate:
                 result.root().validate(
-                    rpc=rpc,
-                    rpcreply=rpcreply,
                     data=data,
                     config=config,
+                    get=get,
+                    getconfig=getconfig,
+                    edit=edit,
+                    rpc=rpc,
+                    rpcreply=rpcreply,
                     no_yanglib=no_yanglib,
                 )
     except:

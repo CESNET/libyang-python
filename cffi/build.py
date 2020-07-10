@@ -3,6 +3,7 @@
 
 import os
 import shlex
+from typing import List
 
 import cffi
 
@@ -13,12 +14,18 @@ BUILDER = cffi.FFI()
 with open(os.path.join(HERE, "cdefs.h")) as f:
     BUILDER.cdef(f.read())
 
-HEADERS = []
-if "LIBYANG_HEADERS" in os.environ:
-    HEADERS.append(os.environ["LIBYANG_HEADERS"])
-LIBRARIES = []
-if "LIBYANG_LIBRARIES" in os.environ:
-    LIBRARIES.append(os.environ["LIBYANG_LIBRARIES"])
+
+def search_paths(env_var: str) -> List[str]:
+    paths = []
+    for p in os.environ.get(env_var, "").strip().split(":"):
+        p = p.strip()
+        if p:
+            paths.append(p)
+    return paths
+
+
+HEADERS = search_paths("LIBYANG_HEADERS")
+LIBRARIES = search_paths("LIBYANG_LIBRARIES")
 EXTRA_CFLAGS = ["-Werror", "-std=c99"]
 EXTRA_CFLAGS += shlex.split(os.environ.get("LIBYANG_EXTRA_CFLAGS", ""))
 EXTRA_LDFLAGS = shlex.split(os.environ.get("LIBYANG_EXTRA_LDFLAGS", ""))

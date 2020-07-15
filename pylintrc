@@ -74,6 +74,7 @@ disable=
 	file-ignored,
 	fixme,
 	import-outside-toplevel,
+	line-too-long,
 	locally-disabled,
 	missing-docstring,
 	no-self-use,

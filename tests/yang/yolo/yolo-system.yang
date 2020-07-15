@@ -79,6 +79,18 @@ module yolo-system {
       leaf enabled {
         type boolean;
       }
+      action fetch {
+        input {
+          leaf timeout {
+            type uint16;
+          }
+        }
+        output {
+          leaf result {
+            type string;
+          }
+        }
+      }
     }
 
     leaf-list number {

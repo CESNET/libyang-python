@@ -238,11 +238,11 @@ class ListTest(unittest.TestCase):
 
     def test_list_iter(self):
         children = list(iter(self.list))
-        self.assertEqual(len(children), 5)
+        self.assertEqual(len(children), 6)
 
     def test_list_children_skip_keys(self):
         children = list(self.list.children(skip_keys=True))
-        self.assertEqual(len(children), 3)
+        self.assertEqual(len(children), 4)
 
     def test_list_parent(self):
         parent = self.list.parent()

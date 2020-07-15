@@ -724,6 +724,7 @@ class SNode:
     LEAFLIST = lib.LYS_LEAFLIST
     LIST = lib.LYS_LIST
     RPC = lib.LYS_RPC
+    ACTION = lib.LYS_ACTION
     INPUT = lib.LYS_INPUT
     OUTPUT = lib.LYS_OUTPUT
     KEYWORDS = {
@@ -732,6 +733,7 @@ class SNode:
         LEAFLIST: "leaf-list",
         LIST: "list",
         RPC: "rpc",
+        ACTION: "action",
         INPUT: "input",
         OUTPUT: "output",
     }
@@ -1014,6 +1016,7 @@ class SRpcInOut(SNode):
 
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.RPC)
+@SNode.register(SNode.ACTION)
 class SRpc(SNode):
     def input(self) -> Optional[SRpcInOut]:
         try:
@@ -1058,6 +1061,7 @@ def iter_children(
 ) -> Iterator[SNode]:
     if types is None:
         types = (
+            lib.LYS_ACTION,
             lib.LYS_CONTAINER,
             lib.LYS_LIST,
             lib.LYS_RPC,

@@ -384,3 +384,73 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
         self.assertEqual(j, '{"yolo-system:format-disk":{"duration":42}}')
+
+    def test_data_from_dict_action(self):
+        module = self.ctx.get_module("yolo-system")
+        dnode = module.parse_data_dict(
+            {
+                "conf": {
+                    "url": [
+                        {
+                            "proto": "https",
+                            "host": "github.com",
+                            "fetch": {"timeout": 42},
+                        },
+                    ],
+                },
+            },
+            rpc=True,
+            strict=True,
+        )
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem("json")
+        finally:
+            dnode.free()
+        self.assertEqual(
+            j,
+            '{"yolo-system:conf":{"url":[{"proto":"https","host":"github.com","fetch":{"timeout":42}}]}}',
+        )
+
+    def test_data_to_dict_action(self):
+        module = self.ctx.get_module("yolo-system")
+        request = module.parse_data_dict(
+            {
+                "conf": {
+                    "url": [
+                        {
+                            "proto": "https",
+                            "host": "github.com",
+                            "fetch": {"timeout": 42},
+                        },
+                    ],
+                },
+            },
+            rpc=True,
+            strict=True,
+        )
+        dnode = self.ctx.parse_data_mem(
+            '{"yolo-system:result":"not found"}',
+            "json",
+            rpcreply=True,
+            rpc_request=request,
+        )
+        try:
+            dic = dnode.print_dict()
+        finally:
+            dnode.free()
+            request.free()
+        self.assertEqual(
+            dic,
+            {
+                "conf": {
+                    "url": [
+                        {
+                            "proto": "https",
+                            "host": "github.com",
+                            "fetch": {"result": "not found"},
+                        },
+                    ],
+                },
+            },
+        )

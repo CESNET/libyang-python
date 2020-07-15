@@ -476,6 +476,7 @@ class DContainer(DNode):
 
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.RPC)
+@DNode.register(SNode.ACTION)
 class DRpc(DContainer):
     pass
 

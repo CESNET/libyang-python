@@ -37,8 +37,26 @@ class DiffTest(unittest.TestCase):
             (NodeTypeRemoved, "/yolo-system:state/yolo-system:number"),
             (SNodeAdded, "/yolo-system:conf/yolo-system:hostname-ref"),
             (SNodeAdded, "/yolo-system:conf/yolo-system:url/yolo-system:enabled"),
+            (SNodeAdded, "/yolo-system:conf/yolo-system:url/yolo-system:fetch"),
+            (
+                SNodeAdded,
+                "/yolo-system:conf/yolo-system:url/yolo-system:fetch/yolo-system:input/yolo-system:timeout",
+            ),
+            (
+                SNodeAdded,
+                "/yolo-system:conf/yolo-system:url/yolo-system:fetch/yolo-system:output/yolo-system:result",
+            ),
             (SNodeAdded, "/yolo-system:state/yolo-system:hostname-ref"),
             (SNodeAdded, "/yolo-system:state/yolo-system:url/yolo-system:enabled"),
+            (SNodeAdded, "/yolo-system:state/yolo-system:url/yolo-system:fetch"),
+            (
+                SNodeAdded,
+                "/yolo-system:state/yolo-system:url/yolo-system:fetch/yolo-system:input/yolo-system:timeout",
+            ),
+            (
+                SNodeAdded,
+                "/yolo-system:state/yolo-system:url/yolo-system:fetch/yolo-system:output/yolo-system:result",
+            ),
             (StatusAdded, "/yolo-system:conf/yolo-system:deprecated-leaf"),
             (StatusAdded, "/yolo-system:conf/yolo-system:obsolete-leaf"),
             (StatusAdded, "/yolo-system:state/yolo-system:deprecated-leaf"),

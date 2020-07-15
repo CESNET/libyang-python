@@ -843,17 +843,20 @@ class SNode:
 
     NODETYPE_CLASS = {}
 
-    @classmethod
-    def register(cls, nodetype):
+    @staticmethod
+    def register(nodetype):
         def _decorator(nodeclass):
-            cls.NODETYPE_CLASS[nodetype] = nodeclass
+            SNode.NODETYPE_CLASS[nodetype] = nodeclass
             return nodeclass
 
         return _decorator
 
-    @classmethod
-    def new(cls, context: "libyang.Context", cdata) -> "SNode":
-        nodecls = cls.NODETYPE_CLASS.get(cdata.nodetype, SNode)
+    @staticmethod
+    def new(context: "libyang.Context", cdata) -> "SNode":
+        cdata = ffi.cast("struct lys_node *", cdata)
+        nodecls = SNode.NODETYPE_CLASS.get(cdata.nodetype, None)
+        if nodecls is None:
+            raise NotImplementedError("node type %s not implemented" % cdata.nodetype)
         return nodecls(context, cdata)
 
 

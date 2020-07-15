@@ -446,7 +446,11 @@ class DNode:
     @classmethod
     def new(cls, context: "libyang.Context", cdata) -> "DNode":
         cdata = ffi.cast("struct lyd_node *", cdata)
-        nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, DNode)
+        nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, None)
+        if nodecls is None:
+            raise NotImplementedError(
+                "node type %s not implemented" % cdata.schema.nodetype
+            )
         return nodecls(context, cdata)
 
 

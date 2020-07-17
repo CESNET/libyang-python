@@ -322,26 +322,31 @@ class DNode:
         )
 
         def _to_dict(node, parent_dic):
-            if not lib.lyd_node_should_print(node.cdata, flags):
+            if not lib.lyd_node_should_print(node, flags):
                 return
             if strip_prefixes:
-                name = node.name()
+                name = c2str(node.schema.name)
             else:
-                name = "%s:%s" % (node.module().name(), node.name())
-            if isinstance(node, DList):
+                mod = lib.lyd_node_module(node)
+                name = "%s:%s" % (c2str(mod.name), c2str(node.schema.name))
+            if node.schema.nodetype == SNode.LIST:
                 list_element = {}
-                for child in node:
+                child = node.child
+                while child:
                     _to_dict(child, list_element)
+                    child = child.next
                 parent_dic.setdefault(name, []).append(list_element)
-            elif isinstance(node, (DContainer, DRpc)):
+            elif node.schema.nodetype & (SNode.CONTAINER | SNode.RPC | SNode.ACTION):
                 container = {}
-                for child in node:
+                child = node.child
+                while child:
                     _to_dict(child, container)
+                    child = child.next
                 parent_dic[name] = container
-            elif isinstance(node, DLeafList):
-                parent_dic.setdefault(name, []).append(node.value())
-            elif isinstance(node, DLeaf):
-                parent_dic[name] = node.value()
+            elif node.schema.nodetype == SNode.LEAFLIST:
+                parent_dic.setdefault(name, []).append(DLeaf.cdata_leaf_value(node))
+            elif node.schema.nodetype == SNode.LEAF:
+                parent_dic[name] = DLeaf.cdata_leaf_value(node)
 
         dic = {}
         dnode = self
@@ -349,9 +354,9 @@ class DNode:
             dnode = dnode.root()
         if with_siblings:
             for sib in dnode.siblings():
-                _to_dict(sib, dic)
+                _to_dict(sib.cdata, dic)
         else:
-            _to_dict(dnode, dic)
+            _to_dict(dnode.cdata, dic)
         return dic
 
     def merge_data_dict(
@@ -490,38 +495,28 @@ class DList(DContainer):
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
-
-    __slots__ = DNode.__slots__ + ("cdata_leaf",)
-
-    def __init__(self, context: "libyang.Context", cdata):
-        super().__init__(context, cdata)
-        self.cdata_leaf = ffi.cast("struct lyd_node_leaf_list *", cdata)
-
     @property
     def _leaf(self):
         deprecated("_leaf", "cdata_leaf", "2.0.0")
-        return self.cdata_leaf
+        return ffi.cast("struct lyd_node_leaf_list *", self.cdata)
 
     def value(self) -> Any:
-        if self.cdata_leaf.value_type == Type.EMPTY:
-            return None
-        if self.cdata_leaf.value_type in Type.NUM_TYPES:
-            return int(c2str(self.cdata_leaf.value_str))
-        if self.cdata_leaf.value_type in (
-            Type.STRING,
-            Type.BINARY,
-            Type.ENUM,
-            Type.IDENT,
-            Type.BITS,
-        ):
-            return c2str(self.cdata_leaf.value_str)
-        if self.cdata_leaf.value_type == Type.DEC64:
-            return lib.lyd_dec64_to_double(self.cdata)
-        if self.cdata_leaf.value_type == Type.LEAFREF:
-            referenced = DNode.new(self.context, self.cdata_leaf.value.leafref)
-            return referenced.value()
-        if self.cdata_leaf.value_type == Type.BOOL:
-            return bool(self.cdata_leaf.value.bln)
+        return DLeaf.cdata_leaf_value(self.cdata)
+
+    @staticmethod
+    def cdata_leaf_value(cdata):
+        cdata = ffi.cast("struct lyd_node_leaf_list *", cdata)
+        val_type = cdata.value_type
+        if val_type in Type.STR_TYPES:
+            return c2str(cdata.value_str)
+        if val_type in Type.NUM_TYPES:
+            return int(c2str(cdata.value_str))
+        if val_type == Type.BOOL:
+            return bool(cdata.value.bln)
+        if val_type == Type.DEC64:
+            return lib.lyd_dec64_to_double(cdata)
+        if val_type == Type.LEAFREF:
+            return DLeaf.cdata_leaf_value(cdata.value.leafref)
         return None
 
 

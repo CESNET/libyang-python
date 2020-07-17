@@ -437,6 +437,8 @@ class Type:
             if rng is not None:
                 yield rng
 
+    STR_TYPES = frozenset((STRING, BINARY, ENUM, IDENT, BITS))
+
     def length(self) -> Optional[str]:
         if self.cdata.base == self.STRING and self.cdata.info.str.length:
             return c2str(self.cdata.info.str.length.expr)

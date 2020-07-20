@@ -321,14 +321,23 @@ class DNode:
             keep_empty_containers=keep_empty_containers,
         )
 
+        name_cache = {}
+
+        def _node_name(node):
+            name = name_cache.get(node.schema)
+            if name is None:
+                if strip_prefixes:
+                    name = c2str(node.schema.name)
+                else:
+                    mod = lib.lyd_node_module(node)
+                    name = "%s:%s" % (c2str(mod.name), c2str(node.schema.name))
+                name_cache[node.schema] = name
+            return name
+
         def _to_dict(node, parent_dic):
             if not lib.lyd_node_should_print(node, flags):
                 return
-            if strip_prefixes:
-                name = c2str(node.schema.name)
-            else:
-                mod = lib.lyd_node_module(node)
-                name = "%s:%s" % (c2str(mod.name), c2str(node.schema.name))
+            name = _node_name(node)
             if node.schema.nodetype == SNode.LIST:
                 list_element = {}
                 child = node.child

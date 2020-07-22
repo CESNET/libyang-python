@@ -4,9 +4,7 @@
 import os
 import unittest
 
-from libyang import Context
-from libyang.schema import Module, SRpc
-from libyang.util import LibyangError
+from libyang import Context, LibyangError, Module, SRpc
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")

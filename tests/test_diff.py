@@ -4,10 +4,10 @@
 import os
 import unittest
 
-from libyang import Context
-from libyang.diff import (
+from libyang import (
     BaseTypeAdded,
     BaseTypeRemoved,
+    Context,
     NodeTypeAdded,
     NodeTypeRemoved,
     SNodeAdded,

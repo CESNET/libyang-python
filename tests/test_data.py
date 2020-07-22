@@ -6,8 +6,8 @@ import os
 import unittest
 from unittest.mock import patch
 
-from libyang import Context, LibyangError, lib
-from libyang.data import DContainer, DRpc
+from _libyang import lib
+from libyang import Context, DContainer, DRpc, LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")

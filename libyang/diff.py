@@ -3,7 +3,7 @@
 
 from typing import Any, Callable, Iterator, Optional
 
-from . import Context
+from .context import Context
 from .schema import SContainer, SLeaf, SLeafList, SList, SNode, SRpc, SRpcInOut
 
 

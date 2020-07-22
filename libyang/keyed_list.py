@@ -1,6 +1,7 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+import copy
 from typing import Any, Hashable, Iterable, Optional, Tuple, Union
 
 
@@ -127,6 +128,16 @@ class KeyedList(list):
             return key in self._map
         except (KeyError, TypeError):
             return False
+
+    def __copy__(self) -> "KeyedList":
+        return self.copy()
+
+    def __deepcopy__(self, memo) -> "KeyedList":
+        k = KeyedList.__new__(KeyedList)
+        memo[id(self)] = k
+        k._key_name = copy.deepcopy(self._key_name, memo)
+        k._map = copy.deepcopy(self._map, memo)
+        return k
 
     # unsupported list API methods
     def not_implemented(self, *args, **kwargs):

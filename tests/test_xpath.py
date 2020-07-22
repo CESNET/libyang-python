@@ -1,6 +1,7 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+import copy
 import unittest
 
 import libyang as ly
@@ -25,6 +26,85 @@ class XPathTest(unittest.TestCase):
             else:
                 self.assertNotEqual(res, value)
                 self.assertEqual(res, defval)
+
+    def test_xpath_set(self):
+        d = copy.deepcopy(DICT)
+        ly.xpath_set(d, "/val", 43)
+        ly.xpath_set(d, "/cont1/leaf1", "foo")
+        ly.xpath_set(d, "/cont1/leaf2", "bar")
+        ly.xpath_set(d, "/iface[name='eth0']", {"name": "eth0", "up": False})
+        ly.xpath_set(d, "/iface[name='eth1']/ipv4/address[ip='10.0.0.2']/mtu", 1500)
+        ly.xpath_set(
+            d,
+            "/iface[name='eth1']/ipv6/address[ip='3ffe::ffff'][prefixlen='100']",
+            {"ip": "3ffe::ffff", "prefixlen": 100, "tentative": False},
+        )
+        ly.xpath_set(d, "/lstnum[.='100']", 100)
+        ly.xpath_set(d, "/lstnum[.='1']", 1, after="")
+        with self.assertRaises(ValueError):
+            ly.xpath_set(d, "/lstnum[.='1000']", 1000, after="1000000")
+        with self.assertRaises(ValueError):
+            ly.xpath_set(
+                d,
+                "/iface[name='eth1']/ipv4/address[ip='10.0.0.3']",
+                {"ip": "10.0.0.3"},
+                after="[ip='10.0.0.55']",
+            )
+        ly.xpath_set(
+            d, "/iface[name='eth1']/ipv4/address[ip='10.0.0.3']", {"ip": "10.0.0.3"}
+        )
+        ly.xpath_set(d, "/cont2/newlist[foo='bar']", {"foo": "bar", "name": "baz"})
+        ly.xpath_set(d, "/cont2/newll[.='12']", 12)
+        self.assertEqual(
+            d,
+            {
+                "cont1": {"leaf1": "foo", "leaf2": "bar"},
+                "cont2": {
+                    "leaf2": "coucou2",
+                    "newlist": [{"foo": "bar", "name": "baz"}],
+                    "newll": [12],
+                },
+                "iface": [
+                    {"name": "eth0", "up": False},
+                    {
+                        "name": "eth1",
+                        "ipv4": {
+                            "address": [
+                                {"ip": "10.0.0.2", "mtu": 1500},
+                                {"ip": "10.0.0.6"},
+                                {"ip": "10.0.0.3"},
+                            ]
+                        },
+                        "ipv6": {
+                            "address": [
+                                {
+                                    "ip": "3ffe::321:8",
+                                    "prefixlen": 64,
+                                    "tentative": False,
+                                },
+                                {
+                                    "ip": "3ffe::ff12",
+                                    "prefixlen": 96,
+                                    "tentative": True,
+                                },
+                                {
+                                    "ip": "3ffe::ffff",
+                                    "prefixlen": 100,
+                                    "tentative": False,
+                                },
+                            ]
+                        },
+                    },
+                ],
+                "iface2": [
+                    {"name": "eth2", "mtu": 1500},
+                    {"name": "eth3", "mtu": 1000},
+                ],
+                "lst2": ["a", "b", "c"],
+                "lstnum": [1, 10, 20, 30, 40, 100],
+                "val": 43,
+            },
+        )
 
 
 XPATH_SPLIT_EXPECTED_RESULTS = {

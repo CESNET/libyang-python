@@ -70,7 +70,7 @@ from .schema import (
     Type,
 )
 from .util import LibyangError
-from .xpath import xpath_get, xpath_split
+from .xpath import xpath_get, xpath_set, xpath_setdefault, xpath_split
 
 
 __all__ = (
@@ -143,5 +143,7 @@ __all__ = (
     "configure_logging",
     "schema_diff",
     "xpath_get",
+    "xpath_set",
+    "xpath_setdefault",
     "xpath_split",
 )

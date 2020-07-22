@@ -208,6 +208,8 @@ class Context:
         strict: bool = False,
         trusted: bool = False,
         no_yanglib: bool = False,
+        rpc_request: Optional[DNode] = None,
+        data_tree: Optional[DNode] = None,
     ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -229,8 +231,15 @@ class Context:
         else:
             d = str2c(d, encode=True)
         args = []
-        if rpc:
-            args.append(ffi.cast("struct lyd_node *", ffi.NULL))
+        if rpcreply:
+            if rpc_request is None:
+                raise ValueError("rpc_request node is required when rpcreply=True")
+            args.append(rpc_request.cdata)
+        if rpc or rpcreply:
+            if data_tree is not None:
+                args.append(data_tree.cdata)
+            else:
+                args.append(ffi.cast("struct lyd_node *", ffi.NULL))
         dnode = lib.lyd_parse_mem(self.cdata, d, fmt, flags, *args)
         if not dnode:
             raise self.error("failed to parse data tree")
@@ -250,6 +259,8 @@ class Context:
         strict: bool = False,
         trusted: bool = False,
         no_yanglib: bool = False,
+        rpc_request: Optional[DNode] = None,
+        data_tree: Optional[DNode] = None,
     ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -267,8 +278,15 @@ class Context:
         )
         fmt = data_format(fmt)
         args = []
-        if rpc:
-            args.append(ffi.cast("struct lyd_node *", ffi.NULL))
+        if rpcreply:
+            if rpc_request is None:
+                raise ValueError("rpc_request node is required when rpcreply=True")
+            args.append(rpc_request.cdata)
+        if rpc or rpcreply:
+            if data_tree is not None:
+                args.append(data_tree.cdata)
+            else:
+                args.append(ffi.cast("struct lyd_node *", ffi.NULL))
         dnode = lib.lyd_parse_fd(self.cdata, fileobj.fileno(), fmt, flags, *args)
         if not dnode:
             raise self.error("failed to parse data tree")

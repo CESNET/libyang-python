@@ -70,6 +70,7 @@ from .schema import (
     Type,
 )
 from .util import LibyangError
+from .xpath import xpath_split
 
 
 __all__ = (
@@ -141,4 +142,5 @@ __all__ = (
     "UnitsRemoved",
     "configure_logging",
     "schema_diff",
+    "xpath_split",
 )

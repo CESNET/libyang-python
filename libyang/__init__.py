@@ -47,6 +47,7 @@ from .diff import (
     UnitsRemoved,
     schema_diff,
 )
+from .keyed_list import KeyedList
 from .log import configure_logging
 from .schema import (
     Extension,
@@ -102,6 +103,7 @@ __all__ = (
     "IfNotFeature",
     "IfOrFeatures",
     "KeyAdded",
+    "KeyedList",
     "KeyRemoved",
     "LengthAdded",
     "LengthRemoved",

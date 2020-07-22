@@ -5,6 +5,7 @@ import logging
 from typing import IO, Any, Dict, Iterator, Optional, Union
 
 from _libyang import ffi, lib
+from .keyed_list import KeyedList
 from .schema import Module, SContainer, SLeaf, SLeafList, SList, SNode, SRpc, Type
 from .util import LibyangError, c2str, deprecated, str2c
 
@@ -334,6 +335,29 @@ class DNode:
                 name_cache[node.schema] = name
             return name
 
+        list_keys_cache = {}
+
+        def _init_yang_list(snode):
+            if snode.flags & lib.LYS_USERORDERED:
+                return []  # ordered list, return an empty builtin list
+
+            # unordered lists
+            if snode.nodetype == SNode.LEAFLIST:
+                return KeyedList(key_name=None)
+
+            if snode not in list_keys_cache:
+                list_snode = ffi.cast("struct lys_node_list *", snode)
+                keys = []
+                for i in range(list_snode.keys_size):
+                    key = ffi.cast("struct lys_node *", list_snode.keys[i])
+                    keys.append(c2str(key.name))
+                if len(keys) == 1:
+                    list_keys_cache[snode] = keys[0]
+                else:
+                    list_keys_cache[snode] = tuple(keys)
+
+            return KeyedList(key_name=list_keys_cache[snode])
+
         def _to_dict(node, parent_dic):
             if not lib.lyd_node_should_print(node, flags):
                 return
@@ -344,7 +368,9 @@ class DNode:
                 while child:
                     _to_dict(child, list_element)
                     child = child.next
-                parent_dic.setdefault(name, []).append(list_element)
+                if name not in parent_dic:
+                    parent_dic[name] = _init_yang_list(node.schema)
+                parent_dic[name].append(list_element)
             elif node.schema.nodetype & (SNode.CONTAINER | SNode.RPC | SNode.ACTION):
                 container = {}
                 child = node.child
@@ -353,7 +379,9 @@ class DNode:
                     child = child.next
                 parent_dic[name] = container
             elif node.schema.nodetype == SNode.LEAFLIST:
-                parent_dic.setdefault(name, []).append(DLeaf.cdata_leaf_value(node))
+                if name not in parent_dic:
+                    parent_dic[name] = _init_yang_list(node.schema)
+                parent_dic[name].append(DLeaf.cdata_leaf_value(node))
             elif node.schema.nodetype == SNode.LEAF:
                 parent_dic[name] = DLeaf.cdata_leaf_value(node)
 
@@ -513,7 +541,7 @@ class DLeaf(DNode):
         return DLeaf.cdata_leaf_value(self.cdata)
 
     @staticmethod
-    def cdata_leaf_value(cdata):
+    def cdata_leaf_value(cdata) -> Any:
         cdata = ffi.cast("struct lyd_node_leaf_list *", cdata)
         val_type = cdata.value_type
         if val_type in Type.STR_TYPES:

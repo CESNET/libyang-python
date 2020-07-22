@@ -16,6 +16,16 @@ class XPathTest(unittest.TestCase):
             else:
                 self.assertEqual(list(ly.xpath_split(xpath)), split_result)
 
+    def test_xpath_get(self):
+        for xpath, value, defval, expected in XPATH_GET_EXPECTED_RESULTS:
+            res = ly.xpath_get(DICT, xpath, defval)
+            if expected:
+                self.assertEqual(res, value)
+                self.assertNotEqual(res, defval)
+            else:
+                self.assertNotEqual(res, value)
+                self.assertEqual(res, defval)
+
 
 XPATH_SPLIT_EXPECTED_RESULTS = {
     "": ValueError,
@@ -39,3 +49,60 @@ XPATH_SPLIT_EXPECTED_RESULTS = {
     "//invalid/xpath": ValueError,
     "/xxx[abc='2']invalid:xx/xpath": ValueError,
 }
+
+DICT = {
+    "cont1": {"leaf1": "coucou1",},
+    "cont2": {"leaf2": "coucou2",},
+    "iface": [
+        {
+            "name": "eth0",
+            "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},
+            "ipv6": {"address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"},],},
+        },
+        {
+            "name": "eth1",
+            "ipv4": {
+                "address": ly.KeyedList(
+                    [{"ip": "10.0.0.2"}, {"ip": "10.0.0.6"},], key_name="ip",
+                ),
+            },
+            "ipv6": {
+                "address": ly.KeyedList(
+                    [
+                        {"ip": "3ffe::321:8", "prefixlen": 64, "tentative": False},
+                        {"ip": "3ffe::ff12", "prefixlen": 96, "tentative": True},
+                    ],
+                    key_name=("ip", "prefixlen"),
+                ),
+            },
+        },
+    ],
+    "iface2": ly.KeyedList(
+        [{"name": "eth2", "mtu": 1500}, {"name": "eth3", "mtu": 1000}], key_name="name"
+    ),
+    "lst2": ["a", "b", "c"],
+    "lstnum": [10, 20, 30, 40],
+    "val": 42,
+}
+
+XPATH_GET_EXPECTED_RESULTS = [
+    ("/val", 42, None, True),
+    ("val", 42, None, True),
+    ("lst2", ["a", "b", "c"], None, True),
+    (
+        "iface[name='eth0']/ipv4/address",
+        [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"}],
+        None,
+        True,
+    ),
+    (
+        "/iface[name='eth1']/ipv6/address[ip='3ffe::321:8'][prefixlen='64']",
+        {"ip": "3ffe::321:8", "prefixlen": 64, "tentative": False},
+        None,
+        True,
+    ),
+    ("cont1/leaf1", "coucou1", None, True),
+    ("cont2/leaf2", "coucou2", None, True),
+    ("cont1/leaf2", "not found", "fallback", False),
+    ("cont1/leaf2", "not found", None, False),
+]

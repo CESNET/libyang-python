@@ -1,6 +1,7 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+import fnmatch
 import re
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
@@ -222,6 +223,99 @@ def xpath_get(data: Dict, xpath: str, default: Any = None) -> Any:
         return _xpath_find(data, xpath_split(xpath), create_if_missing=False)
     except KeyError:
         return default
+
+
+# -------------------------------------------------------------------------------------
+def xpath_getall(data: Dict, xpath: str) -> Iterator[Any]:
+    """
+    Yield all elements from a data structure (dict) that match the given
+    xpath. Basic wildcards in the xpath are supported.
+
+    IMPORTANT: the order in which the elements are yielded is not stable and
+    you should not rely on it.
+
+    Examples:
+
+    >>> config = {'config': {'vrf': [{'name': 'vr0', 'routing': {'a1': [1, 8]}},
+    ...                              {'name': 'vrf1', 'routing': {'a2': 55}},
+    ...                              {'name': 'vrf2', 'snmp': {'a3': 12, 'c': 5}}]}}
+    >>> list(xpath_getall(config, '/config/vrf/name'))
+    ['vrf0', 'vrf1']
+    >>> list(xpath_getall(config, '/config/vrf/routing'))
+    [{'a1': [1, 8]}, {'a2': 55}]
+    >>> list(xpath_getall(config, '/config/vrf/routing/b'))
+    []
+    >>> list(xpath_getall(config, '/config/vrf/*/a*'))
+    [1, 8, 55, 12]
+    """
+    parts = list(xpath_split(xpath))
+
+    def _walk_subtrees(subtrees, keys, level):
+        next_xpath = "/" + "/".join(
+            n + "".join('[%s="%s"]' % _k for _k in k) for _, n, k in parts[level:]
+        )
+        # pylint: disable=too-many-nested-blocks
+        for sub in subtrees:
+            if isinstance(sub, list):
+                if keys:
+                    try:
+                        if isinstance(sub, KeyedList):
+                            l = sub[_xpath_keys_to_key_val(keys)]
+                        else:
+                            l = sub[_list_find_key_index(keys, sub)]
+                    except (ValueError, KeyError):
+                        continue
+                    if level == len(parts):
+                        yield l
+                    elif isinstance(l, dict):
+                        yield from xpath_getall(l, next_xpath)
+                else:
+                    if level == len(parts):
+                        yield from sub
+                    else:
+                        for l in sub:
+                            if isinstance(l, dict):
+                                yield from xpath_getall(l, next_xpath)
+
+            elif isinstance(sub, dict) and not keys and level < len(parts):
+                yield from xpath_getall(sub, next_xpath)
+
+            elif level == len(parts) and not keys:
+                yield sub
+
+    for i, (_, name, keys) in enumerate(parts):
+        if not isinstance(data, dict) or name not in data:
+            if "*" in name and isinstance(data, dict):
+                # Wildcard xpath element, yield from all matching subtrees
+                subtrees = (data[n] for n in fnmatch.filter(data.keys(), name))
+                yield from _walk_subtrees(subtrees, keys, i + 1)
+            return
+
+        data = data[name]
+
+        if keys:
+            if isinstance(data, KeyedList):
+                # shortcut access is possible
+                try:
+                    data = data[_xpath_keys_to_key_val(keys)]
+                except (KeyError, ValueError):
+                    return
+            elif isinstance(data, list):
+                # regular python list, need to iterate over it
+                try:
+                    i = _list_find_key_index(keys, data)
+                    data = data[i]
+                except ValueError:
+                    return
+            else:
+                return
+        elif isinstance(data, list):
+            # More than one element matches the xpath.
+            yield from _walk_subtrees(data, keys, i + 1)
+            return
+
+    # trivial case, only one match
+    yield data
 
 
 # -------------------------------------------------------------------------------------

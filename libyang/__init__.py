@@ -73,6 +73,7 @@ from .util import LibyangError
 from .xpath import (
     xpath_del,
     xpath_get,
+    xpath_getall,
     xpath_move,
     xpath_set,
     xpath_setdefault,
@@ -151,6 +152,7 @@ __all__ = (
     "schema_diff",
     "xpath_del",
     "xpath_get",
+    "xpath_getall",
     "xpath_move",
     "xpath_set",
     "xpath_setdefault",

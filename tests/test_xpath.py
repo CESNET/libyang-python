@@ -106,6 +106,69 @@ class XPathTest(unittest.TestCase):
             },
         )
 
+    def test_xpath_del(self):
+        d = copy.deepcopy(DICT)
+        self.assertTrue(ly.xpath_del(d, "/val"))
+        self.assertTrue(ly.xpath_del(d, "/cont2/leaf2"))
+        self.assertTrue(ly.xpath_del(d, "/lst2[.='b']"))
+        self.assertTrue(ly.xpath_del(d, "/lst2[.='a']"))
+        self.assertTrue(ly.xpath_del(d, "/lst2[.='c']"))
+        self.assertFalse(ly.xpath_del(d, "/lst2[.='x']"))
+        self.assertFalse(ly.xpath_del(d, "/lst2"))
+        self.assertTrue(ly.xpath_del(d, "lstnum[.='20']"))
+        self.assertFalse(ly.xpath_del(d, "/lstnum[.='10000']"))
+        self.assertFalse(ly.xpath_del(d, "/foo/bar/baz"))
+        self.assertTrue(
+            ly.xpath_del(d, "/iface[name='eth1']/ipv4/address[ip='10.0.0.2']")
+        )
+        self.assertFalse(
+            ly.xpath_del(d, "/iface[name='eth1']/ipv4/address[ip='10.0.0.7']")
+        )
+        self.assertFalse(
+            ly.xpath_del(
+                d, "/iface[name='eth1']/ipv6/address[ip='3ffe::ff12'][prefixlen='64']"
+            )
+        )
+        self.assertTrue(
+            ly.xpath_del(
+                d, "/iface[name='eth1']/ipv6/address[ip='3ffe::ff12'][prefixlen='96']"
+            )
+        )
+        self.assertEqual(
+            d,
+            {
+                "cont1": {"leaf1": "coucou1"},
+                "cont2": {},
+                "iface": [
+                    {
+                        "name": "eth0",
+                        "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"}]},
+                        "ipv6": {
+                            "address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"}]
+                        },
+                    },
+                    {
+                        "name": "eth1",
+                        "ipv4": {"address": [{"ip": "10.0.0.6"}]},
+                        "ipv6": {
+                            "address": [
+                                {
+                                    "ip": "3ffe::321:8",
+                                    "prefixlen": 64,
+                                    "tentative": False,
+                                }
+                            ]
+                        },
+                    },
+                ],
+                "iface2": [
+                    {"name": "eth2", "mtu": 1500},
+                    {"name": "eth3", "mtu": 1000},
+                ],
+                "lstnum": [10, 30, 40],
+            },
+        )
+
 
 XPATH_SPLIT_EXPECTED_RESULTS = {
     "": ValueError,

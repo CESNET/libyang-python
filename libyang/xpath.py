@@ -347,3 +347,51 @@ def xpath_setdefault(data: Dict, xpath: str, default: Any) -> Any:
     Shortcut for xpath_set(..., force=False).
     """
     return xpath_set(data, xpath, default, force=False)
+
+
+# -------------------------------------------------------------------------------------
+def xpath_del(data: Dict, xpath: str) -> bool:
+    """
+    Remove an element identified by an Xpath from a data structure.
+
+    :arg data:
+        The dictionary to modify.
+    :arg xpath:
+        The path identifying the element to remove.
+
+    :returns:
+        True if the element was removed. False if the element was not found.
+    """
+    parts = list(xpath_split(xpath))
+    try:
+        parent = _xpath_find(data, parts[:-1], create_if_missing=False)
+    except KeyError:
+        return False
+    _, name, keys = parts[-1]
+    if name not in parent:
+        return False
+
+    if keys:
+        lst = parent[name]
+        if isinstance(lst, KeyedList):
+            # shortcut access is possible
+            try:
+                del lst[_xpath_keys_to_key_val(keys)]
+            except (ValueError, KeyError):
+                return False
+        elif isinstance(lst, list):
+            # regular python list, need to iterate over it
+            try:
+                i = _list_find_key_index(keys, lst)
+                del lst[i]
+            except ValueError:
+                return False
+        else:
+            return False
+        if not lst:
+            # list is now empty
+            del parent[name]
+    else:
+        del parent[name]
+
+    return True

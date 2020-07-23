@@ -395,3 +395,66 @@ def xpath_del(data: Dict, xpath: str) -> bool:
         del parent[name]
 
     return True
+
+
+# -------------------------------------------------------------------------------------
+def xpath_move(data: Dict, xpath: str, after: str) -> None:
+    """
+    Move a list element nested into a data dictionary.
+
+    :arg data:
+        The dictionary to modify.
+    :arg xpath:
+        The path identifying the element to move.
+    :arg after:
+        The element after which to move the element identified by xpath. Similar
+        semantics than in xpath_set().
+
+    :raises ValueError:
+        If `xpath` does not designate a list element or if `after` is invalid.
+    :raises KeyError:
+        If the element identified by `xpath` or if the element identified by `after` are
+        not found.
+    :raises TypeError:
+        If `data` does not match the expected structure conveyed by `xpath`.
+    """
+    parts = list(xpath_split(xpath))
+    parent = _xpath_find(data, parts[:-1], create_if_missing=False)
+    _, name, keys = parts[-1]
+    if name not in parent:
+        raise KeyError(name)
+    if not keys:
+        raise ValueError("xpath does not designate a list element")
+
+    lst = parent[name]
+    if isinstance(lst, KeyedList):
+        raise ValueError("cannot move elements in non-ordered lists")
+    if not isinstance(lst, list):
+        raise ValueError("expected a list")
+
+    try:
+        i = _list_find_key_index(keys, lst)
+    except ValueError:
+        raise KeyError(keys) from None
+
+    if after is None:
+        lst.append(lst.pop(i))
+
+    elif after == "":
+        lst.insert(0, lst.pop(i))
+
+    else:
+        if after[0] != "[":
+            after = "[.=%r]" % after
+        _, _, after_keys = next(xpath_split("/*" + after))
+        try:
+            j = _list_find_key_index(after_keys, lst)
+        except ValueError:
+            raise KeyError(after) from None
+        if i > j:
+            j += 1
+        moved = lst.pop(i)
+        if j == len(lst):
+            lst.append(moved)
+        else:
+            lst.insert(j, moved)

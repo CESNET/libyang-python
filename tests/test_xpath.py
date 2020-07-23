@@ -169,6 +169,56 @@ class XPathTest(unittest.TestCase):
             },
         )
 
+    def test_xpath_move(self):
+        d = {
+            "regular": [
+                {"name": "foo", "size": 2},
+                {"name": "bar", "size": 1},
+                {"name": "baz", "size": 42},
+            ],
+            "regular-multi": [
+                {"name": "foo", "group": "xxx", "size": 2},
+                {"name": "bar", "group": "yyy", "size": 1},
+                {"name": "baz", "group": "xxx", "size": 42},
+            ],
+            "ll": ["a", "b", "c", "d"],
+            "ll-keyed": ly.KeyedList([10, 20, 30, 40]),
+        }
+        with self.assertRaises(KeyError):
+            ly.xpath_move(d, "/not/found", "")
+        with self.assertRaises(KeyError):
+            ly.xpath_move(d, "/ll[.='x']", "")
+        with self.assertRaises(KeyError):
+            ly.xpath_move(d, "/ll[.='c']", "x")
+        with self.assertRaises(ValueError):
+            ly.xpath_move(d, "/ll", "")
+        ly.xpath_move(d, "/ll[.='c']", "a")
+        ly.xpath_move(d, "/ll[.='b']", "")
+        ly.xpath_move(d, "/ll[.='a']", None)
+        with self.assertRaises(ValueError):
+            ly.xpath_move(d, "/ll-keyed[.='40']", "")
+        with self.assertRaises(ValueError):
+            ly.xpath_move(d, "/ll-keyed[.='10']", None)
+        with self.assertRaises(ValueError):
+            ly.xpath_move(d, "/ll-keyed[.='30']", "40")
+        self.assertEqual(
+            d,
+            {
+                "regular": [
+                    {"name": "foo", "size": 2},
+                    {"name": "bar", "size": 1},
+                    {"name": "baz", "size": 42},
+                ],
+                "regular-multi": [
+                    {"group": "xxx", "name": "foo", "size": 2},
+                    {"group": "yyy", "name": "bar", "size": 1},
+                    {"group": "xxx", "name": "baz", "size": 42},
+                ],
+                "ll": ["b", "c", "d", "a"],
+                "ll-keyed": [10, 20, 30, 40],
+            },
+        )
+
 
 XPATH_SPLIT_EXPECTED_RESULTS = {
     "": ValueError,

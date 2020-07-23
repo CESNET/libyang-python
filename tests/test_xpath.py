@@ -219,6 +219,15 @@ class XPathTest(unittest.TestCase):
             },
         )
 
+    def test_xpath_getall(self):
+        for xpath, expected in XPATH_GETALL_EXPECTED_RESULTS:
+            # result order is not guaranteed, and we cannot use a set() because
+            # dicts are not hashable.
+            res = list(ly.xpath_getall(DICT, xpath))
+            self.assertEqual(len(res), len(expected), xpath)
+            for elt in res:
+                self.assertIn(elt, expected, xpath)
+
 
 XPATH_SPLIT_EXPECTED_RESULTS = {
     "": ValueError,
@@ -298,4 +307,83 @@ XPATH_GET_EXPECTED_RESULTS = [
     ("cont2/leaf2", "coucou2", None, True),
     ("cont1/leaf2", "not found", "fallback", False),
     ("cont1/leaf2", "not found", None, False),
+]
+
+XPATH_GETALL_EXPECTED_RESULTS = [
+    ("/val", [42]),
+    ("val", [42]),
+    ("lst2", ["a", "b", "c"]),
+    ("/lstnum", [10, 20, 30, 40]),
+    ("iface/name", ["eth0", "eth1"]),
+    ("/iface*/name", ["eth0", "eth1", "eth2", "eth3"]),
+    ('iface[name="eth1"]/ipv4/address/ip', ["10.0.0.2", "10.0.0.6"]),
+    (
+        "iface/ipv*/address/ip",
+        [
+            "10.0.0.1",
+            "10.0.0.153",
+            "3ffe::123:1",
+            "3ffe::c00:c00",
+            "10.0.0.2",
+            "10.0.0.6",
+            "3ffe::321:8",
+            "3ffe::ff12",
+        ],
+    ),
+    (
+        "/iface[name='eth1']/ipv6/address[ip='3ffe::321:8'][prefixlen='64']/tentative",
+        [False],
+    ),
+    ("/iface[name='eth1']/ipv6/address[ip='3ffe::8'][prefixlen='64']/tentative", [],),
+    ("/cont1[foo='bar']", [],),
+    (
+        "/iface*",
+        [
+            {
+                "name": "eth0",
+                "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},
+                "ipv6": {"address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"},],},
+            },
+            {
+                "name": "eth1",
+                "ipv4": {"address": [{"ip": "10.0.0.2"}, {"ip": "10.0.0.6"},],},
+                "ipv6": {
+                    "address": [
+                        {"ip": "3ffe::321:8", "prefixlen": 64, "tentative": False},
+                        {"ip": "3ffe::ff12", "prefixlen": 96, "tentative": True},
+                    ],
+                },
+            },
+            {"name": "eth2", "mtu": 1500},
+            {"name": "eth3", "mtu": 1000},
+        ],
+    ),
+    (
+        "/iface*[name='eth0']/ipv4",
+        [{"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},],
+    ),
+    ("/iface[name='eth0']/ipv4/address[ip='10.0.0.1']", [{"ip": "10.0.0.1"}],),
+    ("/iface[name='eth0']/ipv4/address[ip='10.0.0.2']", [],),
+    ("/iface2[name='eth3']", [{"name": "eth3", "mtu": 1000}]),
+    ("/iface[name='eth0']/ipv4/address", [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"}]),
+    ("*/leaf*", ["coucou1", "coucou2"]),
+    ("cont1/not-found", []),
+    (
+        "iface/ipv4",
+        [
+            {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"}]},
+            {"address": [{"ip": "10.0.0.2"}, {"ip": "10.0.0.6"}]},
+        ],
+    ),
+    ('iface*[name="eth3"]', [{"name": "eth3", "mtu": 1000}]),
+    (
+        'iface*[name="eth0"]',
+        [
+            {
+                "name": "eth0",
+                "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},
+                "ipv6": {"address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"},],},
+            }
+        ],
+    ),
 ]

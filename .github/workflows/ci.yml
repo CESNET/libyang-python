@@ -55,6 +55,23 @@ jobs:
       - run: python -m pip install --upgrade tox
       - run: python -m tox -e ${{ matrix.toxenv }}
 
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip
+          restore-keys: pip
+      - run: python -m pip install --upgrade pip setuptools wheel
+      - run: python -m pip install --upgrade tox codecov
+      - run: python -m tox -e coverage
+      - run: codecov
+
   deploy:
     needs: [lint, test]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')

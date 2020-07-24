@@ -1,0 +1,4 @@
+setup.py                                export-subst
+.gitattributes                          export-ignore
+.gitignore                              export-ignore
+*.py                                    diff=python

@@ -551,7 +551,7 @@ class DLeaf(DNode):
         if val_type == Type.BOOL:
             return bool(cdata.value.bln)
         if val_type == Type.DEC64:
-            return lib.lyd_dec64_to_double(cdata)
+            return lib.lyd_dec64_to_double(ffi.cast("struct lyd_node *", cdata))
         if val_type == Type.LEAFREF:
             return DLeaf.cdata_leaf_value(cdata.value.leafref)
         return None

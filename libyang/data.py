@@ -289,6 +289,29 @@ class DNode:
         if ret != 0:
             raise self.context.error("cannot print node")
 
+    def should_print(
+        self,
+        include_implicit_defaults: bool = False,
+        trim_default_values: bool = False,
+        keep_empty_containers: bool = False,
+    ) -> bool:
+        """
+        Check if a node should be "printed".
+
+        :arg bool include_implicit_defaults:
+            Include implicit default nodes.
+        :arg bool trim_default_values:
+            Exclude nodes with the value equal to their default value.
+        :arg bool keep_empty_containers:
+            Preserve empty non-presence containers.
+        """
+        flags = printer_flags(
+            include_implicit_defaults=include_implicit_defaults,
+            trim_default_values=trim_default_values,
+            keep_empty_containers=keep_empty_containers,
+        )
+        return bool(lib.lyd_node_should_print(self.cdata, flags))
+
     def print_dict(
         self,
         strip_prefixes: bool = True,

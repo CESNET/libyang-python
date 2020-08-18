@@ -270,6 +270,41 @@ class DataTest(unittest.TestCase):
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
 
+    DICT_CONFIG_WITH_PREFIX = {
+        "yolo-system:conf": {
+            "hostname": "foo",
+            "speed": 1234,
+            "number": [1000, 2000, 3000],
+            "url": [
+                {
+                    "enabled": False,
+                    "path": "/CESNET/libyang-python",
+                    "host": "github.com",
+                    "proto": "https",
+                },
+                {
+                    "port": 8080,
+                    "proto": "http",
+                    "path": "/index.html",
+                    "enabled": True,
+                    "host": "foobar.com",
+                },
+            ],
+        }
+    }
+
+    def test_data_from_dict_module_with_prefix(self):
+        module = self.ctx.get_module("yolo-system")
+        dnode = module.parse_data_dict(
+            self.DICT_CONFIG_WITH_PREFIX, strict=True, config=True
+        )
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem("json", pretty=True)
+        finally:
+            dnode.free()
+        self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+
     DICT_EDIT = {"conf": {"hostname-ref": "notdefined"}}
 
     def test_data_from_dict_edit(self):

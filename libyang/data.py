@@ -740,7 +740,7 @@ def dict_to_dnode(
     def _to_dnode(_dic, _schema, _parent=ffi.NULL, in_rpc_output=False):
         for key in _dic_keys(_dic, _schema):
             if ":" in key:
-                prefix, name = name.split(":")
+                prefix, name = key.split(":")
             else:
                 prefix, name = None, key
 

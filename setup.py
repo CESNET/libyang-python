@@ -76,7 +76,7 @@ def get_version_from_archive_id(git_archive_id="$Format:%ct %d$"):
 
     # source was modified by git archive, try to parse the version from
     # the value of git_archive_id
-    match = re.search(r"tag:\s*v([^,)]+)", git_archive_id)
+    match = re.search(r"tag:\s*(v[^,)]+)", git_archive_id)
     if match:
         # archived revision is tagged, use the tag
         return git_describe_to_pep440(match.group(1))

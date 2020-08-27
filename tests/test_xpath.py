@@ -253,19 +253,37 @@ XPATH_SPLIT_EXPECTED_RESULTS = {
 }
 
 DICT = {
-    "cont1": {"leaf1": "coucou1",},
-    "cont2": {"leaf2": "coucou2",},
+    "cont1": {
+        "leaf1": "coucou1",
+    },
+    "cont2": {
+        "leaf2": "coucou2",
+    },
     "iface": [
         {
             "name": "eth0",
-            "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},
-            "ipv6": {"address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"},],},
+            "ipv4": {
+                "address": [
+                    {"ip": "10.0.0.1"},
+                    {"ip": "10.0.0.153"},
+                ],
+            },
+            "ipv6": {
+                "address": [
+                    {"ip": "3ffe::123:1"},
+                    {"ip": "3ffe::c00:c00"},
+                ],
+            },
         },
         {
             "name": "eth1",
             "ipv4": {
                 "address": ly.KeyedList(
-                    [{"ip": "10.0.0.2"}, {"ip": "10.0.0.6"},], key_name="ip",
+                    [
+                        {"ip": "10.0.0.2"},
+                        {"ip": "10.0.0.6"},
+                    ],
+                    key_name="ip",
                 ),
             },
             "ipv6": {
@@ -334,19 +352,40 @@ XPATH_GETALL_EXPECTED_RESULTS = [
         "/iface[name='eth1']/ipv6/address[ip='3ffe::321:8'][prefixlen='64']/tentative",
         [False],
     ),
-    ("/iface[name='eth1']/ipv6/address[ip='3ffe::8'][prefixlen='64']/tentative", [],),
-    ("/cont1[foo='bar']", [],),
+    (
+        "/iface[name='eth1']/ipv6/address[ip='3ffe::8'][prefixlen='64']/tentative",
+        [],
+    ),
+    (
+        "/cont1[foo='bar']",
+        [],
+    ),
     (
         "/iface*",
         [
             {
                 "name": "eth0",
-                "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},
-                "ipv6": {"address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"},],},
+                "ipv4": {
+                    "address": [
+                        {"ip": "10.0.0.1"},
+                        {"ip": "10.0.0.153"},
+                    ],
+                },
+                "ipv6": {
+                    "address": [
+                        {"ip": "3ffe::123:1"},
+                        {"ip": "3ffe::c00:c00"},
+                    ],
+                },
             },
             {
                 "name": "eth1",
-                "ipv4": {"address": [{"ip": "10.0.0.2"}, {"ip": "10.0.0.6"},],},
+                "ipv4": {
+                    "address": [
+                        {"ip": "10.0.0.2"},
+                        {"ip": "10.0.0.6"},
+                    ],
+                },
                 "ipv6": {
                     "address": [
                         {"ip": "3ffe::321:8", "prefixlen": 64, "tentative": False},
@@ -360,10 +399,23 @@ XPATH_GETALL_EXPECTED_RESULTS = [
     ),
     (
         "/iface*[name='eth0']/ipv4",
-        [{"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},],
+        [
+            {
+                "address": [
+                    {"ip": "10.0.0.1"},
+                    {"ip": "10.0.0.153"},
+                ],
+            },
+        ],
     ),
-    ("/iface[name='eth0']/ipv4/address[ip='10.0.0.1']", [{"ip": "10.0.0.1"}],),
-    ("/iface[name='eth0']/ipv4/address[ip='10.0.0.2']", [],),
+    (
+        "/iface[name='eth0']/ipv4/address[ip='10.0.0.1']",
+        [{"ip": "10.0.0.1"}],
+    ),
+    (
+        "/iface[name='eth0']/ipv4/address[ip='10.0.0.2']",
+        [],
+    ),
     ("/iface2[name='eth3']", [{"name": "eth3", "mtu": 1000}]),
     ("/iface[name='eth0']/ipv4/address", [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"}]),
     ("*/leaf*", ["coucou1", "coucou2"]),
@@ -381,8 +433,18 @@ XPATH_GETALL_EXPECTED_RESULTS = [
         [
             {
                 "name": "eth0",
-                "ipv4": {"address": [{"ip": "10.0.0.1"}, {"ip": "10.0.0.153"},],},
-                "ipv6": {"address": [{"ip": "3ffe::123:1"}, {"ip": "3ffe::c00:c00"},],},
+                "ipv4": {
+                    "address": [
+                        {"ip": "10.0.0.1"},
+                        {"ip": "10.0.0.153"},
+                    ],
+                },
+                "ipv6": {
+                    "address": [
+                        {"ip": "3ffe::123:1"},
+                        {"ip": "3ffe::c00:c00"},
+                    ],
+                },
             }
         ],
     ),

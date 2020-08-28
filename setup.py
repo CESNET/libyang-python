@@ -33,7 +33,8 @@ def git_describe_to_pep440(version):
         v(?P<major>\d+)\.
         (?P<minor>\d+)\.
         (?P<patch>\d+)
-        (\.post(?P<post>\d+))?
+        ((\.post|-)(?P<post>\d+)(?!-g))?
+        ([\+~](?P<local_segment>.*?))?
         (-(?P<dev>\d+))?(-g(?P<commit>.+))?
         """,
         version,
@@ -54,6 +55,9 @@ def git_describe_to_pep440(version):
     elif match.group("post"):
         dic["post"] = int(match.group("post"))
         fmt += ".post{post}"
+    if match.group("local_segment"):
+        dic["local_segment"] = match.group("local_segment")
+        fmt += "+{local_segment}"
     return fmt.format(**dic)
 
 
@@ -76,7 +80,7 @@ def get_version_from_archive_id(git_archive_id="$Format:%ct %d$"):
 
     # source was modified by git archive, try to parse the version from
     # the value of git_archive_id
-    match = re.search(r"tag:\s*(v[^,)]+)", git_archive_id)
+    match = re.search(r"tag:\s*([^,)]+)", git_archive_id)
     if match:
         # archived revision is tagged, use the tag
         return git_describe_to_pep440(match.group(1))
@@ -84,7 +88,7 @@ def get_version_from_archive_id(git_archive_id="$Format:%ct %d$"):
     # archived revision is not tagged, use the commit date
     tstamp = git_archive_id.strip().split()[0]
     d = datetime.datetime.utcfromtimestamp(int(tstamp))
-    return d.strftime("%Y.%m.%d.dev0")
+    return d.strftime("1.%Y.%m.%d")
 
 
 # -------------------------------------------------------------------------------------
@@ -111,7 +115,8 @@ def get_version():
             return git_describe_to_pep440(out.decode("utf-8").strip())
     except Exception:
         pass
-    return "0.0.0"
+
+    return "1.99999.99999"
 
 
 # -------------------------------------------------------------------------------------

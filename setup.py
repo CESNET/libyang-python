@@ -103,10 +103,15 @@ def get_version():
         return read_file("libyang/VERSION")
     except IOError:
         pass
+
+    if "LIBYANG_PYTHON_FORCE_VERSION" in os.environ:
+        return os.environ["LIBYANG_PYTHON_FORCE_VERSION"]
+
     try:
         return get_version_from_archive_id()
     except ValueError:
         pass
+
     try:
         if os.path.isdir(".git"):
             out = subprocess.check_output(

@@ -229,6 +229,7 @@ struct lys_tpdf {
 	struct lys_ext_instance **ext;
 	const char *units;
 	struct lys_type type;
+	struct lys_module *module;
 	const char *dflt;
 	...;
 };

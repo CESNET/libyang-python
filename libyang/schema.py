@@ -482,6 +482,8 @@ class Type:
             yield from self.patterns()
 
     def module(self) -> Module:
+        if not self.cdata.der.module:
+            return None
         module_p = lib.lys_main_module(self.cdata.der.module)
         if not module_p:
             raise self.context.error("cannot get module")

@@ -303,6 +303,9 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), "host")
         self.assertEqual(t.base(), Type.STRING)
+        mod = t.module()
+        self.assertIsNot(mod, None)
+        self.assertEqual(mod.name(), "wtf-types")
         d = t.derived_type()
         self.assertEqual(d.name(), "str")
         dd = d.derived_type()
@@ -357,6 +360,7 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(t.base(), Type.BITS)
         bits = [b for b, _ in t.bits()]
         self.assertEqual(bits, ["read", "write", "execute"])
+        self.assertIs(t.derived_type().module(), None)
 
     def test_leaf_parent(self):
         leaf = next(

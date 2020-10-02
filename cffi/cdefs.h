@@ -410,6 +410,9 @@ typedef enum {
 #define LYD_OPT_DESTRUCT ...
 #define LYD_OPT_NOSIBLINGS ...
 
+#define LYD_DIFFOPT_NOSIBLINGS ...
+#define LYD_DIFFOPT_WITHDEFAULTS ...
+
 typedef union lyd_value_u {
 	int8_t bln;
 	struct lyd_node *leafref;
@@ -434,6 +437,23 @@ struct lyd_node_leaf_list {
 	...;
 };
 
+typedef enum {
+    LYD_DIFF_END,
+    LYD_DIFF_DELETED,
+    LYD_DIFF_CHANGED,
+    LYD_DIFF_MOVEDAFTER1,
+    LYD_DIFF_CREATED,
+    LYD_DIFF_MOVEDAFTER2,
+    ...
+} LYD_DIFFTYPE;
+
+struct lyd_difflist {
+    LYD_DIFFTYPE *type;
+    struct lyd_node **first;
+    struct lyd_node **second;
+    ...;
+};
+
 struct ly_set *lyd_find_instance(const struct lyd_node *, const struct lys_node *);
 struct ly_set *lyd_find_path(const struct lyd_node *, const char *);
 struct lyd_node *lyd_new(struct lyd_node *, const struct lys_module *, const char *);
@@ -454,6 +474,8 @@ void lyd_free(struct lyd_node *);
 void lyd_free_withsiblings(struct lyd_node *);
 int lyd_validate(struct lyd_node **, int, void *);
 int lyd_merge(struct lyd_node *, const struct lyd_node *, int);
+struct lyd_difflist *lyd_diff(struct lyd_node *first, struct lyd_node *second, int options);
+void lyd_free_diff(struct lyd_difflist *diff);
 
 /* from libc, needed to free allocated strings */
 void free(void *);

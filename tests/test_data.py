@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DRpc, LibyangError
+from libyang import Context, DContainer, DDiff, DRpc, LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -489,3 +489,79 @@ class DataTest(unittest.TestCase):
                 },
             },
         )
+
+    XML_DIFF_STATE1 = """<state xmlns="urn:yang:yolo:system">
+  <hostname>foo</hostname>
+  <speed>1234</speed>
+  <number>1000</number>
+  <number>2000</number>
+  <number>3000</number>
+  <url>
+    <proto>https</proto>
+    <host>github.com</host>
+    <path>/CESNET/libyang-python</path>
+    <enabled>false</enabled>
+  </url>
+  <url>
+    <proto>http</proto>
+    <host>foobar.com</host>
+    <port>8080</port>
+    <path>/index.html</path>
+    <enabled>true</enabled>
+  </url>
+</state>
+"""
+    XML_DIFF_STATE2 = """<state xmlns="urn:yang:yolo:system">
+  <hostname>foo</hostname>
+  <speed>5432</speed>
+  <number>1000</number>
+  <number>3000</number>
+  <url>
+    <proto>https</proto>
+    <host>github.com</host>
+    <path>/CESNET/libyang-python</path>
+    <enabled>true</enabled>
+  </url>
+  <url>
+    <proto>http</proto>
+    <host>foobar.com</host>
+    <port>8080</port>
+    <path>/index.html</path>
+    <enabled>false</enabled>
+  </url>
+  <url>
+    <proto>ftp</proto>
+    <host>github.com</host>
+    <path>/CESNET/libyang-python</path>
+    <enabled>false</enabled>
+  </url>
+</state>
+"""
+
+    def test_data_diff(self):
+        dnode1 = self.ctx.parse_data_mem(
+            self.XML_DIFF_STATE1, "xml", data=True, no_yanglib=True
+        )
+        self.assertIsInstance(dnode1, DContainer)
+        dnode2 = self.ctx.parse_data_mem(
+            self.XML_DIFF_STATE2, "xml", data=True, no_yanglib=True
+        )
+        self.assertIsInstance(dnode2, DContainer)
+
+        diffs = dnode1.diff(dnode2)
+        diffs_result = [
+            (diff.dtype, diff.first.name(), diff.second.name() if diff.second else None)
+            for diff in diffs
+        ]
+        expected = [
+            (DDiff.CHANGED, "speed", "speed"),
+            (DDiff.CHANGED, "enabled", "enabled"),
+            (DDiff.CHANGED, "enabled", "enabled"),
+            (DDiff.DELETED, "number", None),
+            (DDiff.CREATED, "state", "url"),
+        ]
+
+        self.assertListEqual(diffs_result, expected)
+
+        dnode1.free()
+        dnode2.free()

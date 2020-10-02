@@ -4,7 +4,7 @@
 
 
 from .context import Context
-from .data import DContainer, DLeaf, DLeafList, DList, DNode, DRpc
+from .data import DContainer, DDiff, DLeaf, DLeafList, DList, DNode, DRpc
 from .diff import (
     BaseTypeAdded,
     BaseTypeRemoved,
@@ -90,6 +90,7 @@ __all__ = (
     "ConfigFalseRemoved",
     "Context",
     "DContainer",
+    "DDiff",
     "DLeaf",
     "DLeafList",
     "DList",

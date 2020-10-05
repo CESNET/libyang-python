@@ -316,6 +316,7 @@ struct lys_node_list {
 
 union ly_set_set {
 	struct lys_node **s;
+	struct lyd_node **d;
 	...;
 };
 

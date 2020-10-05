@@ -241,7 +241,7 @@ class DNode:
             raise self.context.error("cannot find path")
         try:
             for i in range(node_set.number):
-                yield DNode.new(self.context, node_set.d[i])
+                yield DNode.new(self.context, node_set.set.d[i])
         finally:
             lib.ly_set_free(node_set)
 

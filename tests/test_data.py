@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DDiff, DRpc, LibyangError
+from libyang import Context, DContainer, DDiff, DNode, DRpc, LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -565,3 +565,34 @@ class DataTest(unittest.TestCase):
 
         dnode1.free()
         dnode2.free()
+
+    def test_find_one(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            hostname = dnode.find_one("hostname")
+            self.assertIsInstance(hostname, DNode)
+            self.assertEqual(hostname.name(), "hostname")
+        finally:
+            dnode.free()
+
+    def test_find_all(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            urls = dnode.find_all("url")
+            urls = list(urls)
+            self.assertEqual(len(urls), 2)
+            expected_url = {
+                "url": [
+                    {
+                        "proto": "https",
+                        "host": "github.com",
+                        "path": "/CESNET/libyang-python",
+                        "enabled": False,
+                    }
+                ]
+            }
+            self.assertEqual(urls[0].print_dict(absolute=False), expected_url)
+        finally:
+            dnode.free()

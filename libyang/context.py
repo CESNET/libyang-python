@@ -34,7 +34,10 @@ class Context:
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
 
-        self.cdata = lib.ly_ctx_new(ffi.NULL, options)
+        self.cdata = ffi.gc(
+            lib.ly_ctx_new(ffi.NULL, options),
+            lambda ctx: lib.ly_ctx_destroy(ctx, ffi.NULL),
+        )
         if not self.cdata:
             raise self.error("cannot create context")
 
@@ -61,7 +64,8 @@ class Context:
 
     def destroy(self):
         if self.cdata is not None:
-            lib.ly_ctx_destroy(self.cdata, ffi.NULL)
+            if hasattr(ffi, "release"):
+                ffi.release(self.cdata)  # causes ly_ctx_destroy to be called
             self.cdata = None
 
     def __enter__(self):

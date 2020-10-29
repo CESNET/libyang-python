@@ -69,7 +69,7 @@ class KeyedList(list):
 
     def pop(self, key: ListKeyVal = None, default: Any = None) -> Any:
         if key is None or isinstance(key, (int, slice)):
-            raise NotImplementedError("non-ordered lists cannot be accessed by index")
+            raise TypeError("non-ordered lists cannot be accessed by index")
         return self._map.pop(key, default)
 
     def remove(self, element: Any) -> None:
@@ -78,12 +78,12 @@ class KeyedList(list):
 
     def __getitem__(self, key: ListKeyVal) -> Any:
         if isinstance(key, (int, slice)):
-            raise NotImplementedError("non-ordered lists cannot be accessed by index")
+            raise TypeError("non-ordered lists cannot be accessed by index")
         return self._map[key]
 
     def __delitem__(self, key: ListKeyVal) -> None:
         if isinstance(key, (int, slice)):
-            raise NotImplementedError("non-ordered lists cannot be accessed by index")
+            raise TypeError("non-ordered lists cannot be accessed by index")
         del self._map[key]
 
     def __eq__(self, other: Any) -> bool:
@@ -140,24 +140,24 @@ class KeyedList(list):
         return k
 
     # unsupported list API methods
-    def not_implemented(self, *args, **kwargs):
-        raise NotImplementedError()
+    def __unsupported(self, *args, **kwargs):
+        raise TypeError("unsupported operation for non-ordered lists")
 
-    index = not_implemented
-    insert = not_implemented
-    reverse = not_implemented
-    sort = not_implemented
-    __add__ = not_implemented
-    __ge__ = not_implemented
-    __gt__ = not_implemented
-    __iadd__ = not_implemented
-    __imul__ = not_implemented
-    __le__ = not_implemented
-    __lt__ = not_implemented
-    __mul__ = not_implemented
-    __reversed__ = not_implemented
-    __rmul__ = not_implemented
-    __setitem__ = not_implemented
+    index = __unsupported
+    insert = __unsupported
+    reverse = __unsupported
+    sort = __unsupported
+    __add__ = __unsupported
+    __ge__ = __unsupported
+    __gt__ = __unsupported
+    __iadd__ = __unsupported
+    __imul__ = __unsupported
+    __le__ = __unsupported
+    __lt__ = __unsupported
+    __mul__ = __unsupported
+    __reversed__ = __unsupported
+    __rmul__ = __unsupported
+    __setitem__ = __unsupported
 
 
 # -------------------------------------------------------------------------------------

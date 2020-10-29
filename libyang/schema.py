@@ -862,7 +862,7 @@ class SNode:
         cdata = ffi.cast("struct lys_node *", cdata)
         nodecls = SNode.NODETYPE_CLASS.get(cdata.nodetype, None)
         if nodecls is None:
-            raise NotImplementedError("node type %s not implemented" % cdata.nodetype)
+            raise TypeError("node type %s not implemented" % cdata.nodetype)
         return nodecls(context, cdata)
 
 

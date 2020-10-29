@@ -10,23 +10,23 @@ import libyang as ly
 class KeyedListTest(unittest.TestCase):
     def test_keylist_base(self):
         l = ly.KeyedList(["x"])
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l.index("x")
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l.insert(0, "x")
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l.reverse()
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l.sort()
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l["x"] = 2
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l[0]  # pylint: disable=pointless-statement
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             del l[0]
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l.pop()
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(TypeError):
             l.pop(0)
 
     def test_keylist_leaflist(self):

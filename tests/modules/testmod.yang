@@ -1,0 +1,6 @@
+module testmod {
+    prefix my;
+    namespace "test";
+    revision "2020-02-06";
+    revision "2020-05-02";
+}

@@ -1,0 +1,5 @@
+<module xmlns="urn:ietf:params:xml:ns:yang:yin:1" name="mod">
+    <namespace uri="urn:testmod:yin"/>
+    <prefix value="pref"/>
+    <yang-version value="1.1"/>
+</module>

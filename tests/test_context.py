@@ -1,76 +1,171 @@
-# Copyright (c) 2018-2019 Robin Jarry
-# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 CESNET, z.s.p.o.
+# SPDX-License-Identifier: BSD-3-Clause
+# Author David Sedlák
 
-import os
 import unittest
+import os
 
-from libyang import Context, LibyangError, Module, SRpc
+from _libyang import lib
 
+from libyang2 import Context
+from libyang2.log import LibyangError
 
-YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
+MODULES_DIR = os.path.join(os.path.dirname(__file__), "modules")
 
+# při přidávání modulu
+# feature se dá změnit, když uděláš z imported modulu implementovanej modul
 
-# -------------------------------------------------------------------------------------
-class ContextTest(unittest.TestCase):
-    def test_ctx_no_dir(self):
+class TestContext(unittest.TestCase):
+    def testConstruction(self):
         with Context() as ctx:
-            self.assertIsNot(ctx, None)
+            self.assertIsNotNone(ctx)
 
-    def test_ctx_dir(self):
-        with Context(YANG_DIR) as ctx:
-            self.assertIsNot(ctx, None)
-
-    def test_ctx_invalid_dir(self):
-        with Context("/does/not/exist") as ctx:
-            self.assertIsNot(ctx, None)
-
-    def test_ctx_missing_dir(self):
-        with Context(os.path.join(YANG_DIR, "yolo")) as ctx:
-            self.assertIsNot(ctx, None)
-            with self.assertRaises(LibyangError):
-                ctx.load_module("yolo-system")
-
-    def test_ctx_env_search_dir(self):
-        try:
-            os.environ["YANGPATH"] = ":".join(
-                [os.path.join(YANG_DIR, "omg"), os.path.join(YANG_DIR, "wtf")]
+    def testOptions(self):
+        with Context(allimplemented=True) as ctx:
+            self.assertIsNotNone(ctx)
+            self.assertTrue(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_ALL_IMPLEMENTED
             )
-            with Context(os.path.join(YANG_DIR, "yolo")) as ctx:
-                mod = ctx.load_module("yolo-system")
-                self.assertIsInstance(mod, Module)
-        finally:
-            del os.environ["YANGPATH"]
+            self.assertTrue(ctx.allimplemented)
+            ctx.allimplemented = False
+            self.assertFalse(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_ALL_IMPLEMENTED
+            )
+            self.assertFalse(ctx.allimplemented)
 
-    def test_ctx_load_module(self):
-        with Context(YANG_DIR) as ctx:
-            mod = ctx.load_module("yolo-system")
-            self.assertIsInstance(mod, Module)
+        with Context(disable_searchdir_cwd=True) as ctx:
+            self.assertIsNotNone(ctx)
+            self.assertTrue(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_DISABLE_SEARCHDIR_CWD
+            )
+            self.assertTrue(ctx.disable_searchdir_cwd)
+            ctx.disable_searchdir_cwd = False
+            self.assertFalse(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_DISABLE_SEARCHDIR_CWD
+            )
+            self.assertFalse(ctx.disable_searchdir_cwd)
 
-    def test_ctx_get_module(self):
-        with Context(YANG_DIR) as ctx:
-            ctx.load_module("yolo-system")
-            mod = ctx.get_module("wtf-types")
-            self.assertIsInstance(mod, Module)
+        with Context(disable_searchdirs=True) as ctx:
+            self.assertIsNotNone(ctx)
+            self.assertTrue(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_DISABLE_SEARCHDIRS
+            )
+            self.assertTrue(ctx.disable_searchdirs)
+            ctx.disable_searchdirs = False
+            self.assertFalse(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_DISABLE_SEARCHDIRS
+            )
+            self.assertFalse(ctx.disable_searchdirs)
 
-    def test_ctx_get_invalid_module(self):
-        with Context(YANG_DIR) as ctx:
-            ctx.load_module("wtf-types")
-            with self.assertRaises(LibyangError):
-                ctx.get_module("yolo-system")
+        with Context(noyanglibrary=True) as ctx:
+            self.assertIsNotNone(ctx)
+            self.assertTrue(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_NO_YANGLIBRARY
+            )
+            self.assertTrue(ctx.noyanglibrary)
+            self.assertRaises(AttributeError, setattr, ctx, "noyanglibrary", False)
 
-    def test_ctx_load_invalid_module(self):
-        with Context(YANG_DIR) as ctx:
-            with self.assertRaises(LibyangError):
-                ctx.load_module("invalid-module")
+        with Context(prefer_searchdirs=True) as ctx:
+            self.assertIsNotNone(ctx)
+            self.assertTrue(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_PREFER_SEARCHDIRS
+            )
+            self.assertTrue(ctx.prefer_searchdirs)
+            ctx.prefer_searchdirs = False
+            self.assertFalse(
+                lib.ly_ctx_get_options(ctx._cdata) & lib.LY_CTX_PREFER_SEARCHDIRS
+            )
+            self.assertFalse(ctx.prefer_searchdirs)
 
-    def test_ctx_find_path(self):
-        with Context(YANG_DIR) as ctx:
-            ctx.load_module("yolo-system")
-            node = next(ctx.find_path("/yolo-system:format-disk"))
-            self.assertIsInstance(node, SRpc)
+    def testSearchdirs(self):
+        with Context() as ctx:
+            ctx.searchdirs.add("/tmp")
+            self.assertTrue("/tmp" in ctx.searchdirs)
+            self.assertFalse("/hom" in ctx.searchdirs)
+            ctx.searchdirs.add("/tmp")
+            self.assertTrue("/tmp" in ctx.searchdirs)
+            ctx.searchdirs.remove("/tmp")
+            self.assertFalse("/tmp" in ctx.searchdirs)
+            ctx.searchdirs.add("/tmp")
+            controlset = set()
+            self.assertFalse(controlset == ctx.searchdirs)
+            for item in ctx.searchdirs:
+                controlset.add(item)
+            self.assertTrue(controlset == ctx.searchdirs)
+            controlset = set()
+            self.assertFalse(controlset == ctx.searchdirs)
+            for item in ctx.searchdirs:
+                controlset.add(item)
+            self.assertTrue(controlset == ctx.searchdirs)
 
-    def test_ctx_iter_modules(self):
-        with Context(YANG_DIR) as ctx:
-            ctx.load_module("yolo-system")
-            modules = list(iter(ctx))
-            self.assertGreater(len(modules), 0)
+        with Context(searchdirs=["/tmp", "/etc"]) as ctx:
+            self.assertTrue("/tmp" in ctx.searchdirs)
+            self.assertTrue("/etc" in ctx.searchdirs)
+
+        with Context(searchdirs=("/tmp", "/etc")) as ctx:
+            self.assertTrue("/tmp" in ctx.searchdirs)
+            self.assertTrue("/etc" in ctx.searchdirs)
+
+        with Context(searchdirs=("/tmp", "/etc")) as ctx:
+            self.assertRaises(KeyError, ctx.searchdirs.remove, "aa")
+            self.assertEqual("{'/tmp', '/etc'}", str(ctx.searchdirs))
+
+        with Context(searchdirs=("/tmp", "/etc")) as ctx:
+            self.assertTrue("/tmp" in ctx.searchdirs and "/etc" in ctx.searchdirs)
+            self.assertEqual(len(ctx.searchdirs), 2)
+            ctx.searchdirs.clear()
+            self.assertEqual(len(ctx.searchdirs), 0)
+            ctx.searchdirs.update(("/tmp", "/etc"))
+            self.assertEqual(len(ctx.searchdirs), 2)
+            self.assertTrue(ctx.searchdirs.isdisjoint(("aa", "bb")))
+            self.assertFalse(ctx.searchdirs.isdisjoint(("aa", "bb", "/tmp")))
+
+    def test_parse_module(self):
+        with open(os.path.join(MODULES_DIR, "testmod.yang"), "r") as yangfile:
+            testmodyang = yangfile.read()
+
+        with open(os.path.join(MODULES_DIR, "testmodyin.yin"), "r") as yinfile:
+            testmodyin = yinfile.read()
+
+        with Context() as ctx:
+            modyin = ctx.parse_module(testmodyin, fmt="yin")
+            self.assertTrue(modyin)
+            modyang = ctx.parse_module(testmodyang, fmt="yang")
+            self.assertTrue(modyang)
+            self.assertRaises(LibyangError, ctx.parse_module, testmodyin)
+            self.assertRaises(LibyangError, ctx.parse_module, testmodyang, "yin")
+
+            with open(os.path.join(MODULES_DIR, "testmodyin.yin"), "r") as yinfile:
+                with open(os.path.join(MODULES_DIR, "testmod.yang"), "r") as yangfile:
+                    with Context() as ctx:
+                        modyin = ctx.parse_module(yinfile, fmt="yin")
+                        self.assertTrue(modyin)
+                        modyang = ctx.parse_module(yangfile, fmt="yang")
+                        self.assertTrue(modyang)
+                        self.assertRaises(LibyangError, ctx.parse_module, yinfile)
+                        self.assertRaises(
+                            LibyangError, ctx.parse_module, yangfile, "yin"
+                        )
+
+    def test_load_module(self):
+        with Context(searchdirs=[MODULES_DIR]) as ctx:
+            mod = ctx.load_module("testmod")
+            self.assertTrue(mod)
+
+        with Context() as ctx:
+            self.assertRaises(LibyangError, ctx.load_module, "testmod")
+
+    def test_get_modules(self):
+        with Context(searchdirs=[MODULES_DIR]) as ctx:
+            mod = ctx.load_module("testmod")
+            self.assertTrue(mod)
+
+            for module in ctx:
+                pass
+
+    def test_reset_latest(self):
+        with Context(searchdirs=[MODULES_DIR]) as ctx:
+            ctx.reset_latest()
+            mod = ctx.load_module("testmod")
+            self.assertTrue(mod)
+            ctx.reset_latest()

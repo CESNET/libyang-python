@@ -1,30 +1,19 @@
-/*
- * Copyright (c) 2018-2019 Robin Jarry
+/**
+ * Copyright (c) 2020 CESNET, z.s.p.o.
  * SPDX-License-Identifier: MIT
- */
+ * Author David Sedlák
+*/
 
 #include <libyang/libyang.h>
 
-#if (LY_VERSION_MAJOR != 1)
-#error "This version of libyang bindings only works with libyang 1.x"
-#endif
-#if (LY_VERSION_MINOR < 8)
-#error "Need at least libyang 1.8"
-#endif
+int get_array_size(void *array) {
+    if(!array) {
+        return 0;
+    }
 
-static LY_ERR lypy_get_errno(void)
-{
-	return ly_errno;
+    return LY_ARRAY_COUNT(array);
 }
 
-static void lypy_set_errno(LY_ERR err)
-{
-	ly_errno = err;
-}
-
-static uint8_t lypy_module_implemented(const struct lys_module *module)
-{
-	if (module)
-		return module->implemented;
-	return 0;
+const char *lyd_data_canonic(struct lyd_node_term *node) {
+    return LYD_CANON_VALUE(node);
 }

@@ -1,2 +1,3 @@
-# Copyright (c) 2018-2019 Robin Jarry
-# SPDX-License-Identifier: MIT
+# Copyright (c) 2020 CESNET, z.s.p.o.
+# SPDX-License-Identifier: BSD-3-Clause
+# Author David Sedlák

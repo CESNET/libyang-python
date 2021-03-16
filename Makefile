@@ -1,15 +1,14 @@
-# Copyright (c) 2018-2020 Robin Jarry
+# Copyright (c) 2020 CESNET, z.s.p.o.
 # SPDX-License-Identifier: MIT
+# Author David Sedlák
 
-all: lint tests
 
-lint:
-	tox -e lint
+.PHONY: test
 
-tests:
-	tox -e py3-devel
+test:
+	python -m unittest
 
-format:
-	tox -e format
-
-.PHONY: lint tests format
+coverage:
+	python -m coverage run -m unittest discover -c tests/
+	python -m coverage report
+	python -m coverage html

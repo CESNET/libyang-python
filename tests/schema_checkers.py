@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch, Mock
 
 from _libyang import ffi, lib
-from libyang2.schema_compiled import (
+from libyang.schema_compiled import (
     SCExtensionInstance,
     SCIffeature,
     SCContainer,
@@ -17,7 +17,7 @@ from libyang2.schema_compiled import (
     SCWhen,
 )
 
-from libyang2.schema_parsed import (
+from libyang.schema_parsed import (
     SPRevision,
     SPImport,
     SPInclude,
@@ -40,7 +40,7 @@ from libyang2.schema_parsed import (
     SPRestriction,
     SPQualifiedName,
 )
-from libyang2.schema import SModule
+from libyang.schema import SModule
 
 
 class SWrapperTestCheckers(unittest.TestCase):
@@ -118,7 +118,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_revs(self):
         """Mock revisions array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -144,7 +144,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_imports(self):
         """Mock imports array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -172,7 +172,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_includes(self):
         """Mock includes array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -202,7 +202,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_extensions(self):
         """Mock extensions array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -232,7 +232,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_features(self):
         """Mock features array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -262,7 +262,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_identities(self):
         """Mock identities array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -292,7 +292,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_typedefs(self):
         """Mock typedefs array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -331,7 +331,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_groupings(self):
         """Mock groupings array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -361,7 +361,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_node_ll(self, c_member):
         """Mock data linked list and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty list
             childs_gen = self.tested_type.childs()
             self.assertRaises(StopIteration, next, childs_gen)
@@ -391,7 +391,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_augments(self):
         """Mock augments array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -421,7 +421,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_rpcs(self):
         """Mock rpcs array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -449,7 +449,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_notifications(self):
         """Mock notifs array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -477,7 +477,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_deviations(self):
         """Mock deviations array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -507,7 +507,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_extension_instances(self):
         """Mock exts array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -556,7 +556,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_iffeatures(self):
         """Mock iffeatures array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -586,7 +586,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_bases(self):
         """Mock bases array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -657,7 +657,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_actions(self):
         """Mock actions array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -712,7 +712,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_restrs(self, c_member, py_member):
         """Mock rests array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -758,7 +758,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_uniques(self):
         """Mock uniques array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -786,7 +786,7 @@ class SPWrappersTestCheckers(unittest.TestCase):
     def check_defaults(self):
         """Mock defaults array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -897,7 +897,7 @@ class SCWrappersTestCheckers(unittest.TestCase):
     def check_extension_instnaces(self):
         """Mock exts array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -921,7 +921,7 @@ class SCWrappersTestCheckers(unittest.TestCase):
     def check_iffeatures(self):
         """Mock exts array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -945,7 +945,7 @@ class SCWrappersTestCheckers(unittest.TestCase):
     def check_actions(self):
         """Mock actions array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -969,7 +969,7 @@ class SCWrappersTestCheckers(unittest.TestCase):
     def check_musts(self):
         """Mock musts array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -993,7 +993,7 @@ class SCWrappersTestCheckers(unittest.TestCase):
     def check_notifications(self):
         """Mock notifs array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -1104,7 +1104,7 @@ class SCWrappersTestCheckers(unittest.TestCase):
     def check_whens(self):
         """Mock when array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0

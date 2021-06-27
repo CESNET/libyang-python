@@ -4,7 +4,7 @@
 
 import unittest
 
-from libyang2 import Context
+from libyang import Context
 
 
 class TestContext(unittest.TestCase):

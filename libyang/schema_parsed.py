@@ -5,7 +5,7 @@
 from typing import Union, Iterator, TYPE_CHECKING, Tuple
 
 from _libyang import lib, ffi
-from libyang2.schema_compiled import SCType
+from libyang.schema_compiled import SCType
 
 from .utils import Node, SchemaFactory, WrapperBase
 from .schema import (

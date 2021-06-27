@@ -6,7 +6,7 @@ from unittest.mock import patch, Mock
 
 from _libyang import ffi, lib
 
-from libyang2.schema_compiled import (
+from libyang.schema_compiled import (
     SCModule,
     SCContainer,
     SCList,
@@ -43,7 +43,7 @@ from libyang2.schema_compiled import (
     SCRangeSigned,
     SCRangeUnsigned,
 )
-from libyang2 import Context
+from libyang import Context
 
 from tests.schema_checkers import SCWrappersTestCheckers, SWrapperTestCheckers
 
@@ -65,7 +65,7 @@ class TestSCModule(SCWrappersTestCheckers, SWrapperTestCheckers):
     def test_rpcs(self):
         """Mock rpcs array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -93,7 +93,7 @@ class TestSCModule(SCWrappersTestCheckers, SWrapperTestCheckers):
     def test_notifications(self):
         """Mock notifs array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -148,7 +148,7 @@ class TestSCIdentity(SCWrappersTestCheckers, SWrapperTestCheckers):
     def test_derived_identities(self):
         """Mock deviated_by array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -608,7 +608,7 @@ class TestSCTypeString(TestSCType):
     def test_patterns(self):
         """Mock patterns array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -651,7 +651,7 @@ class TestSCTypeEnum(TestSCType):
     def test_enums(self):
         """Mock enums array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -691,7 +691,7 @@ class TestSCTypeEnum(TestSCType):
     def test_enums(self):
         """Mock enums array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -750,7 +750,7 @@ class TestSCTypeIdentityref(TestSCType):
     def test_bases(self):
         """Mock bases array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0
@@ -799,7 +799,7 @@ class TestSCTypeUnion(TestSCType):
     def test_types(self):
         """Mock types array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             mocked_lib.get_array_size = Mock()
             # test empty array
             mocked_lib.get_array_size.return_value = 0

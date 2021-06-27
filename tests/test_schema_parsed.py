@@ -7,7 +7,7 @@ from unittest.mock import patch, Mock
 
 from _libyang import ffi, lib
 
-from libyang2.schema_parsed import (
+from libyang.schema_parsed import (
     SPModule,
     SPImport,
     SPRevision,
@@ -50,7 +50,7 @@ from libyang2.schema_parsed import (
     SPNodeUnknown,
     SPCase,
 )
-from libyang2 import Context
+from libyang import Context
 from tests.schema_checkers import SPWrappersTestCheckers, SWrapperTestCheckers
 
 
@@ -760,7 +760,7 @@ class TestSPDeviation(SPWrappersTestCheckers, SWrapperTestCheckers):
         self.check_char_pointer_getter("ref", "reference")
 
     def test_deviates(self):
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             devsgen = self.tested_type.deviates()
             self.assertRaises(StopIteration, next, devsgen)
@@ -806,7 +806,7 @@ class TestSPType(SPWrappersTestCheckers, SWrapperTestCheckers):
     def test_patterns(self):
         """Mock patterns array and try to access it using tested_type"""
 
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -834,7 +834,7 @@ class TestSPType(SPWrappersTestCheckers, SWrapperTestCheckers):
             mocked_lib.get_array_size.assert_called_with(self.tested_ctype.patterns)
 
     def test_enums(self):
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -861,7 +861,7 @@ class TestSPType(SPWrappersTestCheckers, SWrapperTestCheckers):
             mocked_lib.get_array_size.assert_called_with(self.tested_ctype.enums)
 
     def test_bits(self):
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -890,7 +890,7 @@ class TestSPType(SPWrappersTestCheckers, SWrapperTestCheckers):
         self.check_bases()
 
     def test_types(self):
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0
@@ -1417,7 +1417,7 @@ class TestSPUses(TestSPNode):
         self.tested_type = SPUses(self.tested_ctype, self.ctx)
 
     def test_refines(self):
-        with patch("libyang2.utils.lib") as mocked_lib:
+        with patch("libyang.utils.lib") as mocked_lib:
             # test empty array
             mocked_lib.get_array_size = Mock()
             mocked_lib.get_array_size.return_value = 0

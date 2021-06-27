@@ -118,7 +118,7 @@ class SchemaFactory:
     def arr2gen(self, cdata_arr, name: str = None) -> Iterator["WrapperBase"]:
         """Create generator of wrapped elements from sized-array.
 
-        :param cdata_arr: cdata pointer to libyang2.so sized array
+        :param cdata_arr: cdata pointer to libyang.so sized array
         :param name: name of alternative wrapper to use when desired wrapper
             can't be derived from cdata's ctype
         :type name: str
@@ -239,7 +239,7 @@ class WrapperBase:
         """Default constructor for schema types
 
         :param cdata: cdata object of 'struct lysp*/lysc*/lyd*' type
-        :param context: libyang2 python context instance
+        :param context: libyang python context instance
         :type context: Context
         """
 

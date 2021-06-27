@@ -224,7 +224,7 @@ class DNode(WrapperBase):
             return True
         if ret == lib.LY_ENOT:
             return False
-        raise self.context.error("libyang2 node comparasion returned error")
+        raise self.context.error("libyang node comparasion returned error")
 
     def __ne__(self, other: "Dnode") -> bool:
         ret = lib.lyd_compare(ffi.cast("struct lyd_node *", self._cdata), ffi.cast("struct lyd_node *", other._cdata), 0)
@@ -232,7 +232,7 @@ class DNode(WrapperBase):
             return False
         if ret == lib.LY_ENOT:
             return True
-        raise self.context.error("libyang2 node comparasion returned error")
+        raise self.context.error("libyang node comparasion returned error")
 
     def validate(self, no_state: bool = False, present: bool = False) -> "DNode":
         opts = data_validation_options(no_state, present)

@@ -7,8 +7,8 @@ import os
 
 from _libyang import lib
 
-from libyang2 import Context
-from libyang2.log import LibyangError
+from libyang import Context
+from libyang.log import LibyangError
 
 MODULES_DIR = os.path.join(os.path.dirname(__file__), "modules")
 

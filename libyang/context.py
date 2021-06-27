@@ -24,12 +24,12 @@ if TYPE_CHECKING:
 
 
 class ContextSearchdirsSet(MutableSet, WrapperBase):
-    """Class to manipulate searchdirs of libyang2.so context after creation.
+    """Class to manipulate searchdirs of libyang.so context after creation.
 
     Interface is same as for built in set.
     """
 
-    def __init__(self, cdata, context: "libyang2.Context", data: Set[str] = set()):
+    def __init__(self, cdata, context: "libyang.Context", data: Set[str] = set()):
         WrapperBase.__init__(self, cdata, context)
         self.update(data)
 
@@ -104,7 +104,7 @@ class ContextSearchdirsSet(MutableSet, WrapperBase):
 
 
 class Context:
-    """Class used to manipulate libyang2.so contexts
+    """Class used to manipulate libyang.so contexts
 
     The context concept allows users to work in environments with different
     sets of YANG schemas."""
@@ -149,7 +149,7 @@ class Context:
     def __del__(self) -> None:
         self.destroy()
 
-    def __enter__(self) -> "libyang2.Context":
+    def __enter__(self) -> "libyang.Context":
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
@@ -369,7 +369,7 @@ class Context:
             raise RuntimeError("Context already destroyed.")
         lib.ly_ctx_reset_latests(self._cdata)
 
-    def error(self, msg: str, *args) -> "libyang2.LibyangError":
+    def error(self, msg: str, *args) -> "libyang.LibyangError":
         """Create new LibyangError with additional error info from context"""
 
         msg %= args
@@ -387,7 +387,7 @@ class Context:
 
     def check_retval(self, retval):
         if retval != lib.LY_SUCCESS:
-            raise self.error("libyang2 native function returned error")
+            raise self.error("libyang native function returned error")
 
     def parse_module(
         self, source: Union[TextIO, str], fmt="yang"

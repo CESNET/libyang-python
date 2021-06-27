@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 def schema_in_format(fmt_string: str) -> int:
-    """Convert schema input format string into libyang2 LYS_IN_* enum"""
+    """Convert schema input format string into libyang LYS_IN_* enum"""
 
     if fmt_string == "yang":
         return lib.LYS_IN_YANG
@@ -27,7 +27,7 @@ def schema_in_format(fmt_string: str) -> int:
 
 
 def schema_out_format(fmt_string: str) -> int:
-    """Convert schema input format string into libyang2 LYS_IN_* enum"""
+    """Convert schema input format string into libyang LYS_IN_* enum"""
 
     if fmt_string == "yang":
         return lib.LYS_OUT_YANG

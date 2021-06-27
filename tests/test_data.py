@@ -5,9 +5,9 @@
 import unittest
 
 from _libyang import ffi, lib
-from libyang2.data import DNode, DContainer
-from libyang2.context import Context
-from libyang2.schema_compiled import SCContainer
+from libyang.data import DNode, DContainer
+from libyang.context import Context
+from libyang.schema_compiled import SCContainer
 
 
 class TestGenericDataNode(unittest.TestCase):

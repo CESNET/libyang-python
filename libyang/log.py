@@ -40,13 +40,13 @@ def libyang_c_logging_callback(level, msg, path):
 
 def configure_logging(enable_py_logger, level=logging.ERROR):
     """
-    Configure libyang2 logging behaviour.
+    Configure libyang logging behaviour.
     :arg enable_py_logger:
-        If False, configure libyang2 to store the errors in the context until
+        If False, configure libyang to store the errors in the context until
         they are consumed when Context.error() is called. This is the default behaviour.
-        If True, libyang2 log messages will be sent to the python "libyang2" logger and
+        If True, libyang log messages will be sent to the python "libyang" logger and
         will be processed according to the python logging configuration. Note that by
-        default, the "libyang2" python logger is created with a NullHandler() which means
+        default, the "libyang" python logger is created with a NullHandler() which means
         that all messages are lost until another handler is configured for that logger.
     :arg level:
         Python logging level. By default only ERROR messages are stored/logged.

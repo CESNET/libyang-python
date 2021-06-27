@@ -1,6 +1,7 @@
-# Copyright (c) 2020 CESNET, z.s.p.o.
-# SPDX-License-Identifier: BSD-3-Clause
-# Author David Sedlák
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
+# SPDX-License-Identifier: MIT
+# Author: David Sedlák
+
 from typing import Iterator, Union, TYPE_CHECKING, Tuple
 
 from _libyang import lib, ffi

@@ -1,6 +1,7 @@
-# Copyright (c) 2020 CESNET, z.s.p.o.
-# SPDX-License-Identifier: BSD-3-Clause
-# Author David Sedlák
+# Copyright (c) 2018-2019 Robin Jarry
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
+# SPDX-License-Identifier: MIT
+
 from typing import Iterator, Callable, TYPE_CHECKING
 
 from _libyang import ffi, lib

@@ -1,8 +1,8 @@
-/**
- * Copyright (c) 2020 CESNET, z.s.p.o.
+/*
+ * Copyright (c) 2020-2021 CESNET, z.s.p.o.
  * SPDX-License-Identifier: MIT
- * Author David Sedlák
-*/
+ * Author: David Sedlák
+ */
 
 struct ly_ctx;
 struct lys_module;

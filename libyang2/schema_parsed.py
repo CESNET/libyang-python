@@ -1,5 +1,5 @@
-# Copyright (c) 2020 CESNET, z.s.p.o.
-# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
+# SPDX-License-Identifier: MIT
 # Author David Sedlák
 
 from typing import Union, Iterator, TYPE_CHECKING, Tuple

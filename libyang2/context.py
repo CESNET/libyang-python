@@ -1,7 +1,7 @@
-# Copyright (c) 2020 CESNET, z.s.p.o.
+# Copyright (c) 2018-2019 Robin Jarry
+# Copyright (c) 2020 6WIND S.A.
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
 # SPDX-License-Identifier: MIT
-# Author David Sedlák
-#
 
 from typing import Iterator, Set, Iterable, Union, TextIO, TYPE_CHECKING
 from collections.abc import MutableSet

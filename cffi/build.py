@@ -1,5 +1,5 @@
-# s úpravami převzato z https://github.com/CESNET/libyang-python
 # Copyright (c) 2018-2019 Robin Jarry
+# Copyright (c) 2020-2021 CESNET, z.s.p.o., David Sedlák
 # SPDX-License-Identifier: MIT
 
 import os

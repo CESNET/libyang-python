@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2020 David Sedlák
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
 # SPDX-License-Identifier: MIT
+# Author David Sedlák
 
 from setuptools import setup
 

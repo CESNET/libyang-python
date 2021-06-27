@@ -1,6 +1,6 @@
-# Copyright (c) 2020 CESNET, z.s.p.o.
-# SPDX-License-Identifier: BSD-3-Clause
-# Author David Sedlák <xsedla1d@stud.fit.vutbr.cz>
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
+# SPDX-License-Identifier: MIT
+# Author David Sedlák
 
 from unittest.mock import patch, Mock
 

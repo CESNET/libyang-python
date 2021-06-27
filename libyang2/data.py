@@ -1,6 +1,6 @@
-# Copyright (c) 2020 CESNET, z.s.p.o.\
+# Copyright (c) 2020 6WIND S.A.
+# Copyright (c) 2020-2021 CESNET, z.s.p.o.
 # SPDX-License-Identifier: MIT
-# Author David Sedlák
 
 from typing import TYPE_CHECKING, Union, Iterator, TextIO
 

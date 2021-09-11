@@ -38,9 +38,7 @@ jobs:
           - python: pypy3
             toxenv: pypy3
           - python: 3.x
-            toxenv: py3-master
-          - python: 3.x
-            toxenv: py3-devel
+            toxenv: py3-libyang1
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

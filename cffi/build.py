@@ -11,7 +11,7 @@ import cffi
 HERE = os.path.dirname(__file__)
 
 BUILDER = cffi.FFI()
-with open(os.path.join(HERE, "cdefs.h")) as f:
+with open(os.path.join(HERE, "cdefs.h"), encoding="utf-8") as f:
     BUILDER.cdef(f.read())
 
 
@@ -30,7 +30,7 @@ EXTRA_CFLAGS = ["-Werror", "-std=c99"]
 EXTRA_CFLAGS += shlex.split(os.environ.get("LIBYANG_EXTRA_CFLAGS", ""))
 EXTRA_LDFLAGS = shlex.split(os.environ.get("LIBYANG_EXTRA_LDFLAGS", ""))
 
-with open(os.path.join(HERE, "source.c")) as f:
+with open(os.path.join(HERE, "source.c"), encoding="utf-8") as f:
     BUILDER.set_source(
         "_libyang",
         f.read(),

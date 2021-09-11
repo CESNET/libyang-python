@@ -193,7 +193,7 @@ class Context:
 
         return DNode.new(self, dnode)
 
-    def parse_data_mem(
+    def parse_data_mem(  # pylint: disable=too-many-arguments
         self,
         d: Union[str, bytes],
         fmt: str,
@@ -204,6 +204,7 @@ class Context:
         edit: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
+        notification: bool = False,
         strict: bool = False,
         trusted: bool = False,
         no_yanglib: bool = False,
@@ -220,6 +221,7 @@ class Context:
             edit=edit,
             rpc=rpc,
             rpcreply=rpcreply,
+            notification=notification,
             strict=strict,
             trusted=trusted,
             no_yanglib=no_yanglib,
@@ -234,7 +236,7 @@ class Context:
             if rpc_request is None:
                 raise ValueError("rpc_request node is required when rpcreply=True")
             args.append(rpc_request.cdata)
-        if rpc or rpcreply:
+        if rpc or rpcreply or notification:
             if data_tree is not None:
                 args.append(data_tree.cdata)
             else:

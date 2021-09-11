@@ -4,7 +4,7 @@
 
 
 from .context import Context
-from .data import DContainer, DDiff, DLeaf, DLeafList, DList, DNode, DRpc
+from .data import DContainer, DDiff, DLeaf, DLeafList, DList, DNode, DNotif, DRpc
 from .diff import (
     BaseTypeAdded,
     BaseTypeRemoved,

@@ -65,6 +65,9 @@ class DiffTest(unittest.TestCase):
             (StatusRemoved, "/yolo-system:conf/yolo-system:obsolete-leaf"),
             (StatusRemoved, "/yolo-system:state/yolo-system:deprecated-leaf"),
             (StatusRemoved, "/yolo-system:state/yolo-system:obsolete-leaf"),
+            (SNodeAdded, "/yolo-system:alarm-triggered"),
+            (SNodeAdded, "/yolo-system:alarm-triggered/yolo-system:severity"),
+            (SNodeAdded, "/yolo-system:alarm-triggered/yolo-system:description"),
         )
     )
 

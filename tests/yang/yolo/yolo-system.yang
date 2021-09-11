@@ -157,4 +157,15 @@ module yolo-system {
       }
     }
   }
+
+  notification alarm-triggered {
+    description
+      "Notification about a new alarm.";
+    leaf description {
+      type string;
+    }
+    leaf severity {
+      type uint32;
+    }
+  }
 }

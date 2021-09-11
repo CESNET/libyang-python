@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DDiff, DNode, DRpc, LibyangError
+from libyang import Context, DContainer, DDiff, DNode, DNotif, DRpc, LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -489,6 +489,28 @@ class DataTest(unittest.TestCase):
                 },
             },
         )
+
+    DICT_NOTIF = {
+        "alarm-triggered": {"description": "An error occurred", "severity": 3}
+    }
+
+    JSON_NOTIF = """{
+  "yolo-system:alarm-triggered": {
+    "description": "An error occurred",
+    "severity": 3
+  }
+}
+"""
+
+    def test_notification_from_dict_module(self):
+        module = self.ctx.get_module("yolo-system")
+        dnotif = module.parse_data_dict(self.DICT_NOTIF, strict=True, notification=True)
+        self.assertIsInstance(dnotif, DNotif)
+        try:
+            j = dnotif.print_mem("json", pretty=True)
+        finally:
+            dnotif.free()
+        self.assertEqual(json.loads(j), json.loads(self.JSON_NOTIF))
 
     XML_DIFF_STATE1 = """<state xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>

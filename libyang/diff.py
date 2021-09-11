@@ -4,7 +4,7 @@
 from typing import Any, Callable, Iterator, Optional
 
 from .context import Context
-from .schema import SContainer, SLeaf, SLeafList, SList, SNode, SRpc, SRpcInOut
+from .schema import SContainer, SLeaf, SLeafList, SList, SNode, SNotif, SRpc, SRpcInOut
 
 
 # -------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ def schema_diff(
         if exclude_node_cb(node):
             return
         dic[node.schema_path()] = node
-        if isinstance(node, (SContainer, SList, SRpc, SRpcInOut)):
+        if isinstance(node, (SContainer, SList, SNotif, SRpc, SRpcInOut)):
             for child in node:
                 flatten(child, dic)
 

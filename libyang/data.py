@@ -6,7 +6,17 @@ from typing import IO, Any, Dict, Iterator, Optional, Union
 
 from _libyang import ffi, lib
 from .keyed_list import KeyedList
-from .schema import Module, SContainer, SLeaf, SLeafList, SList, SNode, SRpc, Type
+from .schema import (
+    Module,
+    SContainer,
+    SLeaf,
+    SLeafList,
+    SList,
+    SNode,
+    SNotif,
+    SRpc,
+    Type,
+)
 from .util import LibyangError, c2str, deprecated, str2c
 
 
@@ -69,6 +79,7 @@ def parser_flags(
     edit: bool = False,
     rpc: bool = False,
     rpcreply: bool = False,
+    notification: bool = False,
     strict: bool = False,
     trusted: bool = False,
     no_yanglib: bool = False,
@@ -76,9 +87,12 @@ def parser_flags(
     no_siblings: bool = False,
     explicit: bool = False,
 ) -> int:
-    if (data, config, get, getconfig, edit, rpc, rpcreply).count(True) > 1:
+    if (data, config, get, getconfig, edit, rpc, rpcreply, notification).count(
+        True
+    ) > 1:
         raise ValueError(
-            "Only one of data, config, get, getconfig, edit, rpc, rpcreply can be True"
+            "Only one of data, config, get, getconfig, edit, rpc, rpcreply, "
+            "notification can be True"
         )
     flags = 0
     if data:
@@ -95,6 +109,8 @@ def parser_flags(
         flags |= lib.LYD_OPT_RPC
     if rpcreply:
         flags |= lib.LYD_OPT_RPCREPLY
+    if notification:
+        flags |= lib.LYD_OPT_NOTIF
     if strict:
         flags |= lib.LYD_OPT_STRICT
     if trusted:
@@ -261,6 +277,7 @@ class DNode:
         edit: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
+        notification: bool = False,
         no_yanglib: bool = False,
     ) -> None:
         if self.cdata.parent:
@@ -273,6 +290,7 @@ class DNode:
             edit=edit,
             rpc=rpc,
             rpcreply=rpcreply,
+            notification=notification,
             no_yanglib=no_yanglib,
         )
         node_p = ffi.new("struct lyd_node **")
@@ -476,7 +494,9 @@ class DNode:
                 if name not in parent_dic:
                     parent_dic[name] = _init_yang_list(node.schema)
                 parent_dic[name].append(list_element)
-            elif node.schema.nodetype & (SNode.CONTAINER | SNode.RPC | SNode.ACTION):
+            elif node.schema.nodetype & (
+                SNode.CONTAINER | SNode.RPC | SNode.ACTION | SNode.NOTIF
+            ):
                 container = {}
                 child = node.child
                 while child:
@@ -667,6 +687,12 @@ class DLeafList(DLeaf):
 
 
 # -------------------------------------------------------------------------------------
+@DNode.register(SNode.NOTIF)
+class DNotif(DContainer):
+    pass
+
+
+# -------------------------------------------------------------------------------------
 def dict_to_dnode(
     dic: Dict[str, Any],
     module: Module,
@@ -678,6 +704,7 @@ def dict_to_dnode(
     edit: bool = False,
     rpc: bool = False,
     rpcreply: bool = False,
+    notification: bool = False,
     strict: bool = False,
     no_yanglib: bool = False,
     validate: bool = True,
@@ -709,6 +736,8 @@ def dict_to_dnode(
         Data represents RPC or action input parameters.
     :arg rpcreply:
         Data represents RPC or action output parameters.
+    :arg notification:
+        Data represents notification parameters.
     :arg strict:
         Instead of ignoring (with a warning message) data without schema definition,
         raise an error.
@@ -874,6 +903,10 @@ def dict_to_dnode(
                     n = _create_container(_parent, module, name, in_rpc_output)
                     _to_dnode(v, s, n, in_rpc_output)
 
+            elif isinstance(s, SNotif):
+                n = _create_container(_parent, module, name, in_rpc_output)
+                _to_dnode(value, s, n, in_rpc_output)
+
     result = None
 
     try:
@@ -900,6 +933,7 @@ def dict_to_dnode(
                     edit=edit,
                     rpc=rpc,
                     rpcreply=rpcreply,
+                    notification=notification,
                     no_yanglib=no_yanglib,
                 )
     except:

@@ -136,6 +136,7 @@ class Module:
         edit: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
+        notification: bool = False,
         strict: bool = False,
         no_yanglib: bool = False,
         validate: bool = True,
@@ -163,6 +164,8 @@ class Module:
             Data represents RPC or action input parameters.
         :arg rpcreply:
             Data represents RPC or action output parameters.
+        :arg notification:
+            Data represents a NETCONF notification.
         :arg strict:
             Instead of ignoring (with a warning message) data without schema definition,
             raise an error.
@@ -185,6 +188,7 @@ class Module:
             edit=edit,
             rpc=rpc,
             rpcreply=rpcreply,
+            notification=notification,
             strict=strict,
             no_yanglib=no_yanglib,
             validate=validate,
@@ -731,6 +735,7 @@ class SNode:
     ACTION = lib.LYS_ACTION
     INPUT = lib.LYS_INPUT
     OUTPUT = lib.LYS_OUTPUT
+    NOTIF = lib.LYS_NOTIF
     KEYWORDS = {
         CONTAINER: "container",
         LEAF: "leaf",
@@ -740,6 +745,7 @@ class SNode:
         ACTION: "action",
         INPUT: "input",
         OUTPUT: "output",
+        NOTIF: "notification",
     }
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -1056,6 +1062,16 @@ class SRpc(SNode):
 
 
 # -------------------------------------------------------------------------------------
+@SNode.register(SNode.NOTIF)
+class SNotif(SNode):
+    def __iter__(self) -> Iterator[SNode]:
+        return self.children()
+
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
+        return iter_children(self.context, self.cdata, types=types)
+
+
+# -------------------------------------------------------------------------------------
 def iter_children(
     context: "libyang.Context",
     parent,  # C type: Union["struct lys_module *", "struct lys_node *"]
@@ -1071,6 +1087,7 @@ def iter_children(
             lib.LYS_RPC,
             lib.LYS_LEAF,
             lib.LYS_LEAFLIST,
+            lib.LYS_NOTIF,
         )
 
     def _skip(node) -> bool:

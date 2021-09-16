@@ -346,8 +346,8 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), "protocol")
         self.assertEqual(t.base(), Type.ENUM)
-        enums = [e for e, _ in t.enums()]
-        self.assertEqual(enums, ["http", "https", "ftp", "sftp", "tftp"])
+        enums = [e.name() for e in t.enums()]
+        self.assertEqual(enums, ["http", "https", "ftp", "sftp"])
 
     def test_leaf_type_bits(self):
         leaf = next(
@@ -358,7 +358,7 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(t, Type)
         self.assertEqual(t.name(), "permissions")
         self.assertEqual(t.base(), Type.BITS)
-        bits = [b for b, _ in t.bits()]
+        bits = [b.name() for b in t.bits()]
         self.assertEqual(bits, ["read", "write", "execute"])
         self.assertIs(t.derived_type().module(), None)
 

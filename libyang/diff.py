@@ -142,6 +142,14 @@ class BitAdded(SNodeAttributeChanged):
     pass
 
 
+class BitStatusRemoved(SNodeAttributeChanged):
+    pass
+
+
+class BitStatusAdded(SNodeAttributeChanged):
+    pass
+
+
 class ConfigFalseRemoved(SNodeAttributeChanged):
     pass
 
@@ -171,6 +179,14 @@ class EnumRemoved(SNodeAttributeChanged):
 
 
 class EnumAdded(SNodeAttributeChanged):
+    pass
+
+
+class EnumStatusRemoved(SNodeAttributeChanged):
+    pass
+
+
+class EnumStatusAdded(SNodeAttributeChanged):
     pass
 
 
@@ -365,19 +381,31 @@ def snode_changes(old: SNode, new: SNode) -> Iterator[SNodeDiff]:
         for r in new_ranges - old_ranges:
             yield RangeAdded(old, new, r)
 
-        old_enums = set(e for e, _ in old.type().all_enums())
-        new_enums = set(e for e, _ in new.type().all_enums())
-        for e in old_enums - new_enums:
-            yield EnumRemoved(old, new, e)
-        for e in new_enums - old_enums:
-            yield EnumAdded(old, new, e)
+        old_enums = {e.name(): e for e in old.type().all_enums()}
+        new_enums = {e.name(): e for e in new.type().all_enums()}
+        for e in old_enums.keys() - new_enums.keys():
+            yield EnumRemoved(old, new, old_enums[e])
+        for e in new_enums.keys() - old_enums.keys():
+            yield EnumAdded(old, new, new_enums[e])
+        for e in new_enums.keys() & old_enums.keys():
+            o = old_enums[e]
+            n = new_enums[e]
+            if o.status() != n.status():
+                yield EnumStatusRemoved(old, new, (o.name(), o.status()))
+                yield EnumStatusAdded(old, new, (n.name(), n.status()))
 
-        old_bits = set(b for b, _ in old.type().all_bits())
-        new_bits = set(b for b, _ in new.type().all_bits())
-        for b in old_bits - new_bits:
-            yield BitRemoved(old, new, b)
-        for b in new_bits - old_bits:
-            yield BitAdded(old, new, b)
+        old_bits = {b.name(): b for b in old.type().all_bits()}
+        new_bits = {b.name(): b for b in new.type().all_bits()}
+        for b in old_bits.keys() - new_bits.keys():
+            yield BitRemoved(old, new, old_bits[b])
+        for b in new_bits.keys() - old_bits.keys():
+            yield BitAdded(old, new, new_bits[b])
+        for b in new_bits.keys() & old_bits.keys():
+            o = old_bits[b]
+            n = new_bits[b]
+            if o.status() != n.status():
+                yield BitStatusRemoved(old, new, (o.name(), o.status()))
+                yield BitStatusAdded(old, new, (n.name(), n.status()))
 
     if isinstance(old, SLeaf) and isinstance(new, SLeaf):
         if old.default() != new.default():

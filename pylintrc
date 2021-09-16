@@ -69,6 +69,7 @@ enable=all
 disable=
 	bad-continuation,
 	broad-except,
+	consider-using-f-string,
 	cyclic-import,
 	duplicate-code,
 	file-ignored,

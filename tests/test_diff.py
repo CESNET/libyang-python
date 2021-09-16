@@ -8,6 +8,9 @@ from libyang import (
     BaseTypeAdded,
     BaseTypeRemoved,
     Context,
+    EnumRemoved,
+    EnumStatusAdded,
+    EnumStatusRemoved,
     NodeTypeAdded,
     NodeTypeRemoved,
     SNodeAdded,
@@ -68,6 +71,12 @@ class DiffTest(unittest.TestCase):
             (SNodeAdded, "/yolo-system:alarm-triggered"),
             (SNodeAdded, "/yolo-system:alarm-triggered/yolo-system:severity"),
             (SNodeAdded, "/yolo-system:alarm-triggered/yolo-system:description"),
+            (EnumRemoved, "/yolo-system:conf/yolo-system:url/yolo-system:proto"),
+            (EnumRemoved, "/yolo-system:state/yolo-system:url/yolo-system:proto"),
+            (EnumStatusAdded, "/yolo-system:conf/yolo-system:url/yolo-system:proto"),
+            (EnumStatusAdded, "/yolo-system:state/yolo-system:url/yolo-system:proto"),
+            (EnumStatusRemoved, "/yolo-system:conf/yolo-system:url/yolo-system:proto"),
+            (EnumStatusRemoved, "/yolo-system:state/yolo-system:url/yolo-system:proto"),
         )
     )
 

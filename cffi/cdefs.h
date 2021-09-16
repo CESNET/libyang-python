@@ -151,6 +151,7 @@ struct lys_type_info_binary {
 struct lys_type_bit {
 	const char *name;
 	const char *dsc;
+	uint16_t flags;
 	uint32_t pos;
 	...;
 };
@@ -168,6 +169,7 @@ struct lys_type_info_dec64 {
 struct lys_type_enum {
 	const char *name;
 	const char *dsc;
+	uint16_t flags;
 	...;
 };
 

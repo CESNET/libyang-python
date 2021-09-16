@@ -37,9 +37,10 @@ module wtf-types {
     type enumeration {
       enum http;
       enum https;
-      enum ftp;
+      enum ftp {
+        status deprecated;
+      }
       enum sftp;
-      enum tftp;
     }
   }
 

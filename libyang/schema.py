@@ -282,6 +282,52 @@ class Extension:
 
 
 # -------------------------------------------------------------------------------------
+class _EnumBit:
+
+    __slots__ = ("context", "cdata")
+
+    def __init__(self, context: "libyang.Context", cdata):
+        self.context = context
+        self.cdata = cdata  # C type "struct lys_type_bit" or "struct lys_type_enum"
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def description(self) -> str:
+        return c2str(self.cdata.dsc)
+
+    def deprecated(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
+
+    def obsolete(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
+
+    def status(self) -> str:
+        if self.cdata.flags & lib.LYS_STATUS_OBSLT:
+            return "obsolete"
+        if self.cdata.flags & lib.LYS_STATUS_DEPRC:
+            return "deprecated"
+        return "current"
+
+    def __repr__(self):
+        cls = self.__class__
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, self)
+
+    def __str__(self):
+        return self.name()
+
+
+# -------------------------------------------------------------------------------------
+class Enum(_EnumBit):
+    pass
+
+
+# -------------------------------------------------------------------------------------
+class Bit(_EnumBit):
+    pass
+
+
+# -------------------------------------------------------------------------------------
 class Type:
 
     __slots__ = ("context", "cdata")
@@ -393,31 +439,29 @@ class Type:
         for i in range(t.info.uni.count):
             yield Type(self.context, t.info.uni.types[i])
 
-    def enums(self) -> Iterator[Tuple[str, Optional[str]]]:
+    def enums(self) -> Iterator[Enum]:
         if self.cdata.base != self.ENUM:
             return
         t = self.cdata
         while t.info.enums.count == 0:
             t = ffi.addressof(t.der.type)
         for i in range(t.info.enums.count):
-            e = t.info.enums.enm[i]
-            yield c2str(e.name), c2str(e.dsc)
+            yield Enum(self.context, t.info.enums.enm[i])
 
-    def all_enums(self) -> Iterator[Tuple[str, Optional[str]]]:
+    def all_enums(self) -> Iterator[Enum]:
         for b in self.get_bases():
             yield from b.enums()
 
-    def bits(self) -> Iterator[Tuple[str, Optional[str]]]:
+    def bits(self) -> Iterator[Bit]:
         if self.cdata.base != self.BITS:
             return
         t = self.cdata
         while t.info.bits.count == 0:
             t = ffi.addressof(t.der.type)
         for i in range(t.info.bits.count):
-            b = t.info.bits.bit[i]
-            yield c2str(b.name), c2str(b.dsc)
+            yield Bit(self.context, t.info.bits.bit[i])
 
-    def all_bits(self) -> Iterator[Tuple[str, Optional[str]]]:
+    def all_bits(self) -> Iterator[Bit]:
         for b in self.get_bases():
             yield from b.bits()
 

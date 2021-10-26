@@ -3,3 +3,5 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <libyang/libyang.h>
+

@@ -332,8 +332,13 @@ class Type:
 
     __slots__ = ("context", "cdata")
 
-    DER = lib.LY_TYPE_DER
+    UNKNOWN = lib.LY_TYPE_UNKNOWN
     BINARY = lib.LY_TYPE_BINARY
+    UINT8 = lib.LY_TYPE_UINT8
+    UINT16 = lib.LY_TYPE_UINT16
+    UINT32 = lib.LY_TYPE_UINT32
+    UINT64 = lib.LY_TYPE_UINT64
+    STRING = lib.LY_TYPE_STRING
     BITS = lib.LY_TYPE_BITS
     BOOL = lib.LY_TYPE_BOOL
     DEC64 = lib.LY_TYPE_DEC64
@@ -342,19 +347,20 @@ class Type:
     IDENT = lib.LY_TYPE_IDENT
     INST = lib.LY_TYPE_INST
     LEAFREF = lib.LY_TYPE_LEAFREF
-    STRING = lib.LY_TYPE_STRING
     UNION = lib.LY_TYPE_UNION
     INT8 = lib.LY_TYPE_INT8
-    UINT8 = lib.LY_TYPE_UINT8
     INT16 = lib.LY_TYPE_INT16
-    UINT16 = lib.LY_TYPE_UINT16
     INT32 = lib.LY_TYPE_INT32
-    UINT32 = lib.LY_TYPE_UINT32
     INT64 = lib.LY_TYPE_INT64
-    UINT64 = lib.LY_TYPE_UINT64
+
     BASENAMES = {
-        DER: "derived",
+        UNKNOWN: "unknown",
         BINARY: "binary",
+        UINT8: "uint8",
+        UINT16: "uint16",
+        UINT32: "uint32",
+        UINT64: "uint64",
+        STRING: "string",
         BITS: "bits",
         BOOL: "boolean",
         DEC64: "decimal64",
@@ -363,16 +369,11 @@ class Type:
         IDENT: "identityref",
         INST: "instance-id",
         LEAFREF: "leafref",
-        STRING: "string",
         UNION: "union",
         INT8: "int8",
-        UINT8: "uint8",
         INT16: "int16",
-        UINT16: "uint16",
         INT32: "int32",
-        UINT32: "uint32",
         INT64: "int64",
-        UINT64: "uint64",
     }
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -385,9 +386,10 @@ class Type:
         return self.cdata
 
     def get_bases(self) -> Iterator["Type"]:
-        if self.cdata.base == lib.LY_TYPE_DER:
-            yield from self.derived_type().get_bases()
-        elif self.cdata.base == lib.LY_TYPE_LEAFREF:
+        # NOTE: Derived type no longer in libyang2.
+        # if self.cdata.base == lib.LY_TYPE_DER:
+        #     yield from self.derived_type().get_bases()
+        if self.cdata.base == lib.LY_TYPE_LEAFREF:
             yield from self.leafref_type().get_bases()
         elif self.cdata.base == lib.LY_TYPE_UNION:
             for t in self.union_types():

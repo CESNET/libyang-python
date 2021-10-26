@@ -11,10 +11,19 @@ YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 
 
 # -------------------------------------------------------------------------------------
+
+
 class ContextTest(unittest.TestCase):
     def test_ctx_no_dir(self):
         with Context() as ctx:
             self.assertIsNot(ctx, None)
+
+    def test_ctx_yanglib(self):
+        ctx = Context(YANG_DIR, yanglib_path=YANG_DIR + "/yang-library.json")
+        ctx.load_module("yolo-system")
+        dnode = ctx.get_yanglib_data()
+        j = dnode.print_mem("json", with_siblings=True)
+        self.assertIsInstance(j, str)
 
     def test_ctx_dir(self):
         with Context(YANG_DIR) as ctx:
@@ -74,3 +83,17 @@ class ContextTest(unittest.TestCase):
             ctx.load_module("yolo-system")
             modules = list(iter(ctx))
             self.assertGreater(len(modules), 0)
+
+    YOLO_MOD_PATH = os.path.join(YANG_DIR, "yolo/yolo-system.yang")
+
+    def test_ctx_parse_module(self):
+        with open(self.YOLO_MOD_PATH, encoding="utf-8") as f:
+            mod_str = f.read()
+        with Context(YANG_DIR) as ctx:
+            mod = ctx.parse_module_str(mod_str, features=["turbo-boost", "networking"])
+            self.assertIsInstance(mod, Module)
+
+        with open(self.YOLO_MOD_PATH, encoding="utf-8") as f:
+            with Context(YANG_DIR) as ctx:
+                mod = ctx.parse_module_file(f, features=["turbo-boost", "networking"])
+                self.assertIsInstance(mod, Module)

@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 import datetime
-import distutils.file_util
 import os
 import re
 import subprocess
@@ -88,7 +87,7 @@ def get_version_from_archive_id(git_archive_id="$Format:%ct %d$"):
     # archived revision is not tagged, use the commit date
     tstamp = git_archive_id.strip().split()[0]
     d = datetime.datetime.utcfromtimestamp(int(tstamp))
-    return d.strftime("1.%Y.%m.%d")
+    return d.strftime("2.%Y.%m.%d")
 
 
 # -------------------------------------------------------------------------------------
@@ -121,16 +120,21 @@ def get_version():
     except Exception:
         pass
 
-    return "1.99999.99999"
+    return "2.99999.99999"
 
 
 # -------------------------------------------------------------------------------------
 class SDistCommand(setuptools.command.sdist.sdist):
+    def write_lines(self, file, lines):
+        with open(file, "w", encoding="utf-8") as f:
+            for line in lines:
+                f.write(line + "\n")
+
     def make_release_tree(self, base_dir, files):
         super().make_release_tree(base_dir, files)
         version_file = os.path.join(base_dir, "libyang/VERSION")
         self.execute(
-            distutils.file_util.write_file,
+            self.write_lines,
             (version_file, [self.distribution.metadata.version]),
             "Writing %s" % version_file,
         )
@@ -159,7 +163,7 @@ setuptools.setup(
     packages=["libyang"],
     zip_safe=False,
     include_package_data=True,
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     setup_requires=["setuptools", 'cffi; platform_python_implementation != "PyPy"'],
     install_requires=['cffi; platform_python_implementation != "PyPy"'],
     cffi_modules=["cffi/build.py:BUILDER"],

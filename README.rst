@@ -43,15 +43,13 @@ On a Debian/Ubuntu system::
 Compatibility
 -------------
 
-.. attention::
+The current version requires at least C `libyang 2.19`__.
 
-   For now, only `libyang 1.x`__ is supported. These CFFI bindings will not work
-   with the libyang 2.x. See issues `sysrepo/sysrepo-python#17`__ for more
-   details and `sysrepo/sysrepo-python#12`__ for updates.
+The last version of the bindings that works with C `libyang 1.x`__ is v1.7.0__.
 
-   __ https://github.com/CESNET/libyang/tree/libyang1
-   __ https://github.com/sysrepo/sysrepo-python/issues/17
-   __ https://github.com/sysrepo/sysrepo-python/issues/12
+__ https://github.com/CESNET/libyang/commit/94c581ae59ee79feecb8b560827e0760a4d4da53
+__ https://github.com/CESNET/libyang/tree/libyang1
+__ https://pypi.org/project/libyang/1.7.0/
 
 Compilation Flags
 -----------------

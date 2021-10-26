@@ -140,7 +140,7 @@ class KeyedList(list):
         return k
 
     # unsupported list API methods
-    def __unsupported(self, *args, **kwargs):  # pylint: disable=unused-private-member
+    def __unsupported(self, *args, **kwargs):
         raise TypeError("unsupported operation for non-ordered lists")
 
     index = __unsupported

@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.x
       - uses: actions/cache@v2
         with:
           path: ~/.cache/pip
@@ -27,18 +27,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - python: 3.5
-            toxenv: py35
           - python: 3.6
             toxenv: py36
           - python: 3.7
             toxenv: py37
           - python: 3.8
             toxenv: py38
+          - python: 3.9
+            toxenv: py39
+          - python: "3.10"
+            toxenv: py310
           - python: pypy3
             toxenv: pypy3
-          - python: 3.x
-            toxenv: py3-libyang1
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

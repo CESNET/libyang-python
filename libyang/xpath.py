@@ -325,7 +325,7 @@ def xpath_set(
     value: Any,
     *,
     force: bool = True,
-    after: Optional[str] = None
+    after: Optional[str] = None,
 ) -> Any:
     """
     Set the value pointed by the provided xpath into the provided data structure. If

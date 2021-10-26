@@ -1,10 +1,22 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # Copyright (c) 2020 6WIND S.A.
+# Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
 
 from .context import Context
-from .data import DContainer, DDiff, DLeaf, DLeafList, DList, DNode, DNotif, DRpc
+from .data import (
+    DAnydata,
+    DAnyxml,
+    DContainer,
+    DDiff,
+    DLeaf,
+    DLeafList,
+    DList,
+    DNode,
+    DNotif,
+    DRpc,
+)
 from .diff import (
     BaseTypeAdded,
     BaseTypeRemoved,
@@ -73,7 +85,7 @@ from .schema import (
     SRpcInOut,
     Type,
 )
-from .util import LibyangError
+from .util import DataType, IOType, LibyangError
 from .xpath import (
     xpath_del,
     xpath_get,
@@ -122,6 +134,8 @@ __all__ = (
     "LengthAdded",
     "LengthRemoved",
     "LibyangError",
+    "IOType",
+    "DataType",
     "MandatoryAdded",
     "MandatoryRemoved",
     "Module",

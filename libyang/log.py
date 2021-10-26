@@ -47,7 +47,7 @@ def configure_logging(enable_py_logger: bool, level: int = logging.ERROR) -> Non
     """
     for ly_lvl, py_lvl in LOG_LEVELS.items():
         if py_lvl == level:
-            lib.ly_verb(ly_lvl)
+            lib.ly_log_level(ly_lvl)
             break
     if enable_py_logger:
         lib.ly_log_options(lib.LY_LOLOG | lib.LY_LOSTORE)

@@ -9,6 +9,7 @@ from libyang import (
     Extension,
     IfFeature,
     IfOrFeatures,
+    IOType,
     LibyangError,
     Module,
     Revision,
@@ -37,6 +38,9 @@ class ModuleTest(unittest.TestCase):
         self.ctx = None
 
     def test_mod_print_mem(self):
+        s = self.module.print("tree", IOType.MEMORY)
+        self.assertGreater(len(s), 0)
+
         s = self.module.print_mem("tree")
         self.assertGreater(len(s), 0)
 
@@ -61,8 +65,9 @@ class ModuleTest(unittest.TestCase):
     def test_mod_enable_features(self):
         self.assertFalse(self.module.feature_state("turbo-boost"))
         self.module.feature_enable("turbo-boost")
+        self.module.feature_enable("*")
         self.assertTrue(self.module.feature_state("turbo-boost"))
-        self.module.feature_disable("turbo-boost")
+        self.module.feature_disable_all()
         self.assertFalse(self.module.feature_state("turbo-boost"))
         self.module.feature_enable_all()
         self.assertTrue(self.module.feature_state("turbo-boost"))
@@ -211,8 +216,8 @@ class ContainerTest(unittest.TestCase):
 # -------------------------------------------------------------------------------------
 class ListTest(unittest.TestCase):
 
-    SCHEMA_PATH = "/yolo-system:conf/yolo-system:url"
-    DATA_PATH = "/yolo-system:conf/url[proto='%s'][host='%s']"
+    SCHEMA_PATH = "/yolo-system:conf/url"
+    DATA_PATH = "/yolo-system:conf/url[host='%s'][proto='%s']"
 
     def setUp(self):
         self.ctx = Context(YANG_DIR)
@@ -228,7 +233,9 @@ class ListTest(unittest.TestCase):
         self.assertIsInstance(self.list, SList)
         self.assertEqual(self.list.nodetype(), SNode.LIST)
         self.assertEqual(self.list.keyword(), "list")
+
         self.assertEqual(self.list.schema_path(), self.SCHEMA_PATH)
+
         self.assertEqual(self.list.data_path(), self.DATA_PATH)
         self.assertFalse(self.list.ordered())
 
@@ -301,15 +308,11 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "host")
+        self.assertEqual(t.name(), "types:host")
         self.assertEqual(t.base(), Type.STRING)
-        mod = t.module()
-        self.assertIsNot(mod, None)
-        self.assertEqual(mod.name(), "wtf-types")
-        d = t.derived_type()
-        self.assertEqual(d.name(), "str")
-        dd = d.derived_type()
-        self.assertEqual(dd.name(), "string")
+        # mod = t.module()
+        # self.assertIsNot(mod, None)
+        # self.assertEqual(mod.name(), "wtf-types")
 
     def test_leaf_type_status(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf/yolo-system:hostname"))
@@ -330,10 +333,10 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(leaf, SLeafList)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "number")
+        self.assertEqual(t.name(), "types:number")
         self.assertEqual(t.base(), Type.UNION)
         types = set(u.name() for u in t.union_types())
-        self.assertEqual(types, set(["signed", "unsigned"]))
+        self.assertEqual(types, set(["int16", "int32", "uint16", "uint32"]))
         bases = set(t.basenames())
         self.assertEqual(bases, set(["int16", "int32", "uint16", "uint32"]))
 
@@ -344,23 +347,20 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "protocol")
+        self.assertEqual(t.name(), "types:protocol")
         self.assertEqual(t.base(), Type.ENUM)
         enums = [e.name() for e in t.enums()]
         self.assertEqual(enums, ["http", "https", "ftp", "sftp"])
 
     def test_leaf_type_bits(self):
-        leaf = next(
-            self.ctx.find_path("/yolo-system:chmod/yolo-system:input/yolo-system:perms")
-        )
+        leaf = next(self.ctx.find_path("/yolo-system:chmod/yolo-system:perms"))
         self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "permissions")
+        self.assertEqual(t.name(), "types:permissions")
         self.assertEqual(t.base(), Type.BITS)
         bits = [b.name() for b in t.bits()]
         self.assertEqual(bits, ["read", "write", "execute"])
-        self.assertIs(t.derived_type().module(), None)
 
     def test_leaf_parent(self):
         leaf = next(

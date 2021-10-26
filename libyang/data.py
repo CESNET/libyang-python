@@ -1,4 +1,5 @@
 # Copyright (c) 2020 6WIND S.A.
+# Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
 import logging
@@ -17,7 +18,7 @@ from .schema import (
     SRpc,
     Type,
 )
-from .util import LibyangError, c2str, deprecated, str2c
+from .util import DataType, IOType, LibyangError, c2str, str2c
 
 
 LOG = logging.getLogger(__name__)
@@ -26,22 +27,22 @@ LOG = logging.getLogger(__name__)
 # -------------------------------------------------------------------------------------
 def printer_flags(
     with_siblings: bool = False,
-    pretty: bool = False,
+    pretty: bool = True,
     keep_empty_containers: bool = False,
     trim_default_values: bool = False,
     include_implicit_defaults: bool = False,
 ) -> int:
     flags = 0
     if with_siblings:
-        flags |= lib.LYP_WITHSIBLINGS
-    if pretty:
-        flags |= lib.LYP_FORMAT
+        flags |= lib.LYD_PRINT_WITHSIBLINGS
+    if not pretty:
+        flags |= lib.LYD_PRINT_SHRINK
     if keep_empty_containers:
-        flags |= lib.LYP_KEEPEMPTYCONT
+        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
     if trim_default_values:
-        flags |= lib.LYP_WD_TRIM
+        flags |= lib.LYD_PRINT_WD_TRIM
     if include_implicit_defaults:
-        flags |= lib.LYP_WD_ALL
+        flags |= lib.LYD_PRINT_WD_ALL
     return flags
 
 
@@ -62,79 +63,108 @@ def path_flags(
 ) -> int:
     flags = 0
     if update:
-        flags |= lib.LYD_PATH_OPT_UPDATE
+        flags |= lib.LYD_NEW_PATH_UPDATE
     if rpc_output:
-        flags |= lib.LYD_PATH_OPT_OUTPUT
-    if no_parent_ret:
-        flags |= lib.LYD_PATH_OPT_NOPARENTRET
+        flags |= lib.LYD_NEW_PATH_OUTPUT
     return flags
 
 
 # -------------------------------------------------------------------------------------
 def parser_flags(
-    data: bool = False,
-    config: bool = False,
-    get: bool = False,
-    getconfig: bool = False,
-    edit: bool = False,
-    rpc: bool = False,
-    rpcreply: bool = False,
-    notification: bool = False,
+    lyb_mod_update: bool = False,
+    no_state: bool = False,
+    parse_only: bool = False,
+    opaq: bool = False,
+    ordered: bool = False,
     strict: bool = False,
-    trusted: bool = False,
-    no_yanglib: bool = False,
-    destruct: bool = False,
-    no_siblings: bool = False,
-    explicit: bool = False,
 ) -> int:
-    if (data, config, get, getconfig, edit, rpc, rpcreply, notification).count(
-        True
-    ) > 1:
-        raise ValueError(
-            "Only one of data, config, get, getconfig, edit, rpc, rpcreply, "
-            "notification can be True"
-        )
     flags = 0
-    if data:
-        flags |= lib.LYD_OPT_DATA
-    if config:
-        flags |= lib.LYD_OPT_CONFIG
-    if get:
-        flags |= lib.LYD_OPT_GET
-    if getconfig:
-        flags |= lib.LYD_OPT_GETCONFIG
-    if edit:
-        flags |= lib.LYD_OPT_EDIT
-    if rpc:
-        flags |= lib.LYD_OPT_RPC
-    if rpcreply:
-        flags |= lib.LYD_OPT_RPCREPLY
-    if notification:
-        flags |= lib.LYD_OPT_NOTIF
+    if lyb_mod_update:
+        flags |= lib.LYD_PARSE_LYB_MOD_UPDATE
+    if no_state:
+        flags |= lib.LYD_PARSE_NO_STATE
+    if parse_only:
+        flags |= lib.LYD_PARSE_ONLY
+    if opaq:
+        flags |= lib.LYD_PARSE_OPAQ
+    if ordered:
+        flags |= lib.LYD_PARSE_ORDERED
     if strict:
-        flags |= lib.LYD_OPT_STRICT
-    if trusted:
-        flags |= lib.LYD_OPT_TRUSTED
-    if no_yanglib:
-        flags |= lib.LYD_OPT_DATA_NO_YANGLIB
-    if destruct:
-        flags |= lib.LYD_OPT_DESTRUCT
-    if no_siblings:
-        flags |= lib.LYD_OPT_NOSIBLINGS
-    if explicit:
-        flags |= lib.LYD_OPT_EXPLICIT
+        flags |= lib.LYD_PARSE_STRICT
     return flags
 
 
-def diff_flags(
-    with_defaults: bool = False,
-    no_siblings: bool = False,
+# -------------------------------------------------------------------------------------
+def merge_flags(
+    defaults: bool = False,
+    destruct: bool = False,
+    with_flags: bool = False,
 ) -> int:
     flags = 0
+    if defaults:
+        flags |= lib.LYD_MERGE_DEFAULTS
+    if destruct:
+        flags |= lib.LYD_MERGE_DESTRUCT
+    if with_flags:
+        flags |= lib.LYD_MERGE_WITH_FLAGS
+    return flags
+
+
+# -------------------------------------------------------------------------------------
+def dup_flags(
+    no_meta: bool = False,
+    recursive: bool = False,
+    with_flags: bool = False,
+    with_parents: bool = False,
+) -> int:
+    flags = 0
+    if no_meta:
+        flags |= lib.LYD_DUP_NO_META
+    if recursive:
+        flags |= lib.LYD_DUP_RECURSIVE
+    if with_flags:
+        flags |= lib.LYD_DUP_WITH_FLAGS
+    if with_parents:
+        flags |= lib.LYD_DUP_WITH_PARENTS
+    return flags
+
+
+# -------------------------------------------------------------------------------------
+def data_type(dtype):
+    if dtype == DataType.DATA_YANG:
+        return lib.LYD_TYPE_DATA_YANG
+    if dtype == DataType.RPC_YANG:
+        return lib.LYD_TYPE_RPC_YANG
+    if dtype == DataType.NOTIF_YANG:
+        return lib.LYD_TYPE_NOTIF_YANG
+    if dtype == DataType.REPLY_YANG:
+        return lib.LYD_TYPE_REPLY_YANG
+    if dtype == DataType.RPC_NETCONF:
+        return lib.LYD_TYPE_RPC_NETCONF
+    if dtype == DataType.NOTIF_NETCONF:
+        return lib.LYD_TYPE_NOTIF_NETCONF
+    if dtype == DataType.REPLY_NETCONF:
+        return lib.LYD_TYPE_REPLY_NETCONF
+    raise ValueError("Unknown data type")
+
+
+# -------------------------------------------------------------------------------------
+def validation_flags(
+    no_state: bool = False,
+    validate_present: bool = False,
+) -> int:
+    flags = 0
+    if no_state:
+        flags |= lib.LYD_VALIDATE_NO_STATE
+    if validate_present:
+        flags |= lib.LYD_VALIDATE_PRESENT
+    return flags
+
+
+def diff_flags(with_defaults: bool = False) -> int:
+    flags = 0
     if with_defaults:
-        flags |= lib.LYD_DIFFOPT_WITHDEFAULTS
-    if no_siblings:
-        flags |= lib.LYD_DIFFOPT_NOSIBLINGS
+        flags |= lib.LYD_DIFF_DEFAULTS
     return flags
 
 
@@ -143,20 +173,6 @@ class DDiff:
     """
     Data tree diff
     """
-
-    DELETED = lib.LYD_DIFF_DELETED
-    CHANGED = lib.LYD_DIFF_CHANGED
-    CREATED = lib.LYD_DIFF_CREATED
-    MOVEDAFTER1 = lib.LYD_DIFF_MOVEDAFTER1
-    MOVEDAFTER2 = lib.LYD_DIFF_MOVEDAFTER2
-
-    DIFF_TYPES = {
-        DELETED: "deleted",
-        CHANGED: "changed",
-        CREATED: "created",
-        MOVEDAFTER1: "movedafter1",
-        MOVEDAFTER2: "movedafter2",
-    }
 
     __slots__ = ("dtype", "first", "second")
 
@@ -175,7 +191,7 @@ class DDiff:
 
     def diff_type(self) -> str:
         """Get diff type as string"""
-        return self.DIFF_TYPES.get(self.dtype, "unknown")
+        return hex(self.dtype)
 
     def __repr__(self) -> str:
         return "<libyang.data.DDiff {} first={} second={}>".format(
@@ -201,19 +217,82 @@ class DNode:
         self.context = context
         self.cdata = cdata  # C type: "struct lyd_node *"
 
-    @property
-    def _node(self):
-        deprecated("_node", "cdata", "2.0.0")
-        return self.cdata
+    def meta(self):
+        ret = {}
+        item = self.cdata.meta
+        while item != ffi.NULL:
+            ret[c2str(item.name)] = c2str(
+                lib.lyd_value_get_canonical(
+                    self.context.cdata, ffi.addressof(item.value)
+                )
+            )
+            item = item.next
+        return ret
+
+    def meta_free(self, name):
+        item = self.cdata.meta
+        while item != ffi.NULL:
+            if c2str(item.name) == name:
+                lib.lyd_free_meta_single(item)
+                break
+
+    def flags(self):
+        ret = {"default": False, "when_true": False, "new": False}
+        if self.cdata.flags & lib.LYD_DEFAULT:
+            ret["default"] = True
+        if self.cdata.flags & lib.LYD_WHEN_TRUE:
+            ret["when_true"] = True
+        if self.cdata.flags & lib.LYD_NEW:
+            ret["new"] = True
+        return ret
+
+    def set_when(self, value: bool):
+        if value:
+            self.cdata.flags |= lib.LYD_WHEN_TRUE
+        else:
+            self.cdata.flags &= ~lib.LYD_WHEN_TRUE
+
+    def new_path(
+        self,
+        path: str,
+        value: str,
+        opt_update: bool = False,
+        opt_output: bool = False,
+        opt_opaq: bool = False,
+        opt_bin_value: bool = False,
+        opt_canon_value: bool = False,
+    ):
+
+        opt = 0
+        if opt_update:
+            opt |= lib.LYD_NEW_PATH_UPDATE
+        if opt_output:
+            opt |= lib.LYD_NEW_PATH_OUTPUT
+        if opt_opaq:
+            opt |= lib.LYD_NEW_PATH_OPAQ
+        if opt_bin_value:
+            opt |= lib.LYD_NEW_PATH_BIN_VALUE
+        if opt_canon_value:
+            opt |= lib.LYD_NEW_PATH_CANON_VALUE
+
+        ret = lib.lyd_new_path(
+            self.cdata, ffi.NULL, str2c(path), str2c(value), opt, ffi.NULL
+        )
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot get module")
+
+    def insert_child(self, node):
+        ret = lib.lyd_insert_child(self.cdata, node.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot insert node")
 
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
 
     def module(self) -> Module:
-        mod = lib.lyd_node_module(self.cdata)
-        if not mod:
+        if not self.cdata.schema:
             raise self.context.error("cannot get module")
-        return Module(self.context, mod)
+        return Module(self.context, self.cdata.schema.module)
 
     def schema(self) -> SNode:
         return SNode.new(self.context, self.cdata.schema)
@@ -222,6 +301,16 @@ class DNode:
         if not self.cdata.parent:
             return None
         return self.new(self.context, self.cdata.parent)
+
+    def next(self) -> Optional["DNode"]:
+        if not self.cdata.next:
+            return None
+        return self.new(self.context, self.cdata.next)
+
+    def prev(self) -> Optional["DNode"]:
+        if not self.cdata.prev:
+            return None
+        return self.new(self.context, self.cdata.prev)
 
     def root(self) -> "DNode":
         node = self
@@ -245,6 +334,13 @@ class DNode:
                 yield self.new(self.context, n)
             n = n.next
 
+    def find_path(self, path: str, output: bool = False):
+        node = ffi.new("struct lyd_node **")
+        ret = lib.lyd_find_path(self.cdata, str2c(path), output, node)
+        if ret == lib.LY_SUCCESS:
+            return DNode.new(self.context, node[0])
+        return None
+
     def find_one(self, xpath: str) -> Optional["DNode"]:
         try:
             return next(self.find_all(xpath))
@@ -252,17 +348,30 @@ class DNode:
             return None
 
     def find_all(self, xpath: str) -> Iterator["DNode"]:
-        node_set = lib.lyd_find_path(self.cdata, str2c(xpath))
-        if not node_set:
-            raise self.context.error("cannot find path")
+        node_set = ffi.new("struct ly_set **")
+        ret = lib.lyd_find_xpath(self.cdata, str2c(xpath), node_set)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot find path: %s", xpath)
+
+        node_set = node_set[0]
         try:
-            for i in range(node_set.number):
-                yield DNode.new(self.context, node_set.set.d[i])
+            for i in range(node_set.count):
+                n = DNode.new(self.context, node_set.dnodes[i])
+                yield n
         finally:
-            lib.ly_set_free(node_set)
+            lib.ly_set_free(node_set, ffi.NULL)
+
+    def eval_xpath(self, xpath: str):
+        lbool = ffi.new("ly_bool *")
+        ret = lib.lyd_eval_xpath(self.cdata, str2c(xpath), lbool)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot eva xpath: %s", xpath)
+        if lbool[0]:
+            return True
+        return False
 
     def path(self) -> str:
-        path = lib.lyd_path(self.cdata)
+        path = lib.lyd_path(self.cdata, lib.LYD_PATH_STD, ffi.NULL, 0)
         try:
             return c2str(path)
         finally:
@@ -270,33 +379,51 @@ class DNode:
 
     def validate(
         self,
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
+        no_state: bool = False,
+        validate_present: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
         notification: bool = False,
-        no_yanglib: bool = False,
+    ) -> None:
+        dtype = None
+        if rpc:
+            dtype = DataType.RPC_YANG
+        elif rpcreply:
+            dtype = DataType.REPLY_YANG
+        elif notification:
+            dtype = DataType.NOTIF_YANG
+
+        if dtype is None:
+            self.validate_all(no_state, validate_present)
+        else:
+            self.validate_op(dtype)
+
+    def validate_all(
+        self,
+        no_state: bool = False,
+        validate_present: bool = False,
     ) -> None:
         if self.cdata.parent:
             raise self.context.error("validation is only supported on top-level nodes")
-        flags = parser_flags(
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
-            rpc=rpc,
-            rpcreply=rpcreply,
-            notification=notification,
-            no_yanglib=no_yanglib,
+        flags = validation_flags(
+            no_state=no_state,
+            validate_present=validate_present,
         )
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
-        ret = lib.lyd_validate(node_p, flags, ffi.NULL)
-        if ret != 0:
+        ret = lib.lyd_validate_all(node_p, self.context.cdata, flags, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("validation failed")
+
+    def validate_op(
+        self,
+        dtype: DataType,
+    ) -> None:
+        dtype = data_type(dtype)
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+        ret = lib.lyd_validate_op(node_p[0], ffi.NULL, dtype, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("validation failed")
 
     def diff(
@@ -305,59 +432,145 @@ class DNode:
         no_siblings: bool = False,
         with_defaults: bool = False,
     ) -> Iterator[DDiff]:
-        flags = diff_flags(no_siblings=no_siblings, with_defaults=with_defaults)
-        dlist = lib.lyd_diff(self.cdata, other.cdata, flags)
-        if not dlist:
-            raise self.context.error("diff failed")
+        flags = diff_flags(with_defaults=with_defaults)
+        node_p = ffi.new("struct lyd_node **")
+        if no_siblings:
+            ret = lib.lyd_diff_tree(self.cdata, other.cdata, flags, node_p)
+        else:
+            ret = lib.lyd_diff_siblings(self.cdata, other.cdata, flags, node_p)
 
-        i = 0
-        try:
-            while dlist.type[i] != lib.LYD_DIFF_END:
-                first = None
-                if dlist.first[i]:
-                    first = self.new(self.context, dlist.first[i])
-                second = None
-                if dlist.second[i]:
-                    second = self.new(self.context, dlist.second[i])
-                yield DDiff(dlist.type[i], first, second)
-                i += 1
-        finally:
-            lib.lyd_free_diff(dlist)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("diff error")
+
+        if node_p[0] == ffi.NULL:
+            return None
+
+        return self.new(self.context, node_p[0])
+
+    def diff_apply(self, diff_node: "DNode") -> None:
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+
+        ret = lib.lyd_diff_apply_all(node_p, diff_node.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("apply diff error")
+
+    def duplicate(
+        self,
+        with_siblings: bool = False,
+        no_meta: bool = False,
+        recursive: bool = False,
+        with_flags: bool = False,
+        with_parents: bool = False,
+        parent: Optional["DNode"] = None,
+    ) -> "DNode":
+        flags = dup_flags(
+            no_meta=no_meta,
+            recursive=recursive,
+            with_flags=with_flags,
+            with_parents=with_parents,
+        )
+
+        if parent is not None:
+            parent = parent.cdata
+        else:
+            parent = ffi.NULL
+
+        node = ffi.new("struct lyd_node **")
+        if with_siblings:
+            lib.lyd_dup_siblings(self.cdata, parent, flags, node)
+        else:
+            lib.lyd_dup_single(self.cdata, parent, flags, node)
+
+        return DNode.new(self.context, node[0])
 
     def merge(
         self,
         source: "DNode",
+        with_siblings: bool = False,
+        defaults: bool = False,
         destruct: bool = False,
-        no_siblings: bool = False,
-        explicit: bool = False,
+        with_flags: bool = False,
     ) -> None:
-        flags = parser_flags(
-            destruct=destruct, no_siblings=no_siblings, explicit=explicit
-        )
-        ret = lib.lyd_merge(self.cdata, source.cdata, flags)
-        if ret != 0:
+        flags = merge_flags(defaults=defaults, destruct=destruct, with_flags=with_flags)
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+        if with_siblings:
+            ret = lib.lyd_merge_siblings(node_p, source.cdata, flags)
+        else:
+            ret = lib.lyd_merge_tree(node_p, source.cdata, flags)
+
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("merge failed")
+
+    def print(
+        self,
+        fmt: str,
+        out_type: IOType,
+        out_target: Union[IO, str, None] = None,
+        with_siblings: bool = False,
+        pretty: bool = True,
+        keep_empty_containers: bool = False,
+        trim_default_values: bool = False,
+        include_implicit_defaults: bool = False,
+    ) -> Union[str, bytes]:
+        flags = printer_flags(
+            pretty=pretty,
+            keep_empty_containers=keep_empty_containers,
+            trim_default_values=trim_default_values,
+            include_implicit_defaults=include_implicit_defaults,
+        )
+        fmt = data_format(fmt)
+        out_data = ffi.new("struct ly_out **")
+
+        if out_type == IOType.FD:
+            raise NotImplementedError
+
+        if out_type == IOType.FILE:
+            raise NotImplementedError
+
+        if out_type == IOType.FILEPATH:
+            raise NotImplementedError
+
+        if out_type != IOType.MEMORY:
+            raise ValueError("no input specified")
+
+        buf = ffi.new("char **")
+        ret = lib.ly_out_new_memory(buf, 0, out_data)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("failed to initialize output target")
+
+        if with_siblings:
+            ret = lib.lyd_print_all(out_data[0], self.cdata, fmt, flags)
+        else:
+            ret = lib.lyd_print_tree(out_data[0], self.cdata, fmt, flags)
+
+        lib.ly_out_free(out_data[0], ffi.NULL, 0)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("failed to write data")
+
+        return c2str(buf[0], decode=True)
 
     def print_mem(
         self,
         fmt: str,
         with_siblings: bool = False,
-        pretty: bool = False,
-        include_implicit_defaults: bool = False,
-        trim_default_values: bool = False,
+        pretty: bool = True,
         keep_empty_containers: bool = False,
+        trim_default_values: bool = False,
+        include_implicit_defaults: bool = False,
     ) -> Union[str, bytes]:
         flags = printer_flags(
             with_siblings=with_siblings,
             pretty=pretty,
-            include_implicit_defaults=include_implicit_defaults,
-            trim_default_values=trim_default_values,
             keep_empty_containers=keep_empty_containers,
+            trim_default_values=trim_default_values,
+            include_implicit_defaults=include_implicit_defaults,
         )
         buf = ffi.new("char **")
         fmt = data_format(fmt)
         ret = lib.lyd_print_mem(buf, self.cdata, fmt, flags)
-        if ret != 0:
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot print node")
         try:
             if fmt == lib.LYD_LYB:
@@ -372,21 +585,28 @@ class DNode:
         fileobj: IO,
         fmt: str,
         with_siblings: bool = False,
-        pretty: bool = False,
-        include_implicit_defaults: bool = False,
-        trim_default_values: bool = False,
+        pretty: bool = True,
         keep_empty_containers: bool = False,
+        trim_default_values: bool = False,
+        include_implicit_defaults: bool = False,
     ) -> None:
         flags = printer_flags(
             with_siblings=with_siblings,
             pretty=pretty,
-            include_implicit_defaults=include_implicit_defaults,
-            trim_default_values=trim_default_values,
             keep_empty_containers=keep_empty_containers,
+            trim_default_values=trim_default_values,
+            include_implicit_defaults=include_implicit_defaults,
         )
         fmt = data_format(fmt)
-        ret = lib.lyd_print_fd(fileobj.fileno(), self.cdata, fmt, flags)
-        if ret != 0:
+        out = ffi.new("struct ly_out **")
+        ret = lib.ly_out_new_fd(fileobj.fileno(), out)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot allocate output data")
+        if with_siblings:
+            ret = lib.lyd_print_all(out[0], self.cdata, fmt, flags)
+        else:
+            ret = lib.lyd_print_tree(out[0], self.cdata, fmt, flags)
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot print node")
 
     def should_print(
@@ -453,7 +673,7 @@ class DNode:
                 if strip_prefixes:
                     name = c2str(node.schema.name)
                 else:
-                    mod = lib.lyd_node_module(node)
+                    mod = node.schema.module
                     name = "%s:%s" % (c2str(mod.name), c2str(node.schema.name))
                 name_cache[node.schema] = name
             return name
@@ -461,7 +681,7 @@ class DNode:
         list_keys_cache = {}
 
         def _init_yang_list(snode):
-            if snode.flags & lib.LYS_USERORDERED:
+            if snode.flags & lib.LYS_ORDBY_USER:
                 return []  # ordered list, return an empty builtin list
 
             # unordered lists
@@ -469,11 +689,17 @@ class DNode:
                 return KeyedList(key_name=None)
 
             if snode not in list_keys_cache:
-                list_snode = ffi.cast("struct lys_node_list *", snode)
                 keys = []
-                for i in range(list_snode.keys_size):
-                    key = ffi.cast("struct lys_node *", list_snode.keys[i])
-                    keys.append(c2str(key.name))
+                child = lib.lysc_node_child(snode)
+                while child:
+                    if child.flags & lib.LYS_KEY:
+                        if strip_prefixes:
+                            keys.append(c2str(child.name))
+                        else:
+                            keys.append(
+                                "%s:%s" % (c2str(child.module.name), c2str(child.name))
+                            )
+                    child = child.next
                 if len(keys) == 1:
                     list_keys_cache[snode] = keys[0]
                 else:
@@ -487,7 +713,8 @@ class DNode:
             name = _node_name(node)
             if node.schema.nodetype == SNode.LIST:
                 list_element = {}
-                child = node.child
+
+                child = lib.lyd_child(node)
                 while child:
                     _to_dict(child, list_element)
                     child = child.next
@@ -498,7 +725,7 @@ class DNode:
                 SNode.CONTAINER | SNode.RPC | SNode.ACTION | SNode.NOTIF
             ):
                 container = {}
-                child = node.child
+                child = lib.lyd_child(node)
                 while child:
                     _to_dict(child, container)
                     child = child.next
@@ -524,16 +751,12 @@ class DNode:
     def merge_data_dict(
         self,
         dic: Dict[str, Any],
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
+        no_state: bool = False,
+        validate_present: bool = False,
+        validate: bool = True,
+        strict: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
-        strict: bool = False,
-        no_yanglib: bool = False,
-        validate: bool = True,
     ) -> Optional["DNode"]:
         """
         Merge a python dictionary into this node. The returned value is the first
@@ -541,54 +764,37 @@ class DNode:
 
         :arg dic:
             The python dictionary to convert.
-        :arg data:
-            Complete datastore content with configuration as well as state data. To
-            handle possibly missing (but by default required) ietf-yang-library data,
-            use no_yanglib=True.
-        :arg config:
-            Complete datastore without state data.
-        :arg get:
-            Data content from a reply message to the NETCONF <get> operation.
-        :arg getconfig:
-            Data content from a reply message to the NETCONF <get-config> operation.
-        :arg edit:
-            Content of the NETCONF <edit-config> config element.
+        :arg no_state:
+            Consider state data not allowed and raise an error during validation if they are found.
+        :arg validate_present:
+            Validate result of the operation against schema.
+        :arg validate:
+            Run validation on result of the operation.
+        :arg strict:
+            Instead of ignoring data without schema definition, raise an error.
         :arg rpc:
             Data represents RPC or action input parameters.
         :arg rpcreply:
             Data represents RPC or action output parameters.
-        :arg strict:
-            Instead of ignoring (with a warning message) data without schema
-            definition, raise an error.
-        :arg no_yanglib:
-            Ignore (possibly) missing ietf-yang-library data. Applicable only with
-            data=True.
-        :arg validate:
-            If False, do not validate the modified tree before returning. The validation
-            is performed on the top of the modified data tree.
         """
         return dict_to_dnode(
             dic,
             self.module(),
             parent=self,
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
+            no_state=no_state,
+            validate_present=validate_present,
+            validate=validate,
+            strict=strict,
             rpc=rpc,
             rpcreply=rpcreply,
-            strict=strict,
-            no_yanglib=no_yanglib,
-            validate=validate,
         )
 
     def free(self, with_siblings: bool = True) -> None:
         try:
             if with_siblings:
-                lib.lyd_free_withsiblings(self.cdata)
+                lib.lyd_free_all(self.cdata)
             else:
-                lib.lyd_free(self.cdata)
+                lib.lyd_free_tree(self.cdata)
         finally:
             self.cdata = None
 
@@ -629,10 +835,15 @@ class DContainer(DNode):
             path, parent=self, value=value, rpc_output=rpc_output
         )
 
-    def children(self) -> Iterator[DNode]:
-        child = self.cdata.child
+    def children(self, no_keys=False) -> Iterator[DNode]:
+        if no_keys:
+            child = lib.lyd_child_no_keys(self.cdata)
+        else:
+            child = lib.lyd_child(self.cdata)
+
         while child:
-            yield DNode.new(self.context, child)
+            if child.schema != ffi.NULL:
+                yield DNode.new(self.context, child)
             child = child.next
 
     def __iter__(self):
@@ -655,29 +866,40 @@ class DList(DContainer):
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
-    @property
-    def _leaf(self):
-        deprecated("_leaf", "cdata_leaf", "2.0.0")
-        return ffi.cast("struct lyd_node_leaf_list *", self.cdata)
-
     def value(self) -> Any:
         return DLeaf.cdata_leaf_value(self.cdata)
 
     @staticmethod
     def cdata_leaf_value(cdata) -> Any:
-        cdata = ffi.cast("struct lyd_node_leaf_list *", cdata)
-        val_type = cdata.value_type
-        if val_type in Type.STR_TYPES:
-            return c2str(cdata.value_str)
-        if val_type in Type.NUM_TYPES:
-            return int(c2str(cdata.value_str))
-        if val_type == Type.BOOL:
-            return bool(cdata.value.bln)
-        if val_type == Type.DEC64:
-            return lib.lyd_dec64_to_double(ffi.cast("struct lyd_node *", cdata))
-        if val_type == Type.LEAFREF:
-            return DLeaf.cdata_leaf_value(cdata.value.leafref)
-        return None
+
+        val = lib.lyd_get_value(cdata)
+        if val == ffi.NULL:
+            return None
+
+        val = c2str(val)
+        term_node = ffi.cast("struct lyd_node_term *", cdata)
+        val_type = ffi.new("const struct lysc_type **", ffi.NULL)
+
+        # get real value type
+        ret = lib.lyd_value_validate(
+            ffi.NULL,
+            term_node.schema,
+            str2c(val),
+            len(val),
+            ffi.NULL,
+            val_type,
+            ffi.NULL,
+        )
+
+        if ret in (lib.LY_SUCCESS, lib.LY_EINCOMPLETE):
+            val_type = val_type[0].basetype
+            if val_type == Type.BOOL:
+                return val == "true"
+            if val_type in Type.NUM_TYPES:
+                return int(val)
+            return val
+
+        raise TypeError("value type validation error")
 
 
 # -------------------------------------------------------------------------------------
@@ -693,21 +915,39 @@ class DNotif(DContainer):
 
 
 # -------------------------------------------------------------------------------------
+@DNode.register(SNode.ANYXML)
+class DAnyxml(DNode):
+    def value(self, fmt: str = "xml"):
+        anystr = ffi.new("char **", ffi.NULL)
+        ret = lib.lyd_any_value_str(self.cdata, anystr)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot get data")
+        return c2str(anystr[0])
+
+
+# -------------------------------------------------------------------------------------
+@DNode.register(SNode.ANYDATA)
+class DAnydata(DNode):
+    def value(self, fmt: str = "xml"):
+        anystr = ffi.new("char **", ffi.NULL)
+        ret = lib.lyd_any_value_str(self.cdata, anystr)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot get data")
+        return c2str(anystr[0])
+
+
+# -------------------------------------------------------------------------------------
 def dict_to_dnode(
     dic: Dict[str, Any],
     module: Module,
     parent: Optional[DNode] = None,
-    data: bool = False,
-    config: bool = False,
-    get: bool = False,
-    getconfig: bool = False,
-    edit: bool = False,
+    no_state: bool = False,
+    validate_present: bool = False,
+    validate: bool = True,
+    strict: bool = False,
     rpc: bool = False,
     rpcreply: bool = False,
     notification: bool = False,
-    strict: bool = False,
-    no_yanglib: bool = False,
-    validate: bool = True,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -720,33 +960,20 @@ def dict_to_dnode(
     :arg parent:
         Optional parent to update. If not specified a new top-level DNode will be
         created.
-    :arg data:
-        Complete datastore content with configuration as well as state data. To handle
-        possibly missing (but by default required) ietf-yang-library data, use
-        no_yanglib=True.
-    :arg config:
-        Complete datastore without state data.
-    :arg get:
-        Data content from a reply message to the NETCONF <get> operation.
-    :arg getconfig:
-        Data content from a reply message to the NETCONF <get-config> operation.
-    :arg edit:
-        Content of the NETCONF <edit-config> config element.
+    :arg no_state:
+        Consider state data not allowed and raise an error during validation if they are found.
+    :arg validate_present:
+        Validate result of the operation against schema.
+    :arg validate:
+        Run validation on result of the operation.
+    :arg strict:
+        Instead of ignoring data without schema definition, raise an error.
     :arg rpc:
         Data represents RPC or action input parameters.
     :arg rpcreply:
         Data represents RPC or action output parameters.
     :arg notification:
         Data represents notification parameters.
-    :arg strict:
-        Instead of ignoring (with a warning message) data without schema definition,
-        raise an error.
-    :arg no_yanglib:
-        Ignore (possibly) missing ietf-yang-library data. Applicable only with
-        data=True.
-    :arg validate:
-        If False, do not validate the modified tree before returning. The validation is
-        performed on the top of the data tree.
     """
     if not dic:
         return None
@@ -766,13 +993,13 @@ def dict_to_dnode(
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        if in_rpc_output:
-            n = lib.lyd_new_output_leaf(
-                _parent, module.cdata, str2c(name), str2c(value)
-            )
-        else:
-            n = lib.lyd_new_leaf(_parent, module.cdata, str2c(name), str2c(value))
-        if not n:
+
+        n = ffi.new("struct lyd_node **")
+        ret = lib.lyd_new_term(
+            _parent, module.cdata, str2c(name), str2c(value), in_rpc_output, n
+        )
+
+        if ret != lib.LY_SUCCESS:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
             else:
@@ -780,14 +1007,12 @@ def dict_to_dnode(
             raise module.context.error(
                 "failed to create leaf %r as a child of %s", name, parent_path
             )
-        created.append(n)
+        created.append(n[0])
 
     def _create_container(_parent, module, name, in_rpc_output=False):
-        if in_rpc_output:
-            n = lib.lyd_new_output(_parent, module.cdata, str2c(name))
-        else:
-            n = lib.lyd_new(_parent, module.cdata, str2c(name))
-        if not n:
+        n = ffi.new("struct lyd_node **")
+        ret = lib.lyd_new_inner(_parent, module.cdata, str2c(name), in_rpc_output, n)
+        if ret != lib.LY_SUCCESS:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
             else:
@@ -797,8 +1022,31 @@ def dict_to_dnode(
                 name,
                 parent_path,
             )
-        created.append(n)
-        return n
+        created.append(n[0])
+        return n[0]
+
+    def _create_list(_parent, module, name, key_values, in_rpc_output=False):
+        n = ffi.new("struct lyd_node **")
+        ret = lib.lyd_new_list(
+            _parent,
+            module.cdata,
+            str2c(name),
+            in_rpc_output,
+            n,
+            *[str2c(i) for i in key_values],
+        )
+        if ret != lib.LY_SUCCESS:
+            if _parent:
+                parent_path = repr(DNode.new(module.context, _parent).path())
+            else:
+                parent_path = "module %r" % module.name()
+            raise module.context.error(
+                "failed to create container/list/rpc %r as a child of %s",
+                name,
+                parent_path,
+            )
+        created.append(n[0])
+        return n[0]
 
     schema_cache = {}
 
@@ -808,12 +1056,11 @@ def dict_to_dnode(
         if snode is not None:
             return snode, module
         if isinstance(schema_parent, SRpc):
-            if rpc:
-                schema_parent = schema_parent.input()
-            elif rpcreply:
+            if rpcreply:
                 schema_parent = schema_parent.output()
             else:
-                raise ValueError("rpc or rpcreply must be specified")
+                schema_parent = schema_parent.input()
+
             if schema_parent is None:
                 # there may not be any input or any output node in the rpc
                 return None, None
@@ -894,14 +1141,24 @@ def dict_to_dnode(
                         "%s: python value is not a list/tuple: %r"
                         % (s.schema_path(), value)
                     )
+
+                keys = [i.name() for i in s.keys()]
                 for v in value:
                     if not isinstance(v, dict):
                         raise TypeError(
                             "%s: list element is not a dict: %r"
                             % (_schema.schema_path(), v)
                         )
-                    n = _create_container(_parent, module, name, in_rpc_output)
-                    _to_dnode(v, s, n, in_rpc_output)
+                    val = v.copy()
+                    key_values = []
+                    for k in keys:
+                        try:
+                            key_values.append(val.pop(k))
+                        except KeyError as e:
+                            raise ValueError("Missing key %s in the list" % (k)) from e
+
+                    n = _create_list(_parent, module, name, key_values, in_rpc_output)
+                    _to_dnode(val, s, n, in_rpc_output)
 
             elif isinstance(s, SNotif):
                 n = _create_container(_parent, module, name, in_rpc_output)
@@ -916,6 +1173,7 @@ def dict_to_dnode(
         else:
             _parent = ffi.NULL
             _schema_parent = module
+
         _to_dnode(
             dic,
             _schema_parent,
@@ -926,19 +1184,16 @@ def dict_to_dnode(
             result = DNode.new(module.context, created[0])
             if validate:
                 result.root().validate(
-                    data=data,
-                    config=config,
-                    get=get,
-                    getconfig=getconfig,
-                    edit=edit,
+                    no_state=no_state,
+                    validate_present=validate_present,
                     rpc=rpc,
                     rpcreply=rpcreply,
                     notification=notification,
-                    no_yanglib=no_yanglib,
                 )
+
     except:
         for c in reversed(created):
-            lib.lyd_free(c)
+            lib.lyd_free_tree(c)
         raise
 
     return result

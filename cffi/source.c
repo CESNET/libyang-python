@@ -1,30 +1,14 @@
 /*
- * Copyright (c) 2018-2019 Robin Jarry
+ * Copyright (c) 2018-2022 Robin Jarry
  * SPDX-License-Identifier: MIT
  */
 
 #include <libyang/libyang.h>
+#include <libyang/version.h>
 
-#if (LY_VERSION_MAJOR != 1)
-#error "This version of libyang bindings only works with libyang 1.x"
+#if (LY_VERSION_MAJOR != 2)
+#error "This version of libyang bindings only works with libyang 2.x"
 #endif
-#if (LY_VERSION_MINOR < 8)
-#error "Need at least libyang 1.8"
+#if (LY_VERSION_MINOR < 19)
+#error "Need at least libyang 2.19"
 #endif
-
-static LY_ERR lypy_get_errno(void)
-{
-	return ly_errno;
-}
-
-static void lypy_set_errno(LY_ERR err)
-{
-	ly_errno = err;
-}
-
-static uint8_t lypy_module_implemented(const struct lys_module *module)
-{
-	if (module)
-		return module->implemented;
-	return 0;
-}

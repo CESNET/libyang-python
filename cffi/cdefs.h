@@ -4,12 +4,21 @@
  */
 struct ly_ctx;
 
+#define	LY_CTX_ALL_IMPLEMENTED ...
+#define LY_CTX_REF_IMPLEMENTED ...
+#define LY_CTX_NO_YANGLIBRARY ...
+#define	LY_CTX_DISABLE_SEARCHDIRS   ...
+#define LY_CTX_DISABLE_SEARCHDIR_CWD ...
+#define	LY_CTX_PREFER_SEARCHDIRS ...
+
+
 typedef enum {
 	LY_SUCCESS,
 	...
 } LY_ERR;
 
 LY_ERR ly_ctx_new(const char *, uint16_t, struct ly_ctx **);
+void ly_ctx_destroy(struct ly_ctx *);
 
 typedef enum
 {
@@ -35,6 +44,30 @@ typedef enum
 	LY_TYPE_INT64
 } LY_DATA_TYPE;
 
+typedef enum {
+	LY_LLERR,
+	LY_LLWRN,
+	LY_LLVRB,
+	LY_LLDBG,
+	...
+} LY_LOG_LEVEL;
+
+typedef enum {
+    LYVE_SUCCESS,
+    ...
+} LY_VECODE;
+
+#define LY_LOLOG ...
+#define LY_LOSTORE ...
+#define LY_LOSTORE_LAST ...
+int ly_log_options(int);
+
+LY_LOG_LEVEL ly_log_level(LY_LOG_LEVEL);
+extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *);
+void ly_set_log_clb(void (*)(LY_LOG_LEVEL, const char *, const char *), int);
+struct ly_err_item *ly_err_first(const struct ly_ctx *);
+void ly_err_clean(struct ly_ctx *, struct ly_err_item *);
+LY_VECODE ly_vecode(const struct ly_ctx *);
 
 #define LYS_UNKNOWN ...
 #define LYS_CONTAINER ...

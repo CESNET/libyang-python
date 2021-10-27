@@ -20,12 +20,8 @@ class Context:
         self,
         search_path: Optional[str] = None,
         disable_searchdir_cwd: bool = True,
-        pointer=None,  # C type: "struct ly_ctx *"
         cdata=None,  # C type: "struct ly_ctx *"
     ):
-        if pointer is not None:
-            deprecated("pointer=", "cdata=", "2.0.0")
-            cdata = pointer
         if cdata is not None:
             self.cdata = ffi.cast("struct ly_ctx *", cdata)
             return  # already initialized
@@ -34,9 +30,15 @@ class Context:
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
 
+        ctx = ffi.new("struct ly_ctx **")
+
+        if lib.ly_ctx_new(ffi.NULL, options, ctx) != lib.LY_SUCCESS:
+            #NOTE: Make errors in more detail with log information.
+            raise self.error("cannot create context")
+
         self.cdata = ffi.gc(
-            lib.ly_ctx_new(ffi.NULL, options),
-            lambda ctx: lib.ly_ctx_destroy(ctx, ffi.NULL),
+            ctx[0],
+            lambda ctx: lib.ly_ctx_destroy(ctx),
         )
         if not self.cdata:
             raise self.error("cannot create context")
@@ -169,8 +171,10 @@ class Context:
             flags,
         )
         if lib.lypy_get_errno() != lib.LY_SUCCESS:
-            if lib.ly_vecode(self.cdata) != lib.LYVE_PATH_EXISTS:
-                raise self.error("cannot create data path: %s", path)
+            #NOTE: lot of changes in diff feuature, will be implemented later
+            # https://netopeer.liberouter.org/doc/libyang/master/html/group__errors.html#gad7da67c53cb7a6ca4145c51793ea3ab9
+            #if lib.ly_vecode(self.cdata) != lib.LYVE_PATH_EXISTS:
+            #    raise self.error("cannot create data path: %s", path)
             lib.ly_err_clean(self.cdata, ffi.NULL)
             lib.lypy_set_errno(0)
         if not dnode and not force_return_value:

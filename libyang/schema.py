@@ -911,7 +911,7 @@ class SNode:
 
     @staticmethod
     def new(context: "libyang.Context", cdata) -> "SNode":
-        cdata = ffi.cast("struct lys_node *", cdata)
+        cdata = ffi.cast("struct lysc_node *", cdata)
         nodecls = SNode.NODETYPE_CLASS.get(cdata.nodetype, None)
         if nodecls is None:
             raise TypeError("node type %s not implemented" % cdata.nodetype)

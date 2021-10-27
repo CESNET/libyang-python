@@ -114,7 +114,7 @@ class Context:
     def load_module(self, name: str) -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        mod = lib.ly_ctx_load_module(self.cdata, str2c(name), ffi.NULL)
+        mod = lib.ly_ctx_load_module(self.cdata, str2c(name), ffi.NULL, ffi.NULL)
         if not mod:
             raise self.error("cannot load module")
 
@@ -123,7 +123,7 @@ class Context:
     def get_module(self, name: str) -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        mod = lib.ly_ctx_get_module(self.cdata, str2c(name), ffi.NULL, False)
+        mod = lib.ly_ctx_get_module(self.cdata, str2c(name), ffi.NULL)
         if not mod:
             raise self.error("cannot get module")
 
@@ -132,14 +132,19 @@ class Context:
     def find_path(self, path: str) -> Iterator[SNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        node_set = lib.ly_ctx_find_path(self.cdata, str2c(path))
-        if not node_set:
+
+        node_set = ffi.new("struct ly_set **")
+        if lib.lys_find_xpath(self.cdata, ffi.NULL, str2c(path), 0, node_set) != lib.LY_SUCCESS:
+            raise self.error("cannot find path")
+
+        node_set = node_set[0]
+        if node_set.count == 0:
             raise self.error("cannot find path")
         try:
-            for i in range(node_set.number):
-                yield SNode.new(self, node_set.set.s[i])
+            for i in range(node_set.count):
+                yield SNode.new(self, node_set.snodes[i])
         finally:
-            lib.ly_set_free(node_set)
+            lib.ly_set_free(node_set, ffi.NULL)
 
     def create_data_path(
         self,

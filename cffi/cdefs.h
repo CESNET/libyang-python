@@ -19,6 +19,7 @@ typedef enum {
 
 LY_ERR ly_ctx_new(const char *, uint16_t, struct ly_ctx **);
 void ly_ctx_destroy(struct ly_ctx *);
+int ly_ctx_set_searchdir(struct ly_ctx *, const char *);
 
 typedef enum
 {
@@ -86,3 +87,45 @@ LY_VECODE ly_vecode(const struct ly_ctx *);
 #define LYS_OUTPUT ...
 #define LYS_GROUPING ...
 #define LYS_AUGMENT ...
+
+struct lys_module* ly_ctx_load_module(struct ly_ctx *, const char *, const char *, const char **);
+struct lys_module* ly_ctx_get_module(const struct ly_ctx *, const char *, const char *);
+struct lys_module* ly_ctx_get_module_iter(const struct ly_ctx *, uint32_t *);
+
+LY_ERR lys_find_xpath(const struct ly_ctx *, const struct lysc_node *, const char *, uint32_t, struct ly_set **);
+void ly_set_free(struct ly_set *, void(*)(void *obj));
+
+struct ly_set {
+	uint32_t size;
+	uint32_t count;
+    union {
+        struct lyd_node **dnodes;
+        struct lysc_node **snodes;
+        void **objs;
+    };
+};
+
+struct lysc_node {
+    uint16_t nodetype;
+    uint16_t flags;
+    struct lys_module *module;
+    struct lysc_node *parent;
+    struct lysc_node *next;
+    struct lysc_node *prev;
+    const char *name;
+    const char *dsc;
+    const char *ref;
+    ...;
+};
+
+struct ly_err_item {
+    LY_LOG_LEVEL level;
+    LY_ERR no;
+    LY_VECODE vecode;
+    char *msg;
+    char *path;
+    char *apptag;
+    struct ly_err_item *next;
+    struct ly_err_item *prev;
+    ...;
+};

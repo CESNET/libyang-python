@@ -4,7 +4,7 @@
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import c2str, deprecated, str2c
+from .util import c2str, deprecated, str2c, p_str2c
 
 
 # -------------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ class Module:
         return bool(lib.lypy_module_implemented(self.cdata))
 
     def feature_enable(self, name: str) -> None:
-        ret = lib.lys_features_enable(self.cdata, str2c(name))
+        ret = lib.lys_set_implemented(self.cdata, p_str2c(name))
         if ret != 0:
             raise self.context.error("no such feature: %r" % name)
 

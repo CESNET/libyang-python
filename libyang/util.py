@@ -36,3 +36,10 @@ def c2str(c, decode: bool = True):
     if hasattr(s, "decode"):
         s = s.decode("utf-8")
     return s
+
+
+
+# -------------------------------------------------------------------------------------
+def p_str2c(s: Optional[str], encode: bool = True):
+    s_p = str2c(s, encode)
+    return ffi.new("char **", s_p)

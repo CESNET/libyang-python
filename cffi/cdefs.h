@@ -129,3 +129,46 @@ struct ly_err_item {
     struct ly_err_item *prev;
     ...;
 };
+
+struct lyd_node {
+    uint32_t hash;
+    uint32_t flags;
+    const struct lysc_node *schema;
+    struct lyd_node_inner *parent;
+    struct lyd_node *next;
+    struct lyd_node *prev;
+    struct lyd_meta *meta;
+    void *priv;
+};
+
+LY_ERR lys_set_implemented(struct lys_module *,	const char **);
+
+ #define LYD_NEW_PATH_UPDATE ...
+ #define LYD_NEW_PATH_OUTPUT ...
+ #define LYD_NEW_PATH_OPAQ   ...
+ #define LYD_NEW_PATH_BIN_VALUE ...
+ #define LYD_NEW_PATH_CANON_VALUE ...
+ LY_ERR lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, const char *, uint32_t, struct lyd_node **);
+ void lyd_free_all(struct lyd_node *node);
+ void lyd_free_tree(struct lyd_node *node);
+
+typedef enum {
+    LYD_UNKNOWN = 0,
+    LYD_XML,
+    LYD_JSON,
+    LYD_LYB
+} LYD_FORMAT;
+
+#define LYD_PRINT_KEEPEMPTYCONT ...
+#define LYD_PRINT_SHRINK   ...
+#define LYD_PRINT_WD_ALL ...
+#define LYD_PRINT_WD_ALL_TAG ...
+#define LYD_PRINT_WD_EXPLICIT ...
+#define LYD_PRINT_WD_IMPL_TAG ...
+#define LYD_PRINT_WD_MASK ...
+#define LYD_PRINT_WITHSIBLINGS ...
+#define LYD_PRINT_WD_TRIM ...
+LY_ERR lyd_print_mem(char **, const struct lyd_node *, LYD_FORMAT, uint32_t);
+
+/* from libc, needed to free allocated strings */
+void free(void *);

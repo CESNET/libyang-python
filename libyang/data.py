@@ -26,22 +26,19 @@ LOG = logging.getLogger(__name__)
 # -------------------------------------------------------------------------------------
 def printer_flags(
     with_siblings: bool = False,
-    pretty: bool = False,
     keep_empty_containers: bool = False,
     trim_default_values: bool = False,
     include_implicit_defaults: bool = False,
 ) -> int:
     flags = 0
     if with_siblings:
-        flags |= lib.LYP_WITHSIBLINGS
-    if pretty:
-        flags |= lib.LYP_FORMAT
+        flags |= lib.LYD_PRINT_WITHSIBLINGS
     if keep_empty_containers:
-        flags |= lib.LYP_KEEPEMPTYCONT
+        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
     if trim_default_values:
-        flags |= lib.LYP_WD_TRIM
+        flags |= lib.LYD_PRINT_WD_TRIM
     if include_implicit_defaults:
-        flags |= lib.LYP_WD_ALL
+        flags |= lib.LYD_PRINT_WD_ALL
     return flags
 
 
@@ -62,11 +59,13 @@ def path_flags(
 ) -> int:
     flags = 0
     if update:
-        flags |= lib.LYD_PATH_OPT_UPDATE
+        flags |= lib.LYD_NEW_PATH_UPDATE
     if rpc_output:
-        flags |= lib.LYD_PATH_OPT_OUTPUT
-    if no_parent_ret:
-        flags |= lib.LYD_PATH_OPT_NOPARENTRET
+        flags |= lib.LYD_NEW_PATH_OUTPUT
+    #TODO: No constant like LYD_PATH_OPT_NOPARENTRET in tree_data.h for lyd_new_path().
+    # Not sure what should be a replacement for this.
+    #if no_parent_ret:
+    #    flags |= lib.LYD_PATH_OPT_NOPARENTRET
     return flags
 
 
@@ -272,14 +271,12 @@ class DNode:
         self,
         fmt: str,
         with_siblings: bool = False,
-        pretty: bool = False,
         include_implicit_defaults: bool = False,
         trim_default_values: bool = False,
         keep_empty_containers: bool = False,
     ) -> Union[str, bytes]:
         flags = printer_flags(
             with_siblings=with_siblings,
-            pretty=pretty,
             include_implicit_defaults=include_implicit_defaults,
             trim_default_values=trim_default_values,
             keep_empty_containers=keep_empty_containers,
@@ -287,7 +284,7 @@ class DNode:
         buf = ffi.new("char **")
         fmt = data_format(fmt)
         ret = lib.lyd_print_mem(buf, self.cdata, fmt, flags)
-        if ret != 0:
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot print node")
         try:
             if fmt == lib.LYD_LYB:
@@ -302,14 +299,12 @@ class DNode:
         fileobj: IO,
         fmt: str,
         with_siblings: bool = False,
-        pretty: bool = False,
         include_implicit_defaults: bool = False,
         trim_default_values: bool = False,
         keep_empty_containers: bool = False,
     ) -> None:
         flags = printer_flags(
             with_siblings=with_siblings,
-            pretty=pretty,
             include_implicit_defaults=include_implicit_defaults,
             trim_default_values=trim_default_values,
             keep_empty_containers=keep_empty_containers,
@@ -516,9 +511,9 @@ class DNode:
     def free(self, with_siblings: bool = True) -> None:
         try:
             if with_siblings:
-                lib.lyd_free_withsiblings(self.cdata)
+                lib.lyd_free_all(self.cdata)
             else:
-                lib.lyd_free(self.cdata)
+                lib.lyd_free_tree(self.cdata)
         finally:
             self.cdata = None
 

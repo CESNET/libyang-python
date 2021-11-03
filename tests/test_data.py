@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DDiff, DNode, DNotif, DRpc, LibyangError
+from libyang import Context, DContainer, DNode, DNotif, DRpc, LibyangError
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -64,12 +64,6 @@ class DataTest(unittest.TestCase):
     JSON_STATE = """{
   "yolo-system:state": {
     "hostname": "foo",
-    "speed": 1234,
-    "number": [
-      1000,
-      2000,
-      3000
-    ],
     "url": [
       {
         "proto": "https",
@@ -84,7 +78,13 @@ class DataTest(unittest.TestCase):
         "path": "/index.html",
         "enabled": true
       }
-    ]
+    ],
+    "number": [
+      "1000",
+      "2000",
+      "3000"
+    ],
+    "speed": 1234
   }
 }
 """
@@ -197,7 +197,7 @@ class DataTest(unittest.TestCase):
             u.create_path("port", 8080)
             u.create_path("path", "/index.html")
             u.create_path("enabled", True)
-            self.assertEqual(state.print_mem("json", pretty=True), self.JSON_STATE)
+            self.assertEqual(state.print_mem("json"), self.JSON_STATE)
         finally:
             state.free()
 

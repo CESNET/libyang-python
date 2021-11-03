@@ -158,7 +158,6 @@ class Context:
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        lib.lypy_set_errno(0)
         if value is not None:
             if isinstance(value, bool):
                 value = str(value).lower()
@@ -167,15 +166,17 @@ class Context:
         flags = path_flags(
             update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output
         )
-        dnode = lib.lyd_new_path(
+        dnode = ffi.new("struct lyd_node **")
+        ret = lib.lyd_new_path(
             parent.cdata if parent else ffi.NULL,
             self.cdata,
             str2c(path),
             str2c(value),
-            0,
             flags,
+            dnode
         )
-        if lib.lypy_get_errno() != lib.LY_SUCCESS:
+        dnode = dnode[0]
+        if ret != lib.LY_SUCCESS:
             #NOTE: lot of changes in diff feuature, will be implemented later
             # https://netopeer.liberouter.org/doc/libyang/master/html/group__errors.html#gad7da67c53cb7a6ca4145c51793ea3ab9
             #if lib.ly_vecode(self.cdata) != lib.LYVE_PATH_EXISTS:

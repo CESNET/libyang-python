@@ -27,12 +27,6 @@ class DataTest(unittest.TestCase):
     JSON_CONFIG = """{
   "yolo-system:conf": {
     "hostname": "foo",
-    "speed": 1234,
-    "number": [
-      1000,
-      2000,
-      3000
-    ],
     "url": [
       {
         "proto": "https",
@@ -47,16 +41,22 @@ class DataTest(unittest.TestCase):
         "path": "/index.html",
         "enabled": true
       }
-    ]
+    ],
+    "number": [
+      1000,
+      2000,
+      3000
+    ],
+    "speed": 1234
   }
 }
 """
 
     def test_data_parse_config_json(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_no_state=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", pretty=True)
+            j = dnode.print_mem("json")
             self.assertEqual(j, self.JSON_CONFIG)
         finally:
             dnode.free()

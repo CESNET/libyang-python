@@ -6,7 +6,7 @@ import os
 from typing import IO, Any, Iterator, Optional, Union
 
 from _libyang import ffi, lib
-from .data import DNode, data_format, parser_flags, path_flags
+from .data import DNode, data_format, parser_flags, path_flags, validation_flags
 from .schema import Module, SNode, schema_in_format
 from .util import LibyangError, c2str, deprecated, str2c
 
@@ -207,53 +207,39 @@ class Context:
         self,
         d: Union[str, bytes],
         fmt: str,
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
-        rpc: bool = False,
-        rpcreply: bool = False,
-        notification: bool = False,
-        strict: bool = False,
-        trusted: bool = False,
-        no_yanglib: bool = False,
-        rpc_request: Optional[DNode] = None,
-        data_tree: Optional[DNode] = None,
+        parser_lyb_mod_update: bool = False,
+        parser_no_state: bool = False,
+        parser_parse_only: bool = False,
+        parser_opaq: bool = False,
+        parser_ordered: bool = False,
+        parser_strict: bool = False,
+        validation_no_state: bool = False,
+        validation_validate_present: bool = False
     ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        flags = parser_flags(
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
-            rpc=rpc,
-            rpcreply=rpcreply,
-            notification=notification,
-            strict=strict,
-            trusted=trusted,
-            no_yanglib=no_yanglib,
+        parser_flgs = parser_flags(
+            lyb_mod_update=parser_lyb_mod_update,
+            no_state=parser_no_state,
+            parse_only=parser_parse_only,
+            opaq=parser_opaq,
+            ordered=parser_ordered,
+            strict=parser_strict
+        )
+        validation_flgs = validation_flags(
+            no_state=validation_no_state,
+            validate_present=validation_validate_present
         )
         fmt = data_format(fmt)
         if fmt == lib.LYD_LYB:
             d = str2c(d, encode=False)
         else:
             d = str2c(d, encode=True)
-        args = []
-        if rpcreply:
-            if rpc_request is None:
-                raise ValueError("rpc_request node is required when rpcreply=True")
-            args.append(rpc_request.cdata)
-        if rpc or rpcreply or notification:
-            if data_tree is not None:
-                args.append(data_tree.cdata)
-            else:
-                args.append(ffi.cast("struct lyd_node *", ffi.NULL))
-        dnode = lib.lyd_parse_mem(self.cdata, d, fmt, flags, *args)
-        if not dnode:
+        dnode = ffi.new("struct lyd_node **")
+        ret = lib.lyd_parse_data_mem(self.cdata, d, fmt, parser_flgs, validation_flgs, dnode)
+        if ret != lib.LY_SUCCESS:
             raise self.error("failed to parse data tree")
+        dnode = dnode[0]
         return DNode.new(self, dnode)
 
     def parse_data_file(

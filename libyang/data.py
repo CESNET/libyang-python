@@ -71,57 +71,39 @@ def path_flags(
 
 # -------------------------------------------------------------------------------------
 def parser_flags(
-    data: bool = False,
-    config: bool = False,
-    get: bool = False,
-    getconfig: bool = False,
-    edit: bool = False,
-    rpc: bool = False,
-    rpcreply: bool = False,
-    notification: bool = False,
-    strict: bool = False,
-    trusted: bool = False,
-    no_yanglib: bool = False,
-    destruct: bool = False,
-    no_siblings: bool = False,
-    explicit: bool = False,
+    lyb_mod_update: bool = False,
+    no_state: bool = False,
+    parse_only: bool = False,
+    opaq: bool = False,
+    ordered: bool = False,
+    strict: bool = False
 ) -> int:
-    if (data, config, get, getconfig, edit, rpc, rpcreply, notification).count(
-        True
-    ) > 1:
-        raise ValueError(
-            "Only one of data, config, get, getconfig, edit, rpc, rpcreply, "
-            "notification can be True"
-        )
     flags = 0
-    if data:
-        flags |= lib.LYD_OPT_DATA
-    if config:
-        flags |= lib.LYD_OPT_CONFIG
-    if get:
-        flags |= lib.LYD_OPT_GET
-    if getconfig:
-        flags |= lib.LYD_OPT_GETCONFIG
-    if edit:
-        flags |= lib.LYD_OPT_EDIT
-    if rpc:
-        flags |= lib.LYD_OPT_RPC
-    if rpcreply:
-        flags |= lib.LYD_OPT_RPCREPLY
-    if notification:
-        flags |= lib.LYD_OPT_NOTIF
+    if lyb_mod_update:
+        flags |= lib.LYD_PARSE_LYB_MOD_UPDATE
+    if no_state:
+        flags |= lib.LYD_PARSE_NO_STATE
+    if parse_only:
+        flags |= lib.LYD_PARSE_ONLY
+    if opaq:
+        flags |= lib.LYD_PARSE_OPAQ
+    if ordered:
+        flags |= lib.LYD_PARSE_ORDERED
     if strict:
-        flags |= lib.LYD_OPT_STRICT
-    if trusted:
-        flags |= lib.LYD_OPT_TRUSTED
-    if no_yanglib:
-        flags |= lib.LYD_OPT_DATA_NO_YANGLIB
-    if destruct:
-        flags |= lib.LYD_OPT_DESTRUCT
-    if no_siblings:
-        flags |= lib.LYD_OPT_NOSIBLINGS
-    if explicit:
-        flags |= lib.LYD_OPT_EXPLICIT
+        flags |= lib.LYD_PARSE_STRICT
+    return flags
+
+
+# -------------------------------------------------------------------------------------
+def validation_flags(
+    no_state: bool = False,
+    validate_present: bool = False
+) -> int:
+    flags = 0
+    if no_state:
+        flags |= lib.LYD_VALIDATE_NO_STATE
+    if validate_present:
+        flags |= lib.LYD_VALIDATE_PRESENT
     return flags
 
 

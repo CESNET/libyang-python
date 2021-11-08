@@ -159,6 +159,16 @@ class DNode:
             return None
         return self.new(self.context, self.cdata.parent)
 
+    def next(self) -> Optional["DNode"]:
+        if not self.cdata.next:
+            return None
+        return self.new(self.context, self.cdata.next)
+
+    def prev(self) -> Optional["DNode"]:
+        if not self.cdata.prev:
+            return None
+        return self.new(self.context, self.cdata.prev)
+
     def root(self) -> "DNode":
         node = self
         while node.parent() is not None:

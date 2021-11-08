@@ -56,7 +56,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_no_state=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json")
+            j = dnode.print_mem("json", with_siblings=True)
             self.assertEqual(j, self.JSON_CONFIG)
         finally:
             dnode.free()
@@ -80,9 +80,9 @@ class DataTest(unittest.TestCase):
       }
     ],
     "number": [
-      "1000",
-      "2000",
-      "3000"
+      1000,
+      2000,
+      3000
     ],
     "speed": 1234
   }
@@ -90,12 +90,10 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_state_json(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_STATE, "json", data=True, no_yanglib=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_STATE, "json", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", pretty=True)
+            j = dnode.print_mem("json", with_siblings=True)
             self.assertEqual(j, self.JSON_STATE)
         finally:
             dnode.free()

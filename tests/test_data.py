@@ -160,10 +160,6 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
-    def test_data_parse_duplicate_data_type(self):
-        with self.assertRaises(ValueError):
-            self.ctx.parse_data_mem("", "xml", edit=True, rpc=True)
-
     XML_EDIT = """<conf xmlns="urn:yang:yolo:system">
   <hostname-ref>notdefined</hostname-ref>
 </conf>

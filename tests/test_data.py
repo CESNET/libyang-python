@@ -100,10 +100,6 @@ class DataTest(unittest.TestCase):
 
     XML_CONFIG = """<conf xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
-  <speed>1234</speed>
-  <number>1000</number>
-  <number>2000</number>
-  <number>3000</number>
   <url>
     <proto>https</proto>
     <host>github.com</host>
@@ -117,24 +113,24 @@ class DataTest(unittest.TestCase):
     <path>/index.html</path>
     <enabled>true</enabled>
   </url>
+  <number>1000</number>
+  <number>2000</number>
+  <number>3000</number>
+  <speed>1234</speed>
 </conf>
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", config=True)
+        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", pretty=True)
+            xml = dnode.print_mem("xml", with_siblings=True)
             self.assertEqual(xml, self.XML_CONFIG)
         finally:
             dnode.free()
 
     XML_STATE = """<state xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
-  <speed>1234</speed>
-  <number>1000</number>
-  <number>2000</number>
-  <number>3000</number>
   <url>
     <proto>https</proto>
     <host>github.com</host>
@@ -148,16 +144,18 @@ class DataTest(unittest.TestCase):
     <path>/index.html</path>
     <enabled>true</enabled>
   </url>
+  <number>1000</number>
+  <number>2000</number>
+  <number>3000</number>
+  <speed>1234</speed>
 </state>
 """
 
     def test_data_parse_data_xml(self):
-        dnode = self.ctx.parse_data_mem(
-            self.XML_STATE, "xml", data=True, no_yanglib=True
-        )
+        dnode = self.ctx.parse_data_mem(self.XML_STATE, "xml", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", pretty=True)
+            xml = dnode.print_mem("xml", with_siblings=True)
             self.assertEqual(xml, self.XML_STATE)
         finally:
             dnode.free()

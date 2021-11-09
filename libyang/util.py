@@ -51,3 +51,13 @@ class IO_type(enum.Enum):
     FILE = enum.auto()
     FILEPATH = enum.auto()
     MEMORY = enum.auto()
+
+
+class DataType(enum.Enum):
+    DATA_YANG = enum.auto()
+    RPC_YANG = enum.auto()
+    NOTIF_YANG = enum.auto()
+    REPLY_YANG = enum.auto()
+    RPC_NETCONF = enum.auto()
+    NOTIF_NETCONF = enum.auto()
+    REPLY_NETCONF = enum.auto()

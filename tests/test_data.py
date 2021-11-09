@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DNode, DNotif, DRpc, LibyangError, IO_type
+from libyang import Context, DContainer, DNode, DNotif, DRpc, LibyangError, IO_type, DataType
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -17,6 +17,7 @@ YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 class DataTest(unittest.TestCase):
     def setUp(self):
         self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("ietf-netconf")
         mod = self.ctx.load_module("yolo-system")
         mod.feature_enable_all()
 
@@ -161,17 +162,40 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
-    XML_EDIT = """<conf xmlns="urn:yang:yolo:system">
-  <hostname-ref>notdefined</hostname-ref>
-</conf>
+    XML_NETCONF_IN = """<rpc xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+            <edit-config>
+              <target>
+                <running/>
+              </target>
+              <config xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+                <conf xmlns="urn:yang:yolo:system">
+                    <hostname-ref>notdefined</hostname-ref>
+                </conf>
+              </config>
+            </edit-config>
+            </rpc>
+            """
+
+    XML_NETCONF_OUT = """<edit-config xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <target>
+    <running/>
+  </target>
+  <config>
+    <conf xmlns="urn:yang:yolo:system">
+      <hostname-ref>notdefined</hostname-ref>
+    </conf>
+  </config>
+</edit-config>
 """
 
-    def test_data_parse_edit(self):
-        dnode = self.ctx.parse_data_mem(self.XML_EDIT, "xml", edit=True)
+    def test_data_parse_netconf(self):
+        dnode = self.ctx.parse_op("xml", in_type=IO_type.MEMORY,
+                                  in_data=self.XML_NETCONF_IN,
+                                  dtype=DataType.RPC_NETCONF)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", pretty=True)
-            self.assertEqual(xml, self.XML_EDIT)
+            xml = dnode.print("xml", out_type=IO_type.MEMORY)
+            self.assertEqual(xml, self.XML_NETCONF_OUT)
         finally:
             dnode.free()
 

@@ -6,9 +6,9 @@ import os
 from typing import IO, Any, Iterator, Optional, Union
 
 from _libyang import ffi, lib
-from .data import DNode, data_format, parser_flags, path_flags, validation_flags
+from .data import DNode, data_format, parser_flags, path_flags, validation_flags, data_load, data_type
 from .schema import Module, SNode, schema_in_format
-from .util import LibyangError, c2str, deprecated, str2c, IO_type
+from .util import LibyangError, c2str, deprecated, str2c, IO_type, DataType
 
 
 # -------------------------------------------------------------------------------------
@@ -205,6 +205,29 @@ class Context:
 
         return DNode.new(self, dnode)
 
+    def parse_op(
+        self,
+        fmt: str,
+        in_type: IO_type,
+        in_data: Union[IO, str],
+        dtype: DataType,
+    ) -> DNode:
+        fmt = data_format(fmt)
+        data = ffi.new("struct ly_in **")
+        data_keepalive = []
+        dtype = data_type(dtype)
+        ret = data_load(in_type, in_data, data, data_keepalive)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("failed to read input data")
+
+        tree = ffi.new("struct lyd_node **")
+        op = ffi.new("struct lyd_node **")
+        ret = lib.lyd_parse_op(self.cdata, ffi.NULL, data[0], fmt, dtype, tree, op)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("failed to parse input data")
+
+        return DNode.new(self, op[0])
+
     def parse_data(  # pylint: disable=too-many-arguments
         self,
         fmt: str,
@@ -236,23 +259,10 @@ class Context:
         fmt = data_format(fmt)
         data = ffi.new("struct ly_in **")
 
-        if in_type == IO_type.FD:
-            raise NotImplementedError
-
-        elif in_type == IO_type.FILE:
-            raise NotImplementedError
-
-        elif in_type == IO_type.FILEPATH:
-            raise NotImplementedError
-
-        elif in_type == IO_type.MEMORY:
-            c_str = str2c(in_data, encode=True)
-            ret = lib.ly_in_new_memory(c_str, data)
-            if ret != lib.LY_SUCCESS:
-                raise self.error("failed to read data")
-
-        else:
-            raise ValueError('no input specified')
+        data_keepalive = []
+        ret = data_load(in_type, in_data, data, data_keepalive)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("failed to read input data")
 
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_parse_data(self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode)

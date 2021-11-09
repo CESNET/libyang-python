@@ -75,7 +75,8 @@ from .schema import (
 )
 from .util import (
     LibyangError,
-    IO_type
+    IO_type,
+    DataType
 )
 from .xpath import (
     xpath_del,
@@ -126,6 +127,7 @@ __all__ = (
     "LengthRemoved",
     "LibyangError",
     "IO_type",
+    "DataType",
     "MandatoryAdded",
     "MandatoryRemoved",
     "Module",

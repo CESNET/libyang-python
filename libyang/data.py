@@ -17,7 +17,7 @@ from .schema import (
     SRpc,
     Type,
 )
-from .util import LibyangError, c2str, deprecated, str2c, IO_type
+from .util import LibyangError, c2str, deprecated, str2c, IO_type, DataType
 
 
 LOG = logging.getLogger(__name__)
@@ -104,6 +104,40 @@ def parser_flags(
     if strict:
         flags |= lib.LYD_PARSE_STRICT
     return flags
+
+
+# -------------------------------------------------------------------------------------
+def data_load(in_type, in_data, data, data_keepalive):
+    if in_type == IO_type.FD:
+        raise NotImplementedError
+    elif in_type == IO_type.FILE:
+        raise NotImplementedError
+    elif in_type == IO_type.FILEPATH:
+        raise NotImplementedError
+    elif in_type == IO_type.MEMORY:
+        c_str = str2c(in_data, encode=True)
+        data_keepalive.append(c_str)
+        ret = lib.ly_in_new_memory(c_str, data)
+    return ret
+
+
+# -------------------------------------------------------------------------------------
+def data_type(dtype):
+    if dtype == DataType.DATA_YANG:
+        return lib.LYD_TYPE_DATA_YANG
+    elif dtype == DataType.RPC_YANG:
+        return lib.LYD_TYPE_RPC_YANG
+    elif dtype == DataType.NOTIF_YANG:
+        return lib.LYD_TYPE_NOTIF_YANG
+    elif dtype == DataType.REPLY_YANG:
+        return lib.LYD_TYPE_REPLY_YANG
+    elif dtype == DataType.RPC_NETCONF:
+        return lib.LYD_TYPE_RPC_NETCONF
+    elif dtype == DataType.NOTIF_NETCONF:
+        return lib.LYD_TYPE_NOTIF_NETCONF
+    elif dtype == DataType.REPLY_NETCONF:
+        return lib.LYD_TYPE_REPLY_NETCONF
+    raise ValueError('Unknown data type')
 
 
 # -------------------------------------------------------------------------------------

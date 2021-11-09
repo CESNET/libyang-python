@@ -73,7 +73,10 @@ from .schema import (
     SRpcInOut,
     Type,
 )
-from .util import LibyangError
+from .util import (
+    LibyangError,
+    IO_type
+)
 from .xpath import (
     xpath_del,
     xpath_get,
@@ -122,6 +125,7 @@ __all__ = (
     "LengthAdded",
     "LengthRemoved",
     "LibyangError",
+    "IO_type",
     "MandatoryAdded",
     "MandatoryRemoved",
     "Module",

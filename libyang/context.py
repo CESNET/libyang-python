@@ -8,7 +8,7 @@ from typing import IO, Any, Iterator, Optional, Union
 from _libyang import ffi, lib
 from .data import DNode, data_format, parser_flags, path_flags, validation_flags
 from .schema import Module, SNode, schema_in_format
-from .util import LibyangError, c2str, deprecated, str2c
+from .util import LibyangError, c2str, deprecated, str2c, IO_type
 
 
 # -------------------------------------------------------------------------------------
@@ -201,6 +201,64 @@ class Context:
         if not dnode:
             raise self.error("cannot find created path")
 
+        return DNode.new(self, dnode)
+
+    def parse_data(  # pylint: disable=too-many-arguments
+        self,
+        fmt: str,
+        in_type: IO_type,
+        in_data: Union[IO, str],
+        parser_lyb_mod_update: bool = False,
+        parser_no_state: bool = False,
+        parser_parse_only: bool = False,
+        parser_opaq: bool = False,
+        parser_ordered: bool = False,
+        parser_strict: bool = False,
+        validation_no_state: bool = False,
+        validation_validate_present: bool = False
+    ) -> DNode:
+        if self.cdata is None:
+            raise RuntimeError("context already destroyed")
+        parser_flgs = parser_flags(
+            lyb_mod_update=parser_lyb_mod_update,
+            no_state=parser_no_state,
+            parse_only=parser_parse_only,
+            opaq=parser_opaq,
+            ordered=parser_ordered,
+            strict=parser_strict
+        )
+        validation_flgs = validation_flags(
+            no_state=validation_no_state,
+            validate_present=validation_validate_present
+        )
+        fmt = data_format(fmt)
+        data = ffi.new("struct ly_in **")
+
+        if in_type == IO_type.FD:
+            raise NotImplementedError
+
+        elif in_type == IO_type.FILE:
+            raise NotImplementedError
+
+        elif in_type == IO_type.FILEPATH:
+            raise NotImplementedError
+
+        elif in_type == IO_type.MEMORY:
+            c_str = str2c(in_data, encode=True)
+            ret = lib.ly_in_new_memory(c_str, data)
+            if ret != lib.LY_SUCCESS:
+                raise self.error("failed to read data")
+
+        else:
+            raise ValueError('no input specified')
+
+        dnode = ffi.new("struct lyd_node **")
+        ret = lib.lyd_parse_data(self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode)
+        lib.ly_in_free(data[0], 0)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("failed to parse data tree")
+
+        dnode = dnode[0]
         return DNode.new(self, dnode)
 
     def parse_data_mem(  # pylint: disable=too-many-arguments

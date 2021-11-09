@@ -17,7 +17,7 @@ from .schema import (
     SRpc,
     Type,
 )
-from .util import LibyangError, c2str, deprecated, str2c
+from .util import LibyangError, c2str, deprecated, str2c, IO_type
 
 
 LOG = logging.getLogger(__name__)
@@ -25,20 +25,32 @@ LOG = logging.getLogger(__name__)
 
 # -------------------------------------------------------------------------------------
 def printer_flags(
+    keepemptycont: bool = False,
+    shrink: bool = False,
+    wd_all: bool = False,
+    wd_all_tag: bool = False,
+    wd_explicit: bool = False,
+    wd_impl_tag: bool = False,
+    wd_trim: bool = False,
     with_siblings: bool = False,
-    keep_empty_containers: bool = False,
-    trim_default_values: bool = False,
-    include_implicit_defaults: bool = False,
 ) -> int:
     flags = 0
+    if wd_impl_tag:
+        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
+    if shrink:
+        flags |= lib.LYD_PRINT_SHRINK
+    if wd_all:
+        flags |= lib.LYD_PRINT_WD_ALL
+    if wd_all_tag:
+        flags |= lib.LYD_PRINT_WD_ALL_TAG
+    if wd_explicit:
+        flags |= lib.LYD_PRINT_WD_EXPLICIT
+    if wd_impl_tag:
+        flags |= lib.LYD_PRINT_WD_IMPL_TAG
+    if wd_trim:
+        flags |= lib.LYD_PRINT_WD_TRIM
     if with_siblings:
         flags |= lib.LYD_PRINT_WITHSIBLINGS
-    if keep_empty_containers:
-        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
-    if trim_default_values:
-        flags |= lib.LYD_PRINT_WD_TRIM
-    if include_implicit_defaults:
-        flags |= lib.LYD_PRINT_WD_ALL
     return flags
 
 
@@ -259,19 +271,82 @@ class DNode:
         if ret != 0:
             raise self.context.error("merge failed")
 
+    def print(
+        self,
+        fmt: str,
+        out_type: IO_type,
+        out_target: Union[IO, str, None] = None,
+        printer_keepemptycont: bool = False,
+        printer_shrink: bool = False,
+        printer_wd_all: bool = False,
+        printer_wd_all_tag: bool = False,
+        printer_wd_explicit: bool = False,
+        printer_wd_impl_tag: bool = False,
+        printer_wd_trim: bool = False,
+        printer_with_siblings: bool = False,
+    ) -> Union[str, bytes]:
+        flags = printer_flags(
+            keepemptycont=printer_keepemptycont,
+            shrink=printer_shrink,
+            wd_all=printer_wd_all,
+            wd_all_tag=printer_wd_all_tag,
+            wd_explicit=printer_wd_explicit,
+            wd_impl_tag=printer_wd_impl_tag,
+            wd_trim=printer_wd_trim,
+            with_siblings=printer_with_siblings
+        )
+        fmt = data_format(fmt)
+        out_data = ffi.new("struct ly_out **")
+
+        if out_type == IO_type.FD:
+            raise NotImplementedError
+
+        elif out_type == IO_type.FILE:
+            raise NotImplementedError
+
+        elif out_type == IO_type.FILEPATH:
+            raise NotImplementedError
+
+        elif out_type == IO_type.MEMORY:
+
+            buf = ffi.new("char **")
+            ret = lib.ly_out_new_memory(buf, 0, out_data)
+            if ret != lib.LY_SUCCESS:
+                raise self.context.error("failed to initialize output target")
+
+            ret = lib.lyd_print_all(out_data[0], self.cdata, fmt, flags)
+            lib.ly_out_free(out_data[0], ffi.NULL, 0)
+            if ret != lib.LY_SUCCESS:
+                raise self.context.error("failed to write data")
+
+            ret = c2str(buf[0], decode=True)
+
+        else:
+            raise ValueError('no input specified')
+
+        return ret
+
     def print_mem(
         self,
         fmt: str,
-        with_siblings: bool = False,
-        include_implicit_defaults: bool = False,
-        trim_default_values: bool = False,
-        keep_empty_containers: bool = False,
+        printer_keepemptycont: bool = False,
+        printer_shrink: bool = False,
+        printer_wd_all: bool = False,
+        printer_wd_all_tag: bool = False,
+        printer_wd_explicit: bool = False,
+        printer_wd_impl_tag: bool = False,
+        printer_wd_trim: bool = False,
+        printer_with_siblings: bool = False,
     ) -> Union[str, bytes]:
         flags = printer_flags(
-            with_siblings=with_siblings,
-            include_implicit_defaults=include_implicit_defaults,
-            trim_default_values=trim_default_values,
-            keep_empty_containers=keep_empty_containers,
+            keepemptycont=printer_keepemptycont,
+            shrink=printer_shrink,
+            wd_all=printer_wd_all,
+            wd_all_tag=printer_wd_all_tag,
+            wd_explicit=printer_wd_explicit,
+            wd_impl_tag=printer_wd_impl_tag,
+            wd_trim=printer_wd_trim,
+            with_siblings=printer_with_siblings
         )
         buf = ffi.new("char **")
         fmt = data_format(fmt)

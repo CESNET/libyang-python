@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from typing import Optional
+import enum
 import warnings
 
 from _libyang import ffi
@@ -38,8 +39,15 @@ def c2str(c, decode: bool = True):
     return s
 
 
-
 # -------------------------------------------------------------------------------------
 def p_str2c(s: Optional[str], encode: bool = True):
     s_p = str2c(s, encode)
     return ffi.new("char **", s_p)
+
+
+# -------------------------------------------------------------------------------------
+class IO_type(enum.Enum):
+    FD = enum.auto()
+    FILE = enum.auto()
+    FILEPATH = enum.auto()
+    MEMORY = enum.auto()

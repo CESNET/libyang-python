@@ -169,6 +169,8 @@ typedef enum {
 #define LYD_PRINT_WITHSIBLINGS ...
 #define LYD_PRINT_WD_TRIM ...
 LY_ERR lyd_print_mem(char **, const struct lyd_node *, LYD_FORMAT, uint32_t);
+LY_ERR lyd_print_tree(struct ly_out *, const struct lyd_node *, LYD_FORMAT, uint32_t);
+LY_ERR lyd_print_all(struct ly_out *, const struct lyd_node *, LYD_FORMAT, uint32_t);
 
 #define LYD_PARSE_LYB_MOD_UPDATE ...
 #define LYD_PARSE_NO_STATE ...
@@ -183,6 +185,22 @@ LY_ERR lyd_print_mem(char **, const struct lyd_node *, LYD_FORMAT, uint32_t);
 #define LYD_VALIDATE_OPTS_MASK ...
 
 LY_ERR lyd_parse_data_mem(const struct ly_ctx *, const char *, LYD_FORMAT, uint32_t, uint32_t, struct lyd_node **);
+
+struct ly_in;
+struct ly_out;
+typedef uint8_t ly_bool;
+void ly_in_free(struct ly_in *, ly_bool);
+void ly_out_free(struct ly_out *, void(*)(void *arg), ly_bool);
+LY_ERR ly_in_new_memory(const char *, struct ly_in **);
+LY_ERR ly_in_new_filepath(const char *, size_t, struct ly_in **);
+LY_ERR ly_in_new_fd(int, struct ly_in **);
+LY_ERR ly_in_new_file(FILE *, struct ly_in **);
+LY_ERR ly_out_new_memory(char **, size_t, struct ly_out **);
+LY_ERR ly_out_new_filepath(const char *, struct ly_out **);
+LY_ERR ly_out_new_file(FILE *, struct ly_out **);
+LY_ERR ly_out_new_fd(int, struct ly_out **);
+
+LY_ERR lyd_parse_data(const struct ly_ctx *, struct lyd_node *, struct ly_in *, LYD_FORMAT, uint32_t, uint32_t, struct lyd_node **);
 
 /* from libc, needed to free allocated strings */
 void free(void *);

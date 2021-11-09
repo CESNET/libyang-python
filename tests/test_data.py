@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DNode, DNotif, DRpc, LibyangError
+from libyang import Context, DContainer, DNode, DNotif, DRpc, LibyangError, IO_type
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -56,7 +56,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_no_state=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", with_siblings=True)
+            j = dnode.print_mem("json", printer_with_siblings=True)
             self.assertEqual(j, self.JSON_CONFIG)
         finally:
             dnode.free()
@@ -93,7 +93,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(self.JSON_STATE, "json", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", with_siblings=True)
+            j = dnode.print_mem("json", printer_with_siblings=True)
             self.assertEqual(j, self.JSON_STATE)
         finally:
             dnode.free()
@@ -124,7 +124,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", with_siblings=True)
+            xml = dnode.print_mem("xml", printer_with_siblings=True)
             self.assertEqual(xml, self.XML_CONFIG)
         finally:
             dnode.free()
@@ -152,10 +152,11 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_data_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_STATE, "xml", validation_validate_present=True)
+        dnode = self.ctx.parse_data('xml', in_type=IO_type.MEMORY, in_data=self.XML_STATE,
+                                    validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", with_siblings=True)
+            xml = dnode.print("xml", out_type=IO_type.MEMORY)
             self.assertEqual(xml, self.XML_STATE)
         finally:
             dnode.free()

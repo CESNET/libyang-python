@@ -55,7 +55,16 @@ typedef enum {
 
 typedef enum {
     LYVE_SUCCESS,
-    ...
+    LYVE_SYNTAX,
+    LYVE_SYNTAX_YANG,
+    LYVE_SYNTAX_YIN,
+    LYVE_REFERENCE,
+    LYVE_XPATH,
+    LYVE_SEMANTICS,
+    LYVE_SYNTAX_XML,
+    LYVE_SYNTAX_JSON,
+    LYVE_DATA,
+    LYVE_OTHER
 } LY_VECODE;
 
 #define LY_LOLOG ...
@@ -143,14 +152,15 @@ struct lyd_node {
 
 LY_ERR lys_set_implemented(struct lys_module *,	const char **);
 
- #define LYD_NEW_PATH_UPDATE ...
- #define LYD_NEW_PATH_OUTPUT ...
- #define LYD_NEW_PATH_OPAQ   ...
- #define LYD_NEW_PATH_BIN_VALUE ...
- #define LYD_NEW_PATH_CANON_VALUE ...
- LY_ERR lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, const char *, uint32_t, struct lyd_node **);
- void lyd_free_all(struct lyd_node *node);
- void lyd_free_tree(struct lyd_node *node);
+#define LYD_NEW_PATH_UPDATE ...
+#define LYD_NEW_PATH_OUTPUT ...
+#define LYD_NEW_PATH_OPAQ   ...
+#define LYD_NEW_PATH_BIN_VALUE ...
+#define LYD_NEW_PATH_CANON_VALUE ...
+LY_ERR lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, const char *, uint32_t, struct lyd_node **);
+LY_ERR lyd_find_xpath(const struct lyd_node *, const char *, struct ly_set **);
+void lyd_free_all(struct lyd_node *node);
+void lyd_free_tree(struct lyd_node *node);
 
 typedef enum {
     LYD_UNKNOWN = 0,

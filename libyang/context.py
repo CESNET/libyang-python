@@ -177,12 +177,9 @@ class Context:
         )
         dnode = dnode[0]
         if ret != lib.LY_SUCCESS:
-            #NOTE: lot of changes in diff feuature, will be implemented later
-            # https://netopeer.liberouter.org/doc/libyang/master/html/group__errors.html#gad7da67c53cb7a6ca4145c51793ea3ab9
-            #if lib.ly_vecode(self.cdata) != lib.LYVE_PATH_EXISTS:
-            #    raise self.error("cannot create data path: %s", path)
+            if lib.ly_vecode(self.cdata) != lib.LYVE_SUCCESS:
+                raise self.error("cannot create data path: %s", path)
             lib.ly_err_clean(self.cdata, ffi.NULL)
-            lib.lypy_set_errno(0)
         if not dnode and not force_return_value:
             return None
 
@@ -190,13 +187,18 @@ class Context:
             # This can happen when path points to an already created leaf and
             # its value does not change.
             # In that case, lookup the existing leaf and return it.
-            node_set = lib.lyd_find_path(parent.cdata, str2c(path))
+            node_set = ffi.new("struct ly_set **")
+            ret = lib.lyd_find_xpath(parent.cdata, str2c(path), node_set)
+            if ret != lib.LY_SUCCESS:
+                raise self.error("cannot find path: %s", path)
+
+            node_set = node_set[0]
             try:
-                if not node_set or not node_set.number:
+                if not node_set or not node_set.count:
                     raise self.error("cannot find path: %s", path)
                 dnode = node_set.set.s[0]
             finally:
-                lib.ly_set_free(node_set)
+                lib.ly_set_free(node_set, ffi.NULL)
 
         if not dnode:
             raise self.error("cannot find created path")

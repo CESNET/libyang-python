@@ -163,7 +163,7 @@ void lyd_free_all(struct lyd_node *node);
 void lyd_free_tree(struct lyd_node *node);
 
 typedef enum {
-    LYD_UNKNOWN = 0,
+    LYD_UNKNOWN,
     LYD_XML,
     LYD_JSON,
     LYD_LYB
@@ -222,6 +222,20 @@ LY_ERR ly_out_new_fd(int, struct ly_out **);
 
 LY_ERR lyd_parse_data(const struct ly_ctx *, struct lyd_node *, struct ly_in *, LYD_FORMAT, uint32_t, uint32_t, struct lyd_node **);
 LY_ERR lyd_parse_op(const struct ly_ctx *, struct lyd_node *, struct ly_in *, LYD_FORMAT, enum lyd_type, struct lyd_node **, struct lyd_node **);
+
+typedef enum {
+   LYS_OUT_UNKNOWN,
+   LYS_OUT_YANG,
+   LYS_OUT_YANG_COMPILED,
+   LYS_OUT_YIN,
+   LYS_OUT_TREE
+} LYS_OUTFORMAT;
+
+LY_ERR lys_print_mem(char **, const struct lys_module *, LYS_OUTFORMAT, uint32_t);
+LY_ERR lys_print_module(struct ly_out *, const struct lys_module *, LYS_OUTFORMAT, size_t, uint32_t);
+
+#define LYS_PRINT_NO_SUBSTMT ...
+#define LYS_PRINT_SHRINK ...
 
 /* from libc, needed to free allocated strings */
 void free(void *);

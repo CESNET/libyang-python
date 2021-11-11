@@ -19,6 +19,7 @@ from libyang import (
     SNode,
     SRpc,
     Type,
+    IO_type
 )
 
 
@@ -37,7 +38,7 @@ class ModuleTest(unittest.TestCase):
         self.ctx = None
 
     def test_mod_print_mem(self):
-        s = self.module.print_mem("tree")
+        s = self.module.print('tree', IO_type.MEMORY)
         self.assertGreater(len(s), 0)
 
     def test_mod_attrs(self):

@@ -4,7 +4,7 @@
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import c2str, deprecated, str2c, p_str2c
+from .util import c2str, deprecated, str2c, p_str2c, IO_type
 
 
 # -------------------------------------------------------------------------------------
@@ -29,6 +29,19 @@ def schema_out_format(fmt_string: str) -> int:
     if fmt_string == "json":
         return lib.LYS_OUT_JSON
     raise ValueError("unknown schema output format: %r" % fmt_string)
+
+
+# -------------------------------------------------------------------------------------
+def printer_flags(
+    no_substmt: bool = False,
+    shrink: bool = False,
+) -> int:
+    flags = 0
+    if no_substmt:
+        flags |= lib.LYS_PRINT_NO_SUBSTMT
+    if shrink:
+        flags |= lib.LYS_PRINT_SHRINK
+    return flags
 
 
 # -------------------------------------------------------------------------------------
@@ -104,6 +117,49 @@ class Module:
 
     def __str__(self) -> str:
         return self.name()
+
+    def print(
+        self,
+        fmt: str,
+        out_type: IO_type,
+        out_target: Union[IO, str, None] = None,
+        printer_no_substmt: bool = False,
+        printer_shrink: bool = False,
+    ) -> Union[str, bytes]:
+        fmt = schema_out_format(fmt)
+        flags = printer_flags(
+            no_substmt=printer_no_substmt,
+            shrink=printer_shrink
+        )
+        out_data = ffi.new("struct ly_out **")
+
+        if out_type == IO_type.FD:
+            raise NotImplementedError
+
+        elif out_type == IO_type.FILE:
+            raise NotImplementedError
+
+        elif out_type == IO_type.FILEPATH:
+            raise NotImplementedError
+
+        elif out_type == IO_type.MEMORY:
+
+            buf = ffi.new("char **")
+            ret = lib.ly_out_new_memory(buf, 0, out_data)
+            if ret != lib.LY_SUCCESS:
+                raise self.context.error("failed to initialize output target")
+
+            ret = lib.lys_print_module(out_data[0], self.cdata, fmt, 0, flags)
+            lib.ly_out_free(out_data[0], ffi.NULL, 0)
+            if ret != lib.LY_SUCCESS:
+                raise self.context.error("failed to write data")
+
+            ret = c2str(buf[0], decode=True)
+
+        else:
+            raise ValueError('no output specified')
+
+        return ret
 
     def print_mem(
         self, fmt: str = "tree", path: Optional[str] = None

@@ -258,5 +258,33 @@ struct lys_module {
     ...;
 };
 
+const struct lysc_node *lys_getnext(const struct lysc_node *, const struct lysc_node *, const struct lysc_module *, uint32_t);
+
+struct lysc_node_container {
+    union {
+        struct lysc_node node;
+        struct {
+            uint16_t nodetype;
+            uint16_t flags;
+            struct lys_module *module;
+            struct lysc_node *parent;
+            struct lysc_node *next;
+            struct lysc_node *prev;
+            const char *name;
+            const char *dsc;
+            const char *ref;
+            struct lysc_ext_instance *exts;
+            void *priv;
+            ...;
+        };
+    };
+
+    struct lysc_node *child;
+    struct lysc_must *musts;
+    struct lysc_when **when;
+    struct lysc_node_action *actions;
+    struct lysc_node_notif *notifs;
+};
+
 /* from libc, needed to free allocated strings */
 void free(void *);

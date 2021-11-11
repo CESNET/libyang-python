@@ -1055,7 +1055,7 @@ class SContainer(SNode):
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
-        self.cdata_container = ffi.cast("struct lys_node_container *", cdata)
+        self.cdata_container = ffi.cast("struct lysc_node_container *", cdata)
 
     @property
     def _container(self):
@@ -1210,11 +1210,11 @@ def iter_children(
     else:
         module = ffi.NULL
 
-    child = lib.lys_getnext(ffi.NULL, parent, module, options)
+    child = lib.lys_getnext(ffi.NULL, parent, module.compiled, options)
     while child:
         if not _skip(child):
             yield SNode.new(context, child)
-        child = lib.lys_getnext(child, parent, module, options)
+        child = lib.lys_getnext(child, parent, module.compiled, options)
 
 
 # -------------------------------------------------------------------------------------

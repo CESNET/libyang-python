@@ -237,5 +237,26 @@ LY_ERR lys_print_module(struct ly_out *, const struct lys_module *, LYS_OUTFORMA
 #define LYS_PRINT_NO_SUBSTMT ...
 #define LYS_PRINT_SHRINK ...
 
+struct lys_module {
+    const char *name;
+    const char *revision;
+    const char *ns;
+    const char *prefix;
+    const char *filepath;
+    const char *org;
+    const char *contact;
+    const char *dsc;
+    const char *ref;
+    struct lysp_module *parsed;
+    struct lysc_module *compiled;
+    struct lysc_ident *identities;
+    struct lys_module **augmented_by;
+    struct lys_module **deviated_by;
+    ly_bool implemented;
+    ly_bool to_compile;
+    uint8_t latest_revision;
+    ...;
+};
+
 /* from libc, needed to free allocated strings */
 void free(void *);

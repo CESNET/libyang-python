@@ -13,8 +13,20 @@ struct ly_ctx;
 
 
 typedef enum {
-	LY_SUCCESS,
-	...
+    LY_SUCCESS,
+    LY_EMEM,
+    LY_ESYS,
+    LY_EINVAL,
+    LY_EEXIST,
+    LY_ENOTFOUND,
+    LY_EINT,
+    LY_EVALID,
+    LY_EDENIED,
+    LY_EINCOMPLETE,
+    LY_ERECOMPILE,
+    LY_ENOT,
+    LY_EOTHER,
+    LY_EPLUGIN = 128
 } LY_ERR;
 
 LY_ERR ly_ctx_new(const char *, uint16_t, struct ly_ctx **);
@@ -258,6 +270,27 @@ struct lys_module {
     ...;
 };
 
+struct lysp_module {
+    struct lys_module *mod;
+    struct lysp_revision *revs;
+    struct lysp_import *imports;
+    struct lysp_include *includes;
+    struct lysp_ext *extensions;
+    struct lysp_feature *features;
+    struct lysp_ident *identities;
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node *data;
+    struct lysp_node_augment *augments;
+    struct lysp_node_action *rpcs;
+    struct lysp_node_notif *notifs;
+    struct lysp_deviation *deviations;
+    struct lysp_ext_instance *exts;
+    uint8_t version;
+    uint8_t parsing : 1;
+    uint8_t is_submod : 1;
+};
+
 const struct lysc_node *lys_getnext(const struct lysc_node *, const struct lysc_node *, const struct lysc_module *, uint32_t);
 
 struct lysc_node_container {
@@ -285,6 +318,8 @@ struct lysc_node_container {
     struct lysc_node_action *actions;
     struct lysc_node_notif *notifs;
 };
+
+LY_ERR lys_feature_value(const struct lys_module *, const char *);
 
 /* from libc, needed to free allocated strings */
 void free(void *);

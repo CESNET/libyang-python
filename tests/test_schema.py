@@ -62,8 +62,9 @@ class ModuleTest(unittest.TestCase):
     def test_mod_enable_features(self):
         self.assertFalse(self.module.feature_state("turbo-boost"))
         self.module.feature_enable("turbo-boost")
+        self.module.feature_enable("*")
         self.assertTrue(self.module.feature_state("turbo-boost"))
-        self.module.feature_disable("turbo-boost")
+        self.module.feature_disable_all()
         self.assertFalse(self.module.feature_state("turbo-boost"))
         self.module.feature_enable_all()
         self.assertTrue(self.module.feature_state("turbo-boost"))

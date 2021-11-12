@@ -75,25 +75,25 @@ class Module:
 
     def feature_enable(self, name: str) -> None:
         ret = lib.lys_set_implemented(self.cdata, p_str2c(name))
-        if ret != 0:
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("no such feature: %r" % name)
 
     def feature_enable_all(self) -> None:
         self.feature_enable("*")
 
-    def feature_disable(self, name: str) -> None:
-        ret = lib.lys_features_disable(self.cdata, str2c(name))
-        if ret != 0:
-            raise self.context.error("no such feature: %r" % name)
-
     def feature_disable_all(self) -> None:
-        self.feature_disable("*")
+        val = ffi.new("char **", ffi.NULL)
+        ret = lib.lys_set_implemented(self.cdata, val)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot disable all features")
 
     def feature_state(self, name: str) -> bool:
-        ret = lib.lys_features_state(self.cdata, str2c(name))
-        if ret < 0:
-            raise self.context.error("no such feature: %r" % name)
-        return bool(ret)
+        ret = lib.lys_feature_value(self.cdata, str2c(name))
+        if ret == lib.LY_SUCCESS:
+            return True
+        elif ret == lib.LY_ENOT:
+            return False
+        raise self.context.error("no such feature: %r" % name)
 
     def features(self) -> Iterator["Feature"]:
         for i in range(self.cdata.features_size):

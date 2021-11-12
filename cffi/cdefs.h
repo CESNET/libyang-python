@@ -381,5 +381,14 @@ struct lysp_feature* lysp_feature_next(const struct lysp_feature *, const struct
 #define LYS_IS_OUTPUT ...
 #define LYS_IS_NOTIF ...
 
+#define LY_REV_SIZE 11
+
+struct lysp_revision {
+    char date[LY_REV_SIZE];
+    const char *dsc;
+    const char *ref;
+    struct lysp_ext_instance *exts;
+};
+
 /* from libc, needed to free allocated strings */
 void free(void *);

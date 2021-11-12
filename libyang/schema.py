@@ -115,8 +115,9 @@ class Module:
         raise self.context.error("no such feature: %r" % name)
 
     def revisions(self) -> Iterator["Revision"]:
-        for i in range(self.cdata.rev_size):
-            yield Revision(self.context, self.cdata.rev[i])
+        arr_length = ffi.cast("uint64_t *", self.cdata.parsed.revs)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield Revision(self.context, self.cdata.parsed.revs[i])
 
     def __iter__(self) -> Iterator["SNode"]:
         return self.children()

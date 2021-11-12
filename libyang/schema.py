@@ -96,8 +96,17 @@ class Module:
         raise self.context.error("no such feature: %r" % name)
 
     def features(self) -> Iterator["Feature"]:
-        for i in range(self.cdata.features_size):
-            yield Feature(self.context, self.cdata.features[i])
+        features_list = []
+        f = ffi.NULL
+        idx = ffi.new("uint32_t *")
+        while True:
+            f = lib.lysp_feature_next(f, self.cdata.parsed, idx)
+            if f == ffi.NULL:
+                break
+            features_list.append(f)
+
+        for i in features_list:
+            yield Feature(self.context, i)
 
     def get_feature(self, name: str) -> "Feature":
         for f in self.features():

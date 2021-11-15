@@ -466,8 +466,8 @@ class Type:
             yield self
 
     def name(self) -> str:
-        if self.cdata.der:
-            return c2str(self.cdata.der.name)
+        if self.cdata.name:
+            return c2str(self.cdata.name)
         return self.basename()
 
     def description(self) -> Optional[str]:
@@ -1036,7 +1036,7 @@ class SLeafList(SNode):
         return self.cdata_leaflist
 
     def ordered(self) -> bool:
-        return bool(self.cdata.flags & lib.LYS_USERORDERED)
+        return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
 
     def units(self) -> Optional[str]:
         return c2str(self.cdata_leaflist.units)
@@ -1106,7 +1106,7 @@ class SList(SNode):
         return self.cdata_list
 
     def ordered(self) -> bool:
-        return bool(self.cdata.flags & lib.LYS_USERORDERED)
+        return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
 
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
@@ -1117,9 +1117,10 @@ class SList(SNode):
         return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
 
     def keys(self) -> Iterator[SNode]:
-        for i in range(self.cdata_list.keys_size):
-            node = ffi.cast("struct lys_node *", self.cdata_list.keys[i])
-            yield SLeaf(self.context, node)
+        # TODO: test if context flag LY_CTX_SET_PRIV_PARSED is set
+        p_node = ffi.cast('struct lysp_node_list *', self.cdata.priv)
+        for i in c2str(p_node.key).split():
+            yield i
 
     def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_list.must_size):
@@ -1213,8 +1214,8 @@ def iter_children(
             return False
         if node.nodetype != lib.LYS_LEAF:
             return False
-        leaf = ffi.cast("struct lys_node_leaf *", node)
-        if lib.lys_is_key(leaf, ffi.NULL):
+        leaf = ffi.cast("struct lysc_node_leaf *", node)
+        if leaf.flags & lib.LYS_KEY:
             return True
         return False
 

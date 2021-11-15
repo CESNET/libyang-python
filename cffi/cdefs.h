@@ -415,11 +415,28 @@ struct lysp_node_container {
 };
 
 struct lysc_node_leaf {
+    union {
+        struct lysc_node node;
+        struct {
+            void *priv;
+            uint16_t flags;
+            ...;
+        };
+    };
     struct lysc_must *musts;
     struct lysc_when **when;
     struct lysc_type *type;
     const char *units;
     struct lyd_value *dflt;
+    ...;
+};
+
+struct lysp_node_leaf {
+    struct lysp_restr *musts;
+    struct lysp_when *when;
+    struct lysp_type type;
+    const char *units;
+    struct lysp_qname dflt;
     ...;
 };
 
@@ -444,6 +461,51 @@ struct lysc_node_leaflist {
     uint32_t min;
     uint32_t max;
     ...;
+};
+
+struct lysp_node_list {
+    struct lysp_restr *musts;
+    struct lysp_when *when;
+    const char *key;
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node *child;
+    struct lysp_node_action *actions;
+    struct lysp_node_notif *notifs;
+    struct lysp_qname *uniques;
+    uint32_t min;
+    uint32_t max;
+    ...;
+};
+
+struct lysc_type {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+};
+
+struct lysp_type {
+    const char *name;
+    struct lysp_restr *range;
+    struct lysp_restr *length;
+    struct lysp_restr *patterns;
+    struct lysp_type_enum *enums;
+    struct lysp_type_enum *bits;
+    struct lyxp_expr *path;
+    const char **bases;
+    struct lysp_type *types;
+    struct lysp_ext_instance *exts;
+    const struct lysp_module *pmod;
+    struct lysc_type *compiled;
+    uint8_t fraction_digits;
+    uint8_t require_instance;
+    uint16_t flags;
+};
+
+struct lysp_qname {
+    const char *str;
+    const struct lysp_module *mod;
 };
 
 /* from libc, needed to free allocated strings */

@@ -217,7 +217,7 @@ class ListTest(unittest.TestCase):
     DATA_PATH = "/yolo-system:conf/url[proto='%s'][host='%s']"
 
     def setUp(self):
-        self.ctx = Context(YANG_DIR)
+        self.ctx = Context(YANG_DIR, set_priv_parsed=True)
         self.ctx.load_module("yolo-system")
         self.list = next(self.ctx.find_path(self.SCHEMA_PATH))
 

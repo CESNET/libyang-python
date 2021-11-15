@@ -887,7 +887,7 @@ class SNode:
         return c2str(self.cdata.dsc)
 
     def config_set(self) -> bool:
-        return bool(self.cdata.flags & lib.LYS_CONFIG_SET)
+        return bool(self.cdata.flags & lib.LYS_SET_CONFIG)
 
     def config_false(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_CONFIG_R)
@@ -909,21 +909,18 @@ class SNode:
         return "current"
 
     def module(self) -> Module:
-        module_p = lib.lys_node_module(self.cdata)
-        if not module_p:
-            raise self.context.error("cannot get module")
-        return Module(self.context, module_p)
+        return Module(self.context, self.cdata.module)
 
     def schema_path(self) -> str:
         try:
-            s = lib.lys_path(self.cdata, 0)
+            s = lib.lysc_path(self.cdata, lib.LYSC_PATH_LOG, ffi.NULL, 0)
             return c2str(s)
         finally:
             lib.free(s)
 
     def data_path(self, key_placeholder: str = "'%s'") -> str:
         try:
-            s = lib.lys_data_path_pattern(self.cdata, str2c(key_placeholder))
+            s = lib.lysc_path(self.cdata, lib.LYSC_PATH_DATA, ffi.NULL, 0)
             return c2str(s)
         finally:
             lib.free(s)
@@ -953,7 +950,7 @@ class SNode:
             yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
 
     def parent(self) -> Optional["SNode"]:
-        parent_p = lib.lys_parent(self.cdata)
+        parent_p = self.cdata.parent
         while parent_p and parent_p.nodetype not in SNode.NODETYPE_CLASS:
             parent_p = lib.lys_parent(parent_p)
         if parent_p:
@@ -994,7 +991,7 @@ class SLeaf(SNode):
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
-        self.cdata_leaf = ffi.cast("struct lys_node_leaf *", cdata)
+        self.cdata_leaf = ffi.cast("struct lysc_node_leaf *", cdata)
 
     @property
     def _leaf(self):
@@ -1031,7 +1028,7 @@ class SLeafList(SNode):
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
-        self.cdata_leaflist = ffi.cast("struct lys_node_leaflist *", cdata)
+        self.cdata_leaflist = ffi.cast("struct lysc_node_leaflist *", cdata)
 
     @property
     def _leaflist(self):
@@ -1075,7 +1072,12 @@ class SContainer(SNode):
         return self.cdata_container
 
     def presence(self) -> Optional[str]:
-        return c2str(self.cdata_container.presence)
+        if not self.cdata_container.flags & lib.LYS_PRESENCE:
+            return None
+
+        # TODO: test if context flag LY_CTX_SET_PRIV_PARSED is set
+        p_node = ffi.cast('struct lysp_node_container *', self.cdata.priv)
+        return c2str(p_node.presence)
 
     def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_container.must_size):
@@ -1096,7 +1098,7 @@ class SList(SNode):
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
-        self.cdata_list = ffi.cast("struct lys_node_list *", cdata)
+        self.cdata_list = ffi.cast("struct lysc_node_list *", cdata)
 
     @property
     def _list(self):
@@ -1217,16 +1219,16 @@ def iter_children(
         return False
 
     if ffi.typeof(parent) == ffi.typeof("struct lys_module *"):
-        module = parent
+        module = parent.compiled
         parent = ffi.NULL
     else:
         module = ffi.NULL
 
-    child = lib.lys_getnext(ffi.NULL, parent, module.compiled, options)
+    child = lib.lys_getnext(ffi.NULL, parent, module, options)
     while child:
         if not _skip(child):
             yield SNode.new(context, child)
-        child = lib.lys_getnext(child, parent, module.compiled, options)
+        child = lib.lys_getnext(child, parent, module, options)
 
 
 # -------------------------------------------------------------------------------------

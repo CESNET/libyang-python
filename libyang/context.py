@@ -20,6 +20,7 @@ class Context:
         self,
         search_path: Optional[str] = None,
         disable_searchdir_cwd: bool = True,
+        set_priv_parsed: bool = False,
         cdata=None,  # C type: "struct ly_ctx *"
     ):
         if cdata is not None:
@@ -29,6 +30,8 @@ class Context:
         options = 0
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
+        if set_priv_parsed:
+            options |= lib.LY_CTX_SET_PRIV_PARSED
 
         ctx = ffi.new("struct ly_ctx **")
 

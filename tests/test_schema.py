@@ -173,7 +173,7 @@ class IfFeatureTest(unittest.TestCase):
 # -------------------------------------------------------------------------------------
 class ContainerTest(unittest.TestCase):
     def setUp(self):
-        self.ctx = Context(YANG_DIR)
+        self.ctx = Context(YANG_DIR, set_priv_parsed=True)
         mod = self.ctx.load_module("yolo-system")
         mod.feature_enable_all()
         self.container = next(self.ctx.find_path("/yolo-system:conf"))

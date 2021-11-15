@@ -10,6 +10,10 @@ struct ly_ctx;
 #define	LY_CTX_DISABLE_SEARCHDIRS   ...
 #define LY_CTX_DISABLE_SEARCHDIR_CWD ...
 #define	LY_CTX_PREFER_SEARCHDIRS ...
+#define LY_CTX_ENABLE_IMP_FEATURES ...
+#define LY_CTX_EXPLICIT_COMPILE ...
+#define LY_CTX_REF_IMPLEMENTED ...
+#define LY_CTX_SET_PRIV_PARSED ...
 
 
 typedef enum {
@@ -136,6 +140,7 @@ struct lysc_node {
     const char *name;
     const char *dsc;
     const char *ref;
+    void *priv;
     ...;
 };
 
@@ -388,6 +393,57 @@ struct lysp_revision {
     const char *dsc;
     const char *ref;
     struct lysp_ext_instance *exts;
+};
+
+typedef enum {
+    LYSC_PATH_LOG,
+    LYSC_PATH_DATA
+} LYSC_PATH_TYPE;
+
+char* lysc_path(const struct lysc_node *, LYSC_PATH_TYPE, char *, size_t);
+
+struct lysp_node_container {
+    struct lysp_restr *musts;
+    struct lysp_when *when;
+    const char *presence;
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node *child;
+    struct lysp_node_action *actions;
+    struct lysp_node_notif *notifs;
+    ...;
+};
+
+struct lysc_node_leaf {
+    struct lysc_must *musts;
+    struct lysc_when **when;
+    struct lysc_type *type;
+    const char *units;
+    struct lyd_value *dflt;
+    ...;
+};
+
+struct lysc_node_list {
+    struct lysc_node *child;
+    struct lysc_must *musts;
+    struct lysc_when **when;
+    struct lysc_node_action *actions;
+    struct lysc_node_notif *notifs;
+    struct lysc_node_leaf ***uniques;
+    uint32_t min;
+    uint32_t max;
+    ...;
+};
+
+struct lysc_node_leaflist {
+    struct lysc_must *musts;
+    struct lysc_when **when;
+    struct lysc_type *type;
+    const char *units;
+    struct lyd_value **dflts;
+    uint32_t min;
+    uint32_t max;
+    ...;
 };
 
 /* from libc, needed to free allocated strings */

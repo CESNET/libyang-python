@@ -74,7 +74,9 @@ class Module:
         return bool(lib.lypy_module_implemented(self.cdata))
 
     def feature_enable(self, name: str) -> None:
-        ret = lib.lys_set_implemented(self.cdata, p_str2c(name))
+        p = str2c(name)
+        q = ffi.new("char *[2]", [p, ffi.NULL])
+        ret = lib.lys_set_implemented(self.cdata, q)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("no such feature: %r" % name)
 

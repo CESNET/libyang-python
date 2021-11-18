@@ -328,10 +328,10 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(leaf, SLeafList)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "number")
+        self.assertEqual(t.name(), "types:number")
         self.assertEqual(t.base(), Type.UNION)
         types = set(u.name() for u in t.union_types())
-        self.assertEqual(types, set(["signed", "unsigned"]))
+        self.assertEqual(types, set(["int16", "int32", "uint16", "uint32"]))
         bases = set(t.basenames())
         self.assertEqual(bases, set(["int16", "int32", "uint16", "uint32"]))
 
@@ -342,7 +342,7 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "protocol")
+        self.assertEqual(t.name(), "types:protocol")
         self.assertEqual(t.base(), Type.ENUM)
         enums = [e.name() for e in t.enums()]
         self.assertEqual(enums, ["http", "https", "ftp", "sftp"])

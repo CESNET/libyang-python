@@ -463,6 +463,17 @@ struct lysc_node_leaflist {
     ...;
 };
 
+struct lysp_node_leaflist {
+    struct lysp_restr *musts;
+    struct lysp_when *when;
+    struct lysp_type type;
+    const char *units;
+    struct lysp_qname *dflts;
+    uint32_t min;
+    uint32_t max;
+    ...;
+};
+
 struct lysp_node_list {
     struct lysp_restr *musts;
     struct lysp_when *when;
@@ -506,6 +517,42 @@ struct lysp_type {
 struct lysp_qname {
     const char *str;
     const struct lysp_module *mod;
+};
+
+struct lysc_type_union {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_type **types;
+};
+
+struct lysc_type_enum {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_type_bitenum_item *enums;
+};
+
+struct lysc_type_bits {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_type_bitenum_item *bits;
+};
+
+struct lysc_type_bitenum_item {
+    const char *name;
+    const char *dsc;
+    const char *ref;
+    struct lysc_ext_instance *exts;
+    union {
+        int32_t value;
+        uint32_t position;
+    };
+    uint16_t flags;
 };
 
 /* from libc, needed to free allocated strings */

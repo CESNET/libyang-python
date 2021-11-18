@@ -358,6 +358,12 @@ class _EnumBit:
         self.context = context
         self.cdata = cdata  # C type "struct lys_type_bit" or "struct lys_type_enum"
 
+    def position(self) -> int:
+        return self.cdata.position
+
+    def value(self) -> int:
+        return self.cdata.value
+
     def name(self) -> str:
         return c2str(self.cdata.name)
 
@@ -455,16 +461,16 @@ class Type:
         return self.cdata
 
     def get_bases(self) -> Iterator["Type"]:
-        if self.cdata.base == lib.LY_TYPE_LEAFREF:
+        if self.cdata.basetype == lib.LY_TYPE_LEAFREF:
             yield from self.leafref_type().get_bases()
-        elif self.cdata.base == lib.LY_TYPE_UNION:
+        elif self.cdata.basetype == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.get_bases()
         else:  # builtin type
             yield self
 
     def name(self) -> str:
-        if self.cdata_parsed.name:
+        if self.cdata_parsed is not None and self.cdata_parsed.name:
             return c2str(self.cdata_parsed.name)
         return self.basename()
 
@@ -479,7 +485,7 @@ class Type:
             yield b.base()
 
     def basename(self) -> str:
-        return self.BASENAMES.get(self.cdata.base, "unknown")
+        return self.BASENAMES.get(self.cdata.basetype, "unknown")
 
     def basenames(self) -> Iterator[str]:
         for b in self.get_bases():
@@ -492,22 +498,20 @@ class Type:
         return Type(self.context, ffi.addressof(lref.target.type))
 
     def union_types(self) -> Iterator["Type"]:
-        if self.cdata.base != self.UNION:
+        if self.cdata.basetype != self.UNION:
             return
-        t = self.cdata
-        while t.info.uni.count == 0:
-            t = ffi.addressof(t.der.type)
-        for i in range(t.info.uni.count):
-            yield Type(self.context, t.info.uni.types[i])
+        t = ffi.cast('struct lysc_type_union *', self.cdata)
+        arr_length = ffi.cast("uint64_t *", t.types)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield Type(self.context, t.types[i], None)
 
     def enums(self) -> Iterator[Enum]:
-        if self.cdata.base != self.ENUM:
+        if self.cdata.basetype != self.ENUM:
             return
-        t = self.cdata
-        while t.info.enums.count == 0:
-            t = ffi.addressof(t.der.type)
-        for i in range(t.info.enums.count):
-            yield Enum(self.context, t.info.enums.enm[i])
+        t = ffi.cast('struct lysc_type_enum *', self.cdata)
+        arr_length = ffi.cast("uint64_t *", t.enums)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield Enum(self.context, t.enums[i])
 
     def all_enums(self) -> Iterator[Enum]:
         for b in self.get_bases():
@@ -1031,7 +1035,7 @@ class SLeafList(SNode):
         return c2str(self.cdata_leaflist.units)
 
     def type(self) -> Type:
-        return Type(self.context, ffi.addressof(self.cdata_leaflist.type))
+        return Type(self.context, self.cdata_leaflist.type, self.cdata_leaflist_parsed.type)
 
     def defaults(self) -> Iterator[str]:
         for i in range(self.cdata_leaflist.dflt_size):

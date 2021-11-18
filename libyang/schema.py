@@ -398,7 +398,7 @@ class Bit(_EnumBit):
 # -------------------------------------------------------------------------------------
 class Type:
 
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "cdata_parsed")
 
     UNKNOWN = lib.LY_TYPE_UNKNOWN
     BINARY = lib.LY_TYPE_BINARY
@@ -444,9 +444,10 @@ class Type:
         INT64: "int64",
     }
 
-    def __init__(self, context: "libyang.Context", cdata):
+    def __init__(self, context: "libyang.Context", cdata, cdata_parsed):
         self.context = context
-        self.cdata = cdata  # C type: "struct lys_type *"
+        self.cdata = cdata  # C type: "struct lysc_type*"
+        self.cdata_parsed = cdata_parsed
 
     @property
     def _type(self):
@@ -466,8 +467,8 @@ class Type:
             yield self
 
     def name(self) -> str:
-        if self.cdata.name:
-            return c2str(self.cdata.name)
+        if self.cdata_parsed.name:
+            return c2str(self.cdata_parsed.name)
         return self.basename()
 
     def description(self) -> Optional[str]:
@@ -476,7 +477,7 @@ class Type:
         return None
 
     def base(self) -> int:
-        return self.cdata.base
+        return self.cdata.basetype
 
     def bases(self) -> Iterator[int]:
         for b in self.get_bases():
@@ -600,6 +601,8 @@ class Type:
             yield from self.patterns()
 
     def module(self) -> Module:
+        # TODO: pointer to the parsed module wehere is the type defined is in self.cdata_parsed.pmod
+        # however there is no way how to get name of the module from lysp_module
         if not self.cdata.der.module:
             return None
         module_p = lib.lys_main_module(self.cdata.der.module)
@@ -1009,7 +1012,7 @@ class SLeaf(SNode):
         return c2str(self.cdata_leaf.units)
 
     def type(self) -> Type:
-        return Type(self.context, ffi.addressof(self.cdata_leaf.type))
+        return Type(self.context, self.cdata_leaf.type, self.cdata_leaf_parsed.type)
 
     def is_key(self) -> bool:
         if lib.lys_is_key(self.cdata_leaf, ffi.NULL):

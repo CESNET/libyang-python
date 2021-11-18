@@ -455,9 +455,6 @@ class Type:
         return self.cdata
 
     def get_bases(self) -> Iterator["Type"]:
-        # NOTE: Derived type no longer in libyang2.
-        # if self.cdata.base == lib.LY_TYPE_DER:
-        #     yield from self.derived_type().get_bases()
         if self.cdata.base == lib.LY_TYPE_LEAFREF:
             yield from self.leafref_type().get_bases()
         elif self.cdata.base == lib.LY_TYPE_UNION:
@@ -472,8 +469,6 @@ class Type:
         return self.basename()
 
     def description(self) -> Optional[str]:
-        if self.cdata.der:
-            return c2str(self.cdata.der.dsc)
         return None
 
     def base(self) -> int:
@@ -489,11 +484,6 @@ class Type:
     def basenames(self) -> Iterator[str]:
         for b in self.get_bases():
             yield b.basename()
-
-    def derived_type(self) -> Optional["Type"]:
-        if not self.cdata.der:
-            return None
-        return Type(self.context, ffi.addressof(self.cdata.der.type))
 
     def leafref_type(self) -> Optional["Type"]:
         if self.cdata.base != self.LEAFREF:
@@ -543,8 +533,6 @@ class Type:
             return c2str(self.cdata.info.num.range.expr)
         if self.cdata.base == self.DEC64 and self.cdata.info.dec64.range:
             return c2str(self.cdata.info.dec64.range.expr)
-        if self.cdata.der:
-            return self.derived_type().range()
         return None
 
     def all_ranges(self) -> Iterator[str]:
@@ -563,8 +551,6 @@ class Type:
             return c2str(self.cdata.info.str.length.expr)
         if self.cdata.base == self.BINARY and self.cdata.info.binary.length:
             return c2str(self.cdata.info.binary.length.expr)
-        if self.cdata.der:
-            return self.derived_type().length()
         return None
 
     def all_lengths(self) -> Iterator[str]:
@@ -590,8 +576,6 @@ class Type:
             #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
             #     ('[xX][mM][lL].*', True)
             yield c2str(p.expr + 1), invert_match
-        if self.cdata.der:
-            yield from self.derived_type().patterns()
 
     def all_patterns(self) -> Iterator[Tuple[str, bool]]:
         if self.cdata.base == lib.LY_TYPE_UNION:
@@ -888,9 +872,6 @@ class SNode:
 
     def fullname(self) -> str:
         return "%s:%s" % (self.module().name(), self.name())
-
-    def description(self) -> Optional[str]:
-        return c2str(self.cdata.dsc)
 
     def config_set(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_SET_CONFIG)

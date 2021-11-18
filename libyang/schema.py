@@ -839,7 +839,7 @@ class IfOrFeatures(IfFeatureExprTree):
 # -------------------------------------------------------------------------------------
 class SNode:
 
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "cdata_parsed")
 
     CONTAINER = lib.LYS_CONTAINER
     LEAF = lib.LYS_LEAF
@@ -864,7 +864,10 @@ class SNode:
 
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata  # C type: "struct lys_node *"
+        self.cdata = cdata  # C type: "struct lysc_node *"
+        self.cdata_parsed = None
+        if self.cdata.priv != ffi.NULL:
+            self.cdata_parsed = ffi.cast('struct lysp_node *', self.cdata.priv)
 
     @property
     def _node(self):
@@ -987,11 +990,12 @@ class SNode:
 @SNode.register(SNode.LEAF)
 class SLeaf(SNode):
 
-    __slots__ = SNode.__slots__ + ("cdata_leaf",)
+    __slots__ = SNode.__slots__ + ("cdata_leaf", "cdata_leaf_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaf = ffi.cast("struct lysc_node_leaf *", cdata)
+        self.cdata_leaf_parsed = ffi.cast("struct lysp_node_leaf *", self.cdata_parsed)
 
     @property
     def _leaf(self):
@@ -1024,11 +1028,12 @@ class SLeaf(SNode):
 @SNode.register(SNode.LEAFLIST)
 class SLeafList(SNode):
 
-    __slots__ = SNode.__slots__ + ("cdata_leaflist",)
+    __slots__ = SNode.__slots__ + ("cdata_leaflist", "cdata_leaflist_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaflist = ffi.cast("struct lysc_node_leaflist *", cdata)
+        self.cdata_leaflist_parsed = ffi.cast("struct lysp_node_leaflist *", self.cdata_parsed)
 
     @property
     def _leaflist(self):
@@ -1060,11 +1065,12 @@ class SLeafList(SNode):
 @SNode.register(SNode.CONTAINER)
 class SContainer(SNode):
 
-    __slots__ = SNode.__slots__ + ("cdata_container",)
+    __slots__ = SNode.__slots__ + ("cdata_container", "cdata_container_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_container = ffi.cast("struct lysc_node_container *", cdata)
+        self.cdata_container_parsed = ffi.cast("struct lysp_node_container *", self.cdata_parsed)
 
     @property
     def _container(self):
@@ -1075,9 +1081,7 @@ class SContainer(SNode):
         if not self.cdata_container.flags & lib.LYS_PRESENCE:
             return None
 
-        # TODO: test if context flag LY_CTX_SET_PRIV_PARSED is set
-        p_node = ffi.cast('struct lysp_node_container *', self.cdata.priv)
-        return c2str(p_node.presence)
+        return c2str(self.cdata_container_parsed.presence)
 
     def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_container.must_size):
@@ -1094,11 +1098,12 @@ class SContainer(SNode):
 @SNode.register(SNode.LIST)
 class SList(SNode):
 
-    __slots__ = SNode.__slots__ + ("cdata_list",)
+    __slots__ = SNode.__slots__ + ("cdata_list", "cdata_list_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_list = ffi.cast("struct lysc_node_list *", cdata)
+        self.cdata_list_parsed = ffi.cast("struct lysp_node_list *", self.cdata_parsed)
 
     @property
     def _list(self):
@@ -1117,9 +1122,7 @@ class SList(SNode):
         return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
 
     def keys(self) -> Iterator[SNode]:
-        # TODO: test if context flag LY_CTX_SET_PRIV_PARSED is set
-        p_node = ffi.cast('struct lysp_node_list *', self.cdata.priv)
-        for i in c2str(p_node.key).split():
+        for i in c2str(self.cdata_list_parsed.key).split():
             yield i
 
     def must_conditions(self) -> Iterator[str]:

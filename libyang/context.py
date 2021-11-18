@@ -20,7 +20,7 @@ class Context:
         self,
         search_path: Optional[str] = None,
         disable_searchdir_cwd: bool = True,
-        set_priv_parsed: bool = False,
+        set_priv_parsed: bool = True,
         cdata=None,  # C type: "struct ly_ctx *"
     ):
         if cdata is not None:

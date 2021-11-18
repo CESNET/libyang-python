@@ -173,7 +173,7 @@ class IfFeatureTest(unittest.TestCase):
 # -------------------------------------------------------------------------------------
 class ContainerTest(unittest.TestCase):
     def setUp(self):
-        self.ctx = Context(YANG_DIR, set_priv_parsed=True)
+        self.ctx = Context(YANG_DIR)
         mod = self.ctx.load_module("yolo-system")
         mod.feature_enable_all()
         self.container = next(self.ctx.find_path("/yolo-system:conf"))
@@ -217,7 +217,7 @@ class ListTest(unittest.TestCase):
     DATA_PATH = "/yolo-system:conf/url[proto='%s'][host='%s']"
 
     def setUp(self):
-        self.ctx = Context(YANG_DIR, set_priv_parsed=True)
+        self.ctx = Context(YANG_DIR)
         self.ctx.load_module("yolo-system")
         self.list = next(self.ctx.find_path(self.SCHEMA_PATH))
 

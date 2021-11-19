@@ -555,5 +555,22 @@ struct lysc_type_bitenum_item {
     uint16_t flags;
 };
 
+struct lysp_node {
+    struct lysp_node *parent;
+    uint16_t nodetype;
+    uint16_t flags;
+    struct lysp_node *next;
+    const char *name;
+    const char *dsc;
+    const char *ref;
+    struct lysp_qname *iffeatures;
+    struct lysp_ext_instance *exts;
+};
+
+struct lysc_iffeature {
+    uint8_t *expr;
+    struct lysp_feature **features;
+};
+
 /* from libc, needed to free allocated strings */
 void free(void *);

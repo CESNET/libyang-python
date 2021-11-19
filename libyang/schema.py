@@ -1113,8 +1113,11 @@ class SList(SNode):
         return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
 
     def keys(self) -> Iterator[SNode]:
-        for i in c2str(self.cdata_list_parsed.key).split():
-            yield i
+        node = lib.lysc_node_child(self.cdata)
+        while node:
+            if node.flags & lib.LYS_KEY:
+                yield SLeaf(self.context, node)
+            node = node.next
 
     def must_conditions(self) -> Iterator[str]:
         for i in range(self.cdata_list.must_size):

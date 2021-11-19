@@ -938,8 +938,10 @@ class SNode:
         return None
 
     def if_features(self) -> Iterator[IfFeatureExpr]:
-        for i in range(self.cdata.iffeature_size):
-            yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
+        iff = ffi.cast('struct  lysp_qname *', self.cdata_parsed.iffeatures)
+        arr_length = ffi.cast("uint64_t *", iff)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield IfFeatureExpr(self.context, iff[i])
 
     def parent(self) -> Optional["SNode"]:
         parent_p = self.cdata.parent

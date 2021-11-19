@@ -140,6 +140,7 @@ struct lysc_node {
     const char *name;
     const char *dsc;
     const char *ref;
+    struct lysc_ext_instance *exts;
     void *priv;
     ...;
 };
@@ -571,6 +572,37 @@ struct lysc_iffeature {
     uint8_t *expr;
     struct lysp_feature **features;
 };
+
+struct lysc_ext_instance {
+    struct lysc_ext *def;
+    const char *argument;
+    struct lys_module *module;
+    struct lysc_ext_instance *exts;
+    struct lysc_ext_substmt *substmts;
+    void *data;
+    void *parent;
+    enum ly_stmt parent_stmt;
+    ...;
+};
+
+struct lysc_ext {
+    const char *name;
+    const char *argname;
+    struct lysc_ext_instance *exts;
+    struct lyplg_ext *plugin;
+    struct lys_module *module;
+    uint32_t refcount;
+    uint16_t flags;
+};
+
+#define LYS_GETNEXT_WITHCHOICE ...
+#define LYS_GETNEXT_NOCHOICE ...
+#define LYS_GETNEXT_WITHCASE ...
+#define LYS_GETNEXT_INTONPCONT ...
+#define LYS_GETNEXT_OUTPUT ...
+
+const struct lysc_node* lys_find_child(const struct lysc_node *, const struct lys_module *, const char *, size_t, uint16_t, uint32_t);
+const struct lysc_node* lysc_node_child(const struct lysc_node *);
 
 /* from libc, needed to free allocated strings */
 void free(void *);

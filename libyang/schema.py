@@ -333,13 +333,12 @@ class Extension:
         return c2str(self.cdata_def.name)
 
     def argument(self) -> Optional[str]:
-        return c2str(self.cdata.arg_value)
+        return c2str(self.cdata.argument)
 
     def module(self) -> Module:
-        module_p = lib.lys_main_module(self.cdata_def.module)
-        if not module_p:
+        if not self.cdata_def.module:
             raise self.context.error("cannot get module")
-        return Module(self.context, module_p)
+        return Module(self.context, self.cdata_def.module)
 
     def __repr__(self):
         cls = self.__class__
@@ -917,8 +916,10 @@ class SNode:
             lib.free(s)
 
     def extensions(self) -> Iterator[Extension]:
-        for i in range(self.cdata.ext_size):
-            yield Extension(self.context, self.cdata.ext[i])
+        ext = ffi.cast('struct lysc_ext_instance *', self.cdata.exts)
+        arr_length = ffi.cast("uint64_t *", ext)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield Extension(self.context, ext[i])
 
     def must_conditions(self) -> Iterator[str]:
         return iter(())
@@ -1137,30 +1138,24 @@ class SRpcInOut(SNode):
 @SNode.register(SNode.ACTION)
 class SRpc(SNode):
     def input(self) -> Optional[SRpcInOut]:
-        try:
-            return next(
-                iter_children(
-                    self.context,
-                    self.cdata,
-                    types=(self.INPUT,),
-                    options=lib.LYS_GETNEXT_WITHINOUT,
-                )
-            )
-        except StopIteration:
-            return None
+        node = lib.lysc_node_child(self.cdata)
+        while True:
+            if not node:
+                break
+            if node.nodetype == self.INPUT:
+                return SNode.new(self.context, node)
+            node = node.next
+        return None
 
     def output(self) -> Optional[SRpcInOut]:
-        try:
-            return next(
-                iter_children(
-                    self.context,
-                    self.cdata,
-                    types=(self.OUTPUT,),
-                    options=lib.LYS_GETNEXT_WITHINOUT,
-                )
-            )
-        except StopIteration:
-            return None
+        node = lib.lysc_node_child(self.cdata)
+        while True:
+            if not node:
+                break
+            if node.nodetype == self.OUTPUT:
+                return SNode.new(self.context, node)
+            node = node.next
+        return None
 
     def __iter__(self) -> Iterator[SNode]:
         return self.children()

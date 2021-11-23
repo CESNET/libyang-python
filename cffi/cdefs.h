@@ -604,5 +604,37 @@ struct lysc_ext {
 const struct lysc_node* lys_find_child(const struct lysc_node *, const struct lys_module *, const char *, size_t, uint16_t, uint32_t);
 const struct lysc_node* lysc_node_child(const struct lysc_node *);
 
+typedef enum {
+    LYD_PATH_STD,
+    LYD_PATH_STD_NO_LAST_PRED
+} LYD_PATH_TYPE;
+
+LY_ERR lyd_new_term(struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_node **);
+char* lyd_path(const struct lyd_node *, LYD_PATH_TYPE, char *, size_t);
+LY_ERR lyd_new_inner(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **);
+LY_ERR lyd_new_list(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **, ...);
+LY_ERR lyd_new_list2(struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_node **);
+
+struct lyd_node_inner {
+    union {
+        struct lyd_node node;
+        struct {
+            uint32_t hash;
+            uint32_t flags;
+            const struct lysc_node *schema;
+            struct lyd_node_inner *parent;
+            struct lyd_node *next;
+            struct lyd_node *prev;
+            struct lyd_meta *meta;
+            void *priv;
+        };
+    };
+    struct lyd_node *child;
+    struct hash_table *children_ht;
+    ...;
+};
+
+LY_ERR lyd_validate_all(struct lyd_node **, const struct ly_ctx *, uint32_t, struct lyd_node **);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

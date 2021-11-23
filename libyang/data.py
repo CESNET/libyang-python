@@ -192,10 +192,9 @@ class DNode:
         return c2str(self.cdata.schema.name)
 
     def module(self) -> Module:
-        mod = lib.lyd_node_module(self.cdata)
-        if not mod:
+        if not self.cdata.schema:
             raise self.context.error("cannot get module")
-        return Module(self.context, mod)
+        return Module(self.context, self.cdata.schema.module)
 
     def schema(self) -> SNode:
         return SNode.new(self.context, self.cdata.schema)
@@ -254,7 +253,7 @@ class DNode:
             lib.ly_set_free(node_set)
 
     def path(self) -> str:
-        path = lib.lyd_path(self.cdata)
+        path = lib.lyd_path(self.cdata, lib.LYD_PATH_STD, ffi.NULL, 0)
         try:
             return c2str(path)
         finally:
@@ -262,32 +261,18 @@ class DNode:
 
     def validate(
         self,
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
-        rpc: bool = False,
-        rpcreply: bool = False,
-        notification: bool = False,
-        no_yanglib: bool = False,
+        no_state: bool = False,
+        validate_present: bool = False,
     ) -> None:
         if self.cdata.parent:
             raise self.context.error("validation is only supported on top-level nodes")
-        flags = parser_flags(
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
-            rpc=rpc,
-            rpcreply=rpcreply,
-            notification=notification,
-            no_yanglib=no_yanglib,
+        flags = validation_flags(
+            no_state=no_state,
+            validate_present=validate_present,
         )
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
-        ret = lib.lyd_validate(node_p, flags, ffi.NULL)
+        ret = lib.lyd_validate_all(node_p, self.context.cdata, flags, ffi.NULL)
         if ret != 0:
             raise self.context.error("validation failed")
 
@@ -792,13 +777,11 @@ def dict_to_dnode(
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        if in_rpc_output:
-            n = lib.lyd_new_output_leaf(
-                _parent, module.cdata, str2c(name), str2c(value)
-            )
-        else:
-            n = lib.lyd_new_leaf(_parent, module.cdata, str2c(name), str2c(value))
-        if not n:
+
+        n = ffi.new('struct lyd_node **')
+        ret = lib.lyd_new_term(_parent, module.cdata, str2c(name), str2c(value), in_rpc_output, n)
+
+        if ret != lib.LY_SUCCESS:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
             else:
@@ -806,14 +789,12 @@ def dict_to_dnode(
             raise module.context.error(
                 "failed to create leaf %r as a child of %s", name, parent_path
             )
-        created.append(n)
+        created.append(n[0])
 
     def _create_container(_parent, module, name, in_rpc_output=False):
-        if in_rpc_output:
-            n = lib.lyd_new_output(_parent, module.cdata, str2c(name))
-        else:
-            n = lib.lyd_new(_parent, module.cdata, str2c(name))
-        if not n:
+        n = ffi.new('struct lyd_node **')
+        ret = lib.lyd_new_inner(_parent, module.cdata, str2c(name), in_rpc_output, n)
+        if ret != lib.LY_SUCCESS:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
             else:
@@ -823,8 +804,24 @@ def dict_to_dnode(
                 name,
                 parent_path,
             )
-        created.append(n)
-        return n
+        created.append(n[0])
+        return n[0]
+
+    def _create_list(_parent, module, name, key_values, in_rpc_output=False):
+        n = ffi.new('struct lyd_node **')
+        ret = lib.lyd_new_list(_parent, module.cdata, str2c(name), in_rpc_output, n, *[str2c(i) for i in key_values])
+        if ret != lib.LY_SUCCESS:
+            if _parent:
+                parent_path = repr(DNode.new(module.context, _parent).path())
+            else:
+                parent_path = "module %r" % module.name()
+            raise module.context.error(
+                "failed to create container/list/rpc %r as a child of %s",
+                name,
+                parent_path,
+            )
+        created.append(n[0])
+        return n[0]
 
     schema_cache = {}
 
@@ -920,14 +917,24 @@ def dict_to_dnode(
                         "%s: python value is not a list/tuple: %r"
                         % (s.schema_path(), value)
                     )
+
+                keys = [i.name() for i in s.keys()]
                 for v in value:
                     if not isinstance(v, dict):
                         raise TypeError(
                             "%s: list element is not a dict: %r"
                             % (_schema.schema_path(), v)
                         )
-                    n = _create_container(_parent, module, name, in_rpc_output)
-                    _to_dnode(v, s, n, in_rpc_output)
+                    val = v
+                    key_values = []
+                    for k in keys:
+                        try:
+                            key_values.append(val.pop(k))
+                        except KeyError:
+                            raise ValueError('Missing key %s in the list' % (k))
+
+                    n = _create_list(_parent, module, name, key_values, in_rpc_output)
+                    _to_dnode(val, s, n, in_rpc_output)
 
             elif isinstance(s, SNotif):
                 n = _create_container(_parent, module, name, in_rpc_output)
@@ -964,7 +971,7 @@ def dict_to_dnode(
                 )
     except:
         for c in reversed(created):
-            lib.lyd_free(c)
+            lib.lyd_free_tree(c)
         raise
 
     return result

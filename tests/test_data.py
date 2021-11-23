@@ -407,10 +407,10 @@ class DataTest(unittest.TestCase):
         )
         # make sure subtree validation is forbidden
         with self.assertRaises(LibyangError):
-            subtree.validate(config=True)
+            subtree.validate(validate_present=True)
         try:
-            dnode.validate(config=True)
-            j = dnode.print_mem("json", pretty=True)
+            dnode.validate(validate_present=True)
+            j = dnode.print_mem("json")
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))

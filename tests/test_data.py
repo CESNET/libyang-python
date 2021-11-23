@@ -403,7 +403,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.create_data_path("/yolo-system:conf")
         self.assertIsInstance(dnode, DContainer)
         subtree = dnode.merge_data_dict(
-            self.DICT_CONFIG["conf"], strict=True, config=True, validate=False
+            self.DICT_CONFIG["conf"], strict=True, validate=False
         )
         # make sure subtree validation is forbidden
         with self.assertRaises(LibyangError):
@@ -419,10 +419,10 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.create_data_path("/yolo-system:state")
         self.assertIsInstance(dnode, DContainer)
         dnode.merge_data_dict(
-            {"hostname": "foo"}, strict=True, data=True, no_yanglib=True
+            {"hostname": "foo"}, strict=True, validate=True, validate_present=True
         )
         try:
-            j = dnode.print_mem("json")
+            j = dnode.print_mem("json", printer_shrink=True)
         finally:
             dnode.free()
         self.assertEqual(j, '{"yolo-system:state":{"hostname":"foo"}}')
@@ -432,7 +432,7 @@ class DataTest(unittest.TestCase):
         self.assertIsInstance(dnode, DRpc)
         dnode.merge_data_dict({"duration": 42}, rpcreply=True, strict=True)
         try:
-            j = dnode.print_mem("json")
+            j = dnode.print_mem("json", printer_shrink=True)
         finally:
             dnode.free()
         self.assertEqual(j, '{"yolo-system:format-disk":{"duration":42}}')

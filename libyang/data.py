@@ -273,7 +273,7 @@ class DNode:
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
         ret = lib.lyd_validate_all(node_p, self.context.cdata, flags, ffi.NULL)
-        if ret != 0:
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("validation failed")
 
     def merge(
@@ -535,16 +535,11 @@ class DNode:
     def merge_data_dict(
         self,
         dic: Dict[str, Any],
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
-        rpc: bool = False,
+        no_state: bool = False,
+        validate_present: bool = False,
+        validate: bool = True,
         rpcreply: bool = False,
         strict: bool = False,
-        no_yanglib: bool = False,
-        validate: bool = True,
     ) -> Optional["DNode"]:
         """
         Merge a python dictionary into this node. The returned value is the first
@@ -582,16 +577,11 @@ class DNode:
             dic,
             self.module(),
             parent=self,
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
-            rpc=rpc,
+            no_state=no_state,
+            validate_present=validate_present,
+            validate=validate,
             rpcreply=rpcreply,
             strict=strict,
-            no_yanglib=no_yanglib,
-            validate=validate,
         )
 
     def free(self, with_siblings: bool = True) -> None:
@@ -708,17 +698,11 @@ def dict_to_dnode(
     dic: Dict[str, Any],
     module: Module,
     parent: Optional[DNode] = None,
-    data: bool = False,
-    config: bool = False,
-    get: bool = False,
-    getconfig: bool = False,
-    edit: bool = False,
-    rpc: bool = False,
-    rpcreply: bool = False,
-    notification: bool = False,
-    strict: bool = False,
-    no_yanglib: bool = False,
+    no_state: bool = False,
+    validate_present: bool = False,
     validate: bool = True,
+    rpcreply: bool = False,
+    strict: bool = False,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -949,6 +933,7 @@ def dict_to_dnode(
         else:
             _parent = ffi.NULL
             _schema_parent = module
+
         _to_dnode(
             dic,
             _schema_parent,
@@ -958,17 +943,7 @@ def dict_to_dnode(
         if created:
             result = DNode.new(module.context, created[0])
             if validate:
-                result.root().validate(
-                    data=data,
-                    config=config,
-                    get=get,
-                    getconfig=getconfig,
-                    edit=edit,
-                    rpc=rpc,
-                    rpcreply=rpcreply,
-                    notification=notification,
-                    no_yanglib=no_yanglib,
-                )
+                result.root().validate(no_state=no_state, validate_present=validate_present)
     except:
         for c in reversed(created):
             lib.lyd_free_tree(c)

@@ -430,7 +430,8 @@ class DataTest(unittest.TestCase):
     def test_data_from_dict_rpc(self):
         dnode = self.ctx.create_data_path("/yolo-system:format-disk")
         self.assertIsInstance(dnode, DRpc)
-        dnode.merge_data_dict({"duration": 42}, rpcreply=True, strict=True)
+        dnode.merge_data_dict({"duration": 42}, rpcreply=True, strict=True,
+                              validate=True, validate_present=True)
         try:
             j = dnode.print_mem("json", printer_shrink=True)
         finally:

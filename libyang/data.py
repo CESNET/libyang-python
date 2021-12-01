@@ -815,12 +815,11 @@ def dict_to_dnode(
         if snode is not None:
             return snode, module
         if isinstance(schema_parent, SRpc):
-            if rpc:
-                schema_parent = schema_parent.input()
-            elif rpcreply:
+            if rpcreply:
                 schema_parent = schema_parent.output()
             else:
-                raise ValueError("rpc or rpcreply must be specified")
+                schema_parent = schema_parent.input()
+
             if schema_parent is None:
                 # there may not be any input or any output node in the rpc
                 return None, None

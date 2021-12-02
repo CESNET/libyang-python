@@ -157,7 +157,7 @@ class DataTest(unittest.TestCase):
                                     validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print("xml", out_type=IO_type.MEMORY)
+            xml = dnode.print("xml", out_type=IO_type.MEMORY, printer_with_siblings=True)
             self.assertEqual(xml, self.XML_STATE)
         finally:
             dnode.free()

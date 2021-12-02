@@ -327,7 +327,6 @@ class DNode:
             wd_explicit=printer_wd_explicit,
             wd_impl_tag=printer_wd_impl_tag,
             wd_trim=printer_wd_trim,
-            with_siblings=printer_with_siblings
         )
         fmt = data_format(fmt)
         out_data = ffi.new("struct ly_out **")
@@ -348,7 +347,11 @@ class DNode:
             if ret != lib.LY_SUCCESS:
                 raise self.context.error("failed to initialize output target")
 
-            ret = lib.lyd_print_tree(out_data[0], self.cdata, fmt, flags)
+            if printer_with_siblings:
+                ret = lib.lyd_print_all(out_data[0], self.cdata, fmt, flags)
+            else:
+                ret = lib.lyd_print_tree(out_data[0], self.cdata, fmt, flags)
+
             lib.ly_out_free(out_data[0], ffi.NULL, 0)
             if ret != lib.LY_SUCCESS:
                 raise self.context.error("failed to write data")

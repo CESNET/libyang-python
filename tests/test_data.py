@@ -258,7 +258,7 @@ class DataTest(unittest.TestCase):
     }
 
     def test_data_to_dict_config(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             dic = dnode.print_dict()

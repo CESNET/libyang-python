@@ -607,7 +607,7 @@ class DataTest(unittest.TestCase):
         dnode2.free()
 
     def test_find_one(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             hostname = dnode.find_one("hostname")

@@ -280,6 +280,17 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("validation failed")
 
+    def validate_op(
+        self,
+        dtype: DataType,
+    ) -> None:
+        dtype = data_type(dtype)
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+        ret = lib.lyd_validate_op(node_p[0], ffi.NULL, dtype, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("validation failed")
+
     def merge(
         self,
         source: "DNode",
@@ -515,6 +526,7 @@ class DNode:
         validate: bool = True,
         rpcreply: bool = False,
         strict: bool = False,
+        operation_type: DataType = None,
     ) -> Optional["DNode"]:
         """
         Merge a python dictionary into this node. The returned value is the first
@@ -557,6 +569,7 @@ class DNode:
             validate=validate,
             rpcreply=rpcreply,
             strict=strict,
+            operation_type=operation_type,
         )
 
     def free(self, with_siblings: bool = True) -> None:
@@ -686,6 +699,7 @@ def dict_to_dnode(
     validate: bool = True,
     rpcreply: bool = False,
     strict: bool = False,
+    operation_type: DataType = None,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -925,7 +939,11 @@ def dict_to_dnode(
         if created:
             result = DNode.new(module.context, created[0])
             if validate:
-                result.root().validate(no_state=no_state, validate_present=validate_present)
+                if operation_type is None:
+                    result.root().validate(no_state=no_state, validate_present=validate_present)
+                else:
+                    result.root().validate_op(operation_type)
+
     except:
         for c in reversed(created):
             lib.lyd_free_tree(c)

@@ -635,6 +635,7 @@ struct lyd_node_inner {
 };
 
 LY_ERR lyd_validate_all(struct lyd_node **, const struct ly_ctx *, uint32_t, struct lyd_node **);
+LY_ERR lyd_validate_op(struct lyd_node *, const struct lyd_node *, enum lyd_type, struct lyd_node **);
 struct lyd_node* lyd_child_no_keys(const struct lyd_node *);
 
 struct lyd_node_term {

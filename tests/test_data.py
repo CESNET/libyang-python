@@ -617,12 +617,13 @@ class DataTest(unittest.TestCase):
             dnode.free()
 
     def test_find_all(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             urls = dnode.find_all("url")
             urls = list(urls)
             self.assertEqual(len(urls), 2)
+
             expected_url = {
                 "url": [
                     {

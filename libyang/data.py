@@ -243,14 +243,18 @@ class DNode:
             return None
 
     def find_all(self, xpath: str) -> Iterator["DNode"]:
-        node_set = lib.lyd_find_path(self.cdata, str2c(xpath))
-        if not node_set:
-            raise self.context.error("cannot find path")
+        node_set = ffi.new("struct ly_set **")
+        ret = lib.lyd_find_xpath(self.cdata, str2c(xpath), node_set)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("cannot find path: %s", xpath)
+
+        node_set = node_set[0]
         try:
-            for i in range(node_set.number):
-                yield DNode.new(self.context, node_set.set.d[i])
+            for i in range(node_set.count):
+                n = DNode.new(self.context, node_set.dnodes[i])
+                yield n
         finally:
-            lib.ly_set_free(node_set)
+            lib.ly_set_free(node_set, ffi.NULL)
 
     def path(self) -> str:
         path = lib.lyd_path(self.cdata, lib.LYD_PATH_STD, ffi.NULL, 0)
@@ -333,7 +337,7 @@ class DNode:
             if ret != lib.LY_SUCCESS:
                 raise self.context.error("failed to initialize output target")
 
-            ret = lib.lyd_print_all(out_data[0], self.cdata, fmt, flags)
+            ret = lib.lyd_print_tree(out_data[0], self.cdata, fmt, flags)
             lib.ly_out_free(out_data[0], ffi.NULL, 0)
             if ret != lib.LY_SUCCESS:
                 raise self.context.error("failed to write data")
@@ -400,37 +404,11 @@ class DNode:
         if ret != 0:
             raise self.context.error("cannot print node")
 
-    def should_print(
-        self,
-        include_implicit_defaults: bool = False,
-        trim_default_values: bool = False,
-        keep_empty_containers: bool = False,
-    ) -> bool:
-        """
-        Check if a node should be "printed".
-
-        :arg bool include_implicit_defaults:
-            Include implicit default nodes.
-        :arg bool trim_default_values:
-            Exclude nodes with the value equal to their default value.
-        :arg bool keep_empty_containers:
-            Preserve empty non-presence containers.
-        """
-        flags = printer_flags(
-            include_implicit_defaults=include_implicit_defaults,
-            trim_default_values=trim_default_values,
-            keep_empty_containers=keep_empty_containers,
-        )
-        return bool(lib.lyd_node_should_print(self.cdata, flags))
-
     def print_dict(
         self,
         strip_prefixes: bool = True,
         absolute: bool = True,
         with_siblings: bool = False,
-        include_implicit_defaults: bool = False,
-        trim_default_values: bool = False,
-        keep_empty_containers: bool = False,
     ) -> Dict[str, Any]:
         """
         Convert a DNode object to a python dictionary.
@@ -450,12 +428,6 @@ class DNode:
         :arg bool keep_empty_containers:
             Preserve empty non-presence containers.
         """
-        flags = printer_flags(
-            include_implicit_defaults=include_implicit_defaults,
-            trim_default_values=trim_default_values,
-            keep_empty_containers=keep_empty_containers,
-        )
-
         name_cache = {}
 
         def _node_name(node):
@@ -464,7 +436,7 @@ class DNode:
                 if strip_prefixes:
                     name = c2str(node.schema.name)
                 else:
-                    mod = lib.lyd_node_module(node)
+                    mod = node.schema.module
                     name = "%s:%s" % (c2str(mod.name), c2str(node.schema.name))
                 name_cache[node.schema] = name
             return name
@@ -472,7 +444,7 @@ class DNode:
         list_keys_cache = {}
 
         def _init_yang_list(snode):
-            if snode.flags & lib.LYS_USERORDERED:
+            if snode.flags & lib.LYS_ORDBY_USER:
                 return []  # ordered list, return an empty builtin list
 
             # unordered lists
@@ -480,11 +452,15 @@ class DNode:
                 return KeyedList(key_name=None)
 
             if snode not in list_keys_cache:
-                list_snode = ffi.cast("struct lys_node_list *", snode)
                 keys = []
-                for i in range(list_snode.keys_size):
-                    key = ffi.cast("struct lys_node *", list_snode.keys[i])
-                    keys.append(c2str(key.name))
+                child = lib.lysc_node_child(snode)
+                while child:
+                    if child.flags & lib.LYS_KEY:
+                        if strip_prefixes:
+                            keys.append(c2str(child.name))
+                        else:
+                            keys.append("%s:%s" % (c2str(child.module.name), c2str(child.name)))
+                    child = child.next
                 if len(keys) == 1:
                     list_keys_cache[snode] = keys[0]
                 else:
@@ -493,12 +469,11 @@ class DNode:
             return KeyedList(key_name=list_keys_cache[snode])
 
         def _to_dict(node, parent_dic):
-            if not lib.lyd_node_should_print(node, flags):
-                return
             name = _node_name(node)
             if node.schema.nodetype == SNode.LIST:
                 list_element = {}
-                child = node.child
+
+                child = lib.lyd_child(node)
                 while child:
                     _to_dict(child, list_element)
                     child = child.next
@@ -509,7 +484,7 @@ class DNode:
                 SNode.CONTAINER | SNode.RPC | SNode.ACTION | SNode.NOTIF
             ):
                 container = {}
-                child = node.child
+                child = lib.lyd_child(node)
                 while child:
                     _to_dict(child, container)
                     child = child.next
@@ -666,19 +641,27 @@ class DLeaf(DNode):
 
     @staticmethod
     def cdata_leaf_value(cdata) -> Any:
-        cdata = ffi.cast("struct lyd_node_leaf_list *", cdata)
-        val_type = cdata.value_type
-        if val_type in Type.STR_TYPES:
-            return c2str(cdata.value_str)
-        if val_type in Type.NUM_TYPES:
-            return int(c2str(cdata.value_str))
+
+        val = lib.lyd_get_value(cdata)
+        if val == ffi.NULL:
+            return None
+
+        val = c2str(val)
+        term_node = ffi.cast("struct lyd_node_term *", cdata)
+        val_type = ffi.new("const struct lysc_type **", ffi.NULL)
+
+        # get real value type
+        ret = lib.lyd_value_validate(ffi.NULL, term_node.schema, str2c(val),
+                                     len(val), ffi.NULL, val_type, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
+            raise TypeError('value type validation error')
+
+        val_type = val_type[0].basetype
         if val_type == Type.BOOL:
-            return bool(cdata.value.bln)
-        if val_type == Type.DEC64:
-            return lib.lyd_dec64_to_double(ffi.cast("struct lyd_node *", cdata))
-        if val_type == Type.LEAFREF:
-            return DLeaf.cdata_leaf_value(cdata.value.leafref)
-        return None
+            return True if val == 'true' else False
+        elif val_type in Type.NUM_TYPES:
+            return int(val)
+        return val
 
 
 # -------------------------------------------------------------------------------------

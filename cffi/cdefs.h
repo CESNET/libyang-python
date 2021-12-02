@@ -635,6 +635,59 @@ struct lyd_node_inner {
 };
 
 LY_ERR lyd_validate_all(struct lyd_node **, const struct ly_ctx *, uint32_t, struct lyd_node **);
+struct lyd_node* lyd_child_no_keys(const struct lyd_node *);
+
+struct lyd_node_term {
+    union {
+        struct lyd_node node;
+        struct {
+            uint32_t hash;
+            uint32_t flags;
+            const struct lysc_node *schema;
+            struct lyd_node_inner *parent;
+            struct lyd_node *next;
+            struct lyd_node *prev;
+            struct lyd_meta *meta;
+            void *priv;
+        };
+    };
+    struct lyd_value value;
+};
+
+struct lyd_value {
+    const struct lysc_type *realtype;
+    union {
+        int8_t boolean;
+        int64_t dec64;
+        int8_t int8;
+        int16_t int16;
+        int32_t int32;
+        int64_t int64;
+        uint8_t uint8;
+        uint16_t uint16;
+        uint32_t uint32;
+        uint64_t uint64;
+        struct lysc_type_bitenum_item *enum_item;
+        struct lysc_ident *ident;
+        struct ly_path *target;
+        struct lyd_value_union *subvalue;
+        void *dyn_mem;
+        ...;
+    };
+    ...;
+};
+
+const char * lyd_get_value(const struct lyd_node *);
+struct lyd_node* lyd_child(const struct lyd_node *);
+LY_ERR lyd_value_validate(const struct ly_ctx *, const struct lysc_node *, const char *, size_t, const struct lyd_node *, const struct lysc_type **, const char **);
+
+struct lysc_type_num {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_range *range;
+};
 
 /* from libc, needed to free allocated strings */
 void free(void *);

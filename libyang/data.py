@@ -236,6 +236,13 @@ class DNode:
                 yield self.new(self.context, n)
             n = n.next
 
+    def find_path(self, path: str, output: bool = False):
+        node = ffi.new("struct lyd_node **")
+        ret = lib.lyd_find_path(self.cdata, str2c(path), output, node)
+        if ret == lib.LY_SUCCESS or ret == lib.LY_EINCOMPLETE:
+            return DNode.new(self.context, node[0])
+        return None
+
     def find_one(self, xpath: str) -> Optional["DNode"]:
         try:
             return next(self.find_all(xpath))
@@ -622,7 +629,7 @@ class DContainer(DNode):
         )
 
     def children(self) -> Iterator[DNode]:
-        child = self.cdata.child
+        child = lib.lyd_child_no_keys(self.cdata)
         while child:
             yield DNode.new(self.context, child)
             child = child.next

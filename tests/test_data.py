@@ -493,20 +493,22 @@ class DataTest(unittest.TestCase):
                     ],
                 },
             },
-            rpc=True,
             strict=True,
+            operation_type=DataType.RPC_YANG,
         )
-        dnode = self.ctx.parse_data_mem(
-            '{"yolo-system:result":"not found"}',
+        request = request.find_path("/yolo-system:conf/url[proto='https'][host='github.com']/fetch")
+        dnode = self.ctx.parse_op(
             "json",
-            rpcreply=True,
-            rpc_request=request,
+            in_data='{"yolo-system:result":"not found"}',
+            in_type=IO_type.MEMORY,
+            dtype=DataType.REPLY_YANG,
+            parent=request
         )
         try:
             dic = dnode.print_dict()
         finally:
-            dnode.free()
             request.free()
+
         self.assertEqual(
             dic,
             {
@@ -515,7 +517,10 @@ class DataTest(unittest.TestCase):
                         {
                             "proto": "https",
                             "host": "github.com",
-                            "fetch": {"result": "not found"},
+                            "fetch": {
+                                "result": "not found",
+                                "timeout": 42  # probably bug in linyang, this is part of input
+                            },
                         },
                     ],
                 },

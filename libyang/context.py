@@ -214,6 +214,7 @@ class Context:
         in_type: IO_type,
         in_data: Union[IO, str],
         dtype: DataType,
+        parent: DNode = None
     ) -> DNode:
         fmt = data_format(fmt)
         data = ffi.new("struct ly_in **")
@@ -224,8 +225,12 @@ class Context:
             raise self.error("failed to read input data")
 
         tree = ffi.new("struct lyd_node **")
-        op = ffi.new("struct lyd_node **")
-        ret = lib.lyd_parse_op(self.cdata, ffi.NULL, data[0], fmt, dtype, tree, op)
+        op = ffi.new("struct lyd_node **", ffi.NULL)
+        par = ffi.new("struct lyd_node **", ffi.NULL)
+        if parent is not None:
+            par[0] = parent.cdata
+
+        ret = lib.lyd_parse_op(self.cdata, par[0], data[0], fmt, dtype, tree, op)
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to parse input data")
 

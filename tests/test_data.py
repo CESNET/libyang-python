@@ -267,9 +267,10 @@ class DataTest(unittest.TestCase):
         self.assertEqual(dic, self.DICT_CONFIG)
 
     def test_data_to_dict_rpc_input(self):
-        dnode = self.ctx.parse_data_mem(
-            '{"yolo-system:format-disk": {"disk": "/dev/sda"}}', "json", rpc=True
-        )
+        in_data = '{"yolo-system:format-disk": {"disk": "/dev/sda"}}'
+        dnode = self.ctx.parse_op("json", in_type=IO_type.MEMORY,
+                                  in_data=in_data,
+                                  dtype=DataType.RPC_YANG)
         self.assertIsInstance(dnode, DRpc)
         try:
             dic = dnode.print_dict()

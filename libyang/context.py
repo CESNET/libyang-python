@@ -126,7 +126,7 @@ class Context:
     def get_module(self, name: str) -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        mod = lib.ly_ctx_get_module(self.cdata, str2c(name), ffi.NULL)
+        mod = lib.ly_ctx_get_module_latest(self.cdata, str2c(name))
         if not mod:
             raise self.error("cannot get module")
 

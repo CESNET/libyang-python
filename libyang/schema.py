@@ -4,7 +4,7 @@
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import c2str, deprecated, str2c, p_str2c, IO_type
+from .util import c2str, deprecated, str2c, p_str2c, IO_type, DataType
 
 
 # -------------------------------------------------------------------------------------
@@ -197,17 +197,12 @@ class Module:
     def parse_data_dict(
         self,
         dic: Dict[str, Any],
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
-        rpc: bool = False,
-        rpcreply: bool = False,
-        notification: bool = False,
-        strict: bool = False,
-        no_yanglib: bool = False,
+        no_state: bool = False,
+        validate_present: bool = False,
         validate: bool = True,
+        rpcreply: bool = False,
+        strict: bool = False,
+        operation_type: DataType = None,
     ) -> "libyang.data.DNode":
         """
         Convert a python dictionary to a DNode object following the schema of this
@@ -248,18 +243,12 @@ class Module:
         return dict_to_dnode(
             dic,
             self,
-            parent=None,
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
-            rpc=rpc,
-            rpcreply=rpcreply,
-            notification=notification,
-            strict=strict,
-            no_yanglib=no_yanglib,
+            no_state=no_state,
+            validate_present=validate_present,
             validate=validate,
+            rpcreply=rpcreply,
+            strict=strict,
+            operation_type=operation_type
         )
 
 

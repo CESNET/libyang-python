@@ -116,6 +116,7 @@ LY_VECODE ly_vecode(const struct ly_ctx *);
 struct lys_module* ly_ctx_load_module(struct ly_ctx *, const char *, const char *, const char **);
 struct lys_module* ly_ctx_get_module(const struct ly_ctx *, const char *, const char *);
 struct lys_module* ly_ctx_get_module_iter(const struct ly_ctx *, uint32_t *);
+struct lys_module* ly_ctx_get_module_latest(const struct ly_ctx *, const char *);
 
 LY_ERR lys_find_xpath(const struct ly_ctx *, const struct lysc_node *, const char *, uint32_t, struct ly_set **);
 void ly_set_free(struct ly_set *, void(*)(void *obj));

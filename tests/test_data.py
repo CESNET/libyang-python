@@ -453,8 +453,8 @@ class DataTest(unittest.TestCase):
                     ],
                 },
             },
-            rpc=True,
             strict=True,
+            operation_type=DataType.RPC_YANG
         )
         self.assertIsInstance(dnode, DContainer)
         try:
@@ -463,7 +463,20 @@ class DataTest(unittest.TestCase):
             dnode.free()
         self.assertEqual(
             j,
-            '{"yolo-system:conf":{"url":[{"proto":"https","host":"github.com","fetch":{"timeout":42}}]}}',
+            """{
+  "yolo-system:conf": {
+    "url": [
+      {
+        "proto": "https",
+        "host": "github.com",
+        "fetch": {
+          "timeout": 42
+        }
+      }
+    ]
+  }
+}
+"""
         )
 
     def test_data_to_dict_action(self):

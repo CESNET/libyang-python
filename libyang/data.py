@@ -908,7 +908,7 @@ def dict_to_dnode(
                             "%s: list element is not a dict: %r"
                             % (_schema.schema_path(), v)
                         )
-                    val = v
+                    val = v.copy()
                     key_values = []
                     for k in keys:
                         try:

@@ -676,15 +676,16 @@ class DLeaf(DNode):
         # get real value type
         ret = lib.lyd_value_validate(ffi.NULL, term_node.schema, str2c(val),
                                      len(val), ffi.NULL, val_type, ffi.NULL)
-        if ret != lib.LY_SUCCESS:
-            raise TypeError('value type validation error')
 
-        val_type = val_type[0].basetype
-        if val_type == Type.BOOL:
-            return True if val == 'true' else False
-        elif val_type in Type.NUM_TYPES:
-            return int(val)
-        return val
+        if ret == lib.LY_SUCCESS or ret == lib.LY_EINCOMPLETE:
+            val_type = val_type[0].basetype
+            if val_type == Type.BOOL:
+                return True if val == 'true' else False
+            elif val_type in Type.NUM_TYPES:
+                return int(val)
+            return val
+
+        raise TypeError('value type validation error')
 
 
 # -------------------------------------------------------------------------------------

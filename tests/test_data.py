@@ -323,18 +323,6 @@ class DataTest(unittest.TestCase):
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
 
-    DICT_EDIT = {"conf": {"hostname-ref": "notdefined"}}
-
-    def test_data_from_dict_edit(self):
-        module = self.ctx.get_module("yolo-system")
-        dnode = module.parse_data_dict(self.DICT_EDIT, strict=True, edit=True)
-        self.assertIsInstance(dnode, DContainer)
-        try:
-            xml = dnode.print_mem("xml", pretty=True)
-        finally:
-            dnode.free()
-        self.assertEqual(xml, self.XML_EDIT)
-
     def test_data_from_dict_invalid(self):
         module = self.ctx.get_module("yolo-system")
 

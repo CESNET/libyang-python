@@ -441,7 +441,8 @@ class Type:
     def __init__(self, context: "libyang.Context", cdata, cdata_parsed):
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_type*"
-        self.cdata_parsed = cdata_parsed
+        self.cdata_parsed = cdata_parsed  # C type: "struct lysp_type*"
+        print(cdata_parsed)
 
     @property
     def _type(self):
@@ -865,6 +866,9 @@ class SNode:
     def fullname(self) -> str:
         return "%s:%s" % (self.module().name(), self.name())
 
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
     def config_set(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_SET_CONFIG)
 
@@ -997,8 +1001,12 @@ class SLeaf(SNode):
         return False
 
     def must_conditions(self) -> Iterator[str]:
-        for i in range(self.cdata_leaf.must_size):
-            yield c2str(self.cdata_leaf.must[i].expr)
+        pdata = self.cdata_leaf_parsed
+        if pdata.musts == ffi.NULL:
+            return iter(())
+        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield c2str(pdata.musts[i].arg.str)
 
     def __str__(self):
         return "%s %s" % (self.name(), self.type().name())
@@ -1034,8 +1042,12 @@ class SLeafList(SNode):
             yield c2str(self.cdata_leaflist.dflt[i])
 
     def must_conditions(self) -> Iterator[str]:
-        for i in range(self.cdata_leaflist.must_size):
-            yield c2str(self.cdata_leaflist.must[i].expr)
+        pdata = self.cdata_leaflist_parsed
+        if pdata.musts == ffi.NULL:
+            return iter(())
+        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield c2str(pdata.musts[i].arg.str)
 
     def __str__(self):
         return "%s %s" % (self.name(), self.type().name())
@@ -1064,8 +1076,12 @@ class SContainer(SNode):
         return c2str(self.cdata_container_parsed.presence)
 
     def must_conditions(self) -> Iterator[str]:
-        for i in range(self.cdata_container.must_size):
-            yield c2str(self.cdata_container.must[i].expr)
+        pdata = self.cdata_container_parsed
+        if pdata.musts == ffi.NULL:
+            return iter(())
+        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield c2str(pdata.musts[i].arg.str)
 
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
@@ -1109,8 +1125,12 @@ class SList(SNode):
             node = node.next
 
     def must_conditions(self) -> Iterator[str]:
-        for i in range(self.cdata_list.must_size):
-            yield c2str(self.cdata_list.must[i].expr)
+        pdata = self.cdata_list_parsed
+        if pdata.musts == ffi.NULL:
+            return iter(())
+        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield c2str(pdata.musts[i].arg.str)
 
     def __str__(self):
         return "%s [%s]" % (self.name(), ", ".join(k.name() for k in self.keys()))

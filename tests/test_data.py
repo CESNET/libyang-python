@@ -536,10 +536,11 @@ class DataTest(unittest.TestCase):
 
     def test_notification_from_dict_module(self):
         module = self.ctx.get_module("yolo-system")
-        dnotif = module.parse_data_dict(self.DICT_NOTIF, strict=True, notification=True)
+        dnotif = module.parse_data_dict(self.DICT_NOTIF, strict=True,
+                                        operation_type=DataType.NOTIF_YANG)
         self.assertIsInstance(dnotif, DNotif)
         try:
-            j = dnotif.print_mem("json", pretty=True)
+            j = dnotif.print_mem("json")
         finally:
             dnotif.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_NOTIF))

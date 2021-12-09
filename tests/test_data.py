@@ -280,10 +280,10 @@ class DataTest(unittest.TestCase):
 
     def test_data_from_dict_module(self):
         module = self.ctx.get_module("yolo-system")
-        dnode = module.parse_data_dict(self.DICT_CONFIG, strict=True, config=True)
+        dnode = module.parse_data_dict(self.DICT_CONFIG, strict=True, validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", pretty=True)
+            j = dnode.print_mem("json")
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
@@ -314,11 +314,11 @@ class DataTest(unittest.TestCase):
     def test_data_from_dict_module_with_prefix(self):
         module = self.ctx.get_module("yolo-system")
         dnode = module.parse_data_dict(
-            self.DICT_CONFIG_WITH_PREFIX, strict=True, config=True
+            self.DICT_CONFIG_WITH_PREFIX, strict=True, validate_present=True
         )
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", pretty=True)
+            j = dnode.print_mem("json")
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))

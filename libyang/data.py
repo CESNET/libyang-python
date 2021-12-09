@@ -154,15 +154,43 @@ def validation_flags(
 
 
 def diff_flags(
-    with_defaults: bool = False,
-    no_siblings: bool = False,
+    with_defaults: bool = False
 ) -> int:
     flags = 0
     if with_defaults:
-        flags |= lib.LYD_DIFFOPT_WITHDEFAULTS
-    if no_siblings:
-        flags |= lib.LYD_DIFFOPT_NOSIBLINGS
+        flags |= lib.LYD_DIFF_DEFAULTS
     return flags
+
+
+# -------------------------------------------------------------------------------------
+class DDiff:
+    """
+    Data tree diff
+    """
+
+    __slots__ = ("dtype", "first", "second")
+
+    def __init__(self, dtype, first: Optional["DNode"], second: Optional["DNode"]):
+        """
+        :arg dtype:
+            The type of the diff
+        :arg first:
+            The first DNode
+        :arg second:
+            The second DNode
+        """
+        self.dtype = dtype
+        self.first = first
+        self.second = second
+
+    def diff_type(self) -> str:
+        """Get diff type as string"""
+        return self.DIFF_TYPES.get(self.dtype, "unknown")
+
+    def __repr__(self) -> str:
+        return "<libyang.data.DDiff {} first={} second={}>".format(
+            self.diff_type(), self.first, self.second
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -297,6 +325,24 @@ class DNode:
         ret = lib.lyd_validate_op(node_p[0], ffi.NULL, dtype, ffi.NULL)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("validation failed")
+
+    def diff(
+        self,
+        other: "DNode",
+        no_siblings: bool = False,
+        with_defaults: bool = False,
+    ) -> Iterator[DDiff]:
+        flags = diff_flags(with_defaults=with_defaults)
+        node_p = ffi.new("struct lyd_node **")
+        if no_siblings:
+            ret = lib.lyd_diff_tree(self.cdata, other.cdata, flags, node_p)
+        else:
+            ret = lib.lyd_diff_siblings(self.cdata, other.cdata, flags, node_p)
+
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("diff error")
+
+        return self.new(self.context, node_p[0])
 
     def merge(
         self,

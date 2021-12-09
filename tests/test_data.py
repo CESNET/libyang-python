@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DNode, DNotif, DRpc, LibyangError, IO_type, DataType
+from libyang import Context, DContainer, DDiff, DNode, DNotif, DRpc, LibyangError, IO_type, DataType
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -593,31 +593,40 @@ class DataTest(unittest.TestCase):
 </state>
 """
 
+    XML_DIFF_RESULT = """<state xmlns="urn:yang:yolo:system" xmlns:yang="urn:ietf:params:xml:ns:yang:1" yang:operation="none">
+  <url>
+    <proto>https</proto>
+    <host>github.com</host>
+    <enabled yang:operation="replace" yang:orig-default="false" yang:orig-value="false">true</enabled>
+  </url>
+  <url yang:operation="none">
+    <proto>http</proto>
+    <host>foobar.com</host>
+    <enabled yang:operation="replace" yang:orig-default="false" yang:orig-value="true">false</enabled>
+  </url>
+  <url yang:operation="create">
+    <proto>ftp</proto>
+    <host>github.com</host>
+    <path>/CESNET/libyang-python</path>
+    <enabled>false</enabled>
+  </url>
+  <number yang:operation="delete" yang:orig-position="1">2000</number>
+  <speed yang:operation="replace" yang:orig-default="false" yang:orig-value="1234">5432</speed>
+</state>
+"""
+
     def test_data_diff(self):
         dnode1 = self.ctx.parse_data_mem(
-            self.XML_DIFF_STATE1, "xml", data=True, no_yanglib=True
+            self.XML_DIFF_STATE1, "xml", validation_validate_present=True
         )
         self.assertIsInstance(dnode1, DContainer)
         dnode2 = self.ctx.parse_data_mem(
-            self.XML_DIFF_STATE2, "xml", data=True, no_yanglib=True
+            self.XML_DIFF_STATE2, "xml", validation_validate_present=True
         )
         self.assertIsInstance(dnode2, DContainer)
 
-        diffs = dnode1.diff(dnode2)
-        diffs_result = [
-            (diff.dtype, diff.first.name(), diff.second.name() if diff.second else None)
-            for diff in diffs
-        ]
-        expected = [
-            (DDiff.CHANGED, "speed", "speed"),
-            (DDiff.CHANGED, "enabled", "enabled"),
-            (DDiff.CHANGED, "enabled", "enabled"),
-            (DDiff.DELETED, "number", None),
-            (DDiff.CREATED, "state", "url"),
-        ]
-
-        self.assertListEqual(diffs_result, expected)
-
+        result = dnode1.diff(dnode2)
+        self.assertEqual(result.print_mem("xml"), self.XML_DIFF_RESULT)
         dnode1.free()
         dnode2.free()
 

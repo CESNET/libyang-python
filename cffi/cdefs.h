@@ -521,42 +521,6 @@ struct lysp_qname {
     const struct lysp_module *mod;
 };
 
-struct lysc_type_union {
-    struct lysc_ext_instance *exts;
-    struct lyplg_type *plugin;
-    LY_DATA_TYPE basetype;
-    uint32_t refcount;
-    struct lysc_type **types;
-};
-
-struct lysc_type_enum {
-    struct lysc_ext_instance *exts;
-    struct lyplg_type *plugin;
-    LY_DATA_TYPE basetype;
-    uint32_t refcount;
-    struct lysc_type_bitenum_item *enums;
-};
-
-struct lysc_type_bits {
-    struct lysc_ext_instance *exts;
-    struct lyplg_type *plugin;
-    LY_DATA_TYPE basetype;
-    uint32_t refcount;
-    struct lysc_type_bitenum_item *bits;
-};
-
-struct lysc_type_bitenum_item {
-    const char *name;
-    const char *dsc;
-    const char *ref;
-    struct lysc_ext_instance *exts;
-    union {
-        int32_t value;
-        uint32_t position;
-    };
-    uint16_t flags;
-};
-
 struct lysp_node {
     struct lysp_node *parent;
     uint16_t nodetype;
@@ -685,12 +649,129 @@ LY_ERR lyd_value_validate(const struct ly_ctx *, const struct lysc_node *, const
 LY_ERR lyd_find_path(const struct lyd_node *, const char *, ly_bool, struct lyd_node **);
 void lyd_free_siblings(struct lyd_node *);
 
+#define LYD_DIFF_DEFAULTS ...
+LY_ERR lyd_diff_siblings(const struct lyd_node *, const struct lyd_node *, uint16_t, struct lyd_node **);
+LY_ERR lyd_diff_tree(const struct lyd_node *, const struct lyd_node *, uint16_t, struct lyd_node **);
+
+struct lysc_must* lysc_node_musts(const struct lysc_node *);
+struct lysc_must {
+    struct lyxp_expr *cond;
+    struct lysc_prefix *prefixes;
+    const char *dsc;
+    const char *ref;
+    const char *emsg;
+    const char *eapptag;
+    struct lysc_ext_instance *exts;
+};
+
+#define LYSP_RESTR_PATTERN_ACK ...
+#define LYSP_RESTR_PATTERN_NACK ...
+
+struct lysp_restr {
+    struct lysp_qname arg;
+    const char *emsg;
+    const char *eapptag;
+    const char *dsc;
+    const char *ref;
+    struct lysp_ext_instance *exts;
+};
+
 struct lysc_type_num {
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
     uint32_t refcount;
     struct lysc_range *range;
+};
+
+struct lysc_type_dec {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    uint8_t fraction_digits;
+    struct lysc_range *range;
+};
+
+struct lysc_type_str {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_range *length;
+    struct lysc_pattern **patterns;
+};
+
+struct lysc_type_bitenum_item {
+    const char *name;
+    const char *dsc;
+    const char *ref;
+    struct lysc_ext_instance *exts;
+    union {
+        int32_t value;
+        uint32_t position;
+    };
+    uint16_t flags;
+};
+
+struct lysc_type_enum {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_type_bitenum_item *enums;
+};
+
+struct lysc_type_bits {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_type_bitenum_item *bits;
+};
+
+struct lysc_type_leafref {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lyxp_expr *path;
+    struct lysc_prefix *prefixes;
+    const struct lys_module *cur_mod;
+    struct lysc_type *realtype;
+    uint8_t require_instance;
+};
+
+struct lysc_type_identityref {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_ident **bases;
+};
+
+struct lysc_type_instanceid {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    uint8_t require_instance;
+};
+
+struct lysc_type_union {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_type **types;
+};
+
+struct lysc_type_bin {
+    struct lysc_ext_instance *exts;
+    struct lyplg_type *plugin;
+    LY_DATA_TYPE basetype;
+    uint32_t refcount;
+    struct lysc_range *length;
 };
 
 /* from libc, needed to free allocated strings */

@@ -399,7 +399,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.create_data_path("/yolo-system:conf")
         self.assertIsInstance(dnode, DContainer)
         subtree = dnode.merge_data_dict(
-            self.DICT_CONFIG["conf"], strict=True, validate=False
+            self.DICT_CONFIG["conf"], strict=True, validate_present=True
         )
         # make sure subtree validation is forbidden
         with self.assertRaises(LibyangError):

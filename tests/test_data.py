@@ -333,33 +333,39 @@ class DataTest(unittest.TestCase):
             def __init__(self, orig):
                 self.orig = orig
 
-            def lyd_new(self, *args):
-                c = self.orig.lyd_new(*args)
-                if c:
+            def lyd_new_inner(self, *args):
+                ret = self.orig.lyd_new_inner(*args)
+                c = args[4][0]
+                if ret == lib.LY_SUCCESS:
                     created.append(c)
-                return c
+                return ret
 
-            def lyd_new_leaf(self, *args):
-                c = self.orig.lyd_new_leaf(*args)
-                if c:
+            def lyd_new_term(self, *args):
+                ret = self.orig.lyd_new_term(*args)
+                c = args[5][0]
+                if ret == lib.LY_SUCCESS:
                     created.append(c)
-                return c
+                return ret
 
-            def lyd_free(self, dnode):
+            def lyd_new_list(self, *args):
+                ret = self.orig.lyd_new_list(*args)
+                c = args[4][0]
+                if ret == lib.LY_SUCCESS:
+                    created.append(c)
+                return ret
+
+            def lyd_free_tree(self, dnode):
                 freed.append(dnode)
-                self.orig.lyd_free(dnode)
+                self.orig.lyd_free_tree(dnode)
 
             def __getattr__(self, name):
                 return getattr(self.orig, name)
 
         fake_lib = FakeLib(lib)
-
         root = module.parse_data_dict(
             {"conf": {"hostname": "foo", "speed": 1234, "number": [1000, 2000, 3000]}},
-            strict=True,
-            config=True,
+            strict=True, validate_present=True
         )
-
         invalid_dict = {
             "url": [
                 {
@@ -381,7 +387,8 @@ class DataTest(unittest.TestCase):
         try:
             with patch("libyang.data.lib", fake_lib):
                 with self.assertRaises(LibyangError):
-                    root.merge_data_dict(invalid_dict, strict=True, config=True)
+                    root.merge_data_dict(invalid_dict, strict=True, validate_present=True)
+
             self.assertGreater(len(created), 0)
             self.assertGreater(len(freed), 0)
             self.assertEqual(freed, list(reversed(created)))

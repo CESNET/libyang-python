@@ -524,13 +524,12 @@ class Type:
             yield from b.enums()
 
     def bits(self) -> Iterator[Bit]:
-        if self.cdata.base != self.BITS:
+        if self.cdata.basetype != self.BITS:
             return
-        t = self.cdata
-        while t.info.bits.count == 0:
-            t = ffi.addressof(t.der.type)
-        for i in range(t.info.bits.count):
-            yield Bit(self.context, t.info.bits.bit[i])
+        t = ffi.cast('struct lysc_type_bits *', self.cdata)
+        arr_length = ffi.cast("uint64_t *", t.bits)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield Bit(self.context, t.bits[i])
 
     def all_bits(self) -> Iterator[Bit]:
         for b in self.get_bases():

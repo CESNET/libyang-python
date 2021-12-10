@@ -575,22 +575,16 @@ class Type:
                 return iter(())
 
     def patterns(self) -> Iterator[Tuple[str, bool]]:
-        if self.cdata.base != self.STRING:
+        if not self.cdata_parsed or self.cdata.basetype != self.STRING:
             return
-        for i in range(self.cdata.info.str.pat_count):
-            p = self.cdata.info.str.patterns[i]
-            if not p:
-                continue
-            # in case of pattern restriction, the first byte has a special meaning:
-            # 0x06 (ACK) for regular match and 0x15 (NACK) for invert-match
-            invert_match = p.expr[0] == 0x15
-            # yield tuples like:
-            #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
-            #     ('[xX][mM][lL].*', True)
-            yield c2str(p.expr + 1), invert_match
+        if self.cdata_parsed.patterns == ffi.NULL:
+            return
+        arr_length = ffi.cast("uint64_t *", self.cdata_parsed.patterns)[-1]
+        for i in range(arr_length):
+            yield c2str(self.cdata_parsed.patterns[i].arg.str)
 
     def all_patterns(self) -> Iterator[Tuple[str, bool]]:
-        if self.cdata.base == lib.LY_TYPE_UNION:
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_patterns()
         else:

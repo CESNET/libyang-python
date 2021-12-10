@@ -774,5 +774,9 @@ struct lysc_type_bin {
     struct lysc_range *length;
 };
 
+const struct lysc_node* lys_find_path(const struct ly_ctx *, const struct lysc_node *, const char *, ly_bool);
+const char* lyxp_get_expr(const struct lyxp_expr *);
+const char* lyd_value_get_canonical(const struct ly_ctx *, const struct lyd_value *);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

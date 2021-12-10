@@ -1000,7 +1000,18 @@ class SLeaf(SNode):
         return self.cdata_leaf
 
     def default(self) -> Optional[str]:
-        return c2str(self.cdata_leaf.dflt)
+        if not self.cdata_leaf.dflt:
+            return
+        val = lib.lyd_value_get_canonical(self.context.cdata, self.cdata_leaf.dflt)
+        if not val:
+            return
+        val = c2str(val)
+        val_type = self.cdata_leaf.dflt.realtype
+        if val_type == Type.BOOL:
+            return True if val == 'true' else False
+        elif val_type in Type.NUM_TYPES:
+            return int(val)
+        return val
 
     def units(self) -> Optional[str]:
         return c2str(self.cdata_leaf.units)
@@ -1051,8 +1062,20 @@ class SLeafList(SNode):
         return Type(self.context, self.cdata_leaflist.type, self.cdata_leaflist_parsed.type)
 
     def defaults(self) -> Iterator[str]:
-        for i in range(self.cdata_leaflist.dflt_size):
-            yield c2str(self.cdata_leaflist.dflt[i])
+        if self.cdata_leaflist.dflts == ffi.NULL:
+            return iter(())
+        arr_length = ffi.cast("uint64_t *", self.cdata_leaflist.dflts)[-1]
+        for i in range(arr_length):
+            val = lib.lyd_value_get_canonical(self.context.cdata, self.cdata_leaflist.dflts[i])
+            if not val:
+                yield None
+            ret = c2str(val)
+            val_type = self.cdata_leaflist.dflts[i].realtype
+            if val_type == Type.BOOL:
+                ret =  True if val == 'true' else False
+            elif val_type in Type.NUM_TYPES:
+                ret = int(val)
+            yield ret
 
     def must_conditions(self) -> Iterator[str]:
         pdata = self.cdata_leaflist_parsed

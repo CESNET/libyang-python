@@ -58,18 +58,6 @@ class Module:
         deprecated("_module", "cdata", "2.0.0")
         return self.cdata
 
-    def find_path(self, path: str, root_node: Optional["libyang.SNode"] = None,
-                  output: bool = False) -> Optional["libyang.SNode"]:
-        if root_node is not None:
-            ctx_node = root_node.cdata
-        else:
-            ctx_node = ffi.NULL
-
-        ret = lib.lys_find_path(self.context.cdata, ctx_node, str2c(path), output)
-        if ret is None:
-            return
-        return SNode.new(self.context, ret)
-
     def name(self) -> str:
         return c2str(self.cdata.name)
 

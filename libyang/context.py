@@ -149,6 +149,18 @@ class Context:
         finally:
             lib.ly_set_free(node_set, ffi.NULL)
 
+    def find_jsonpath(self, path: str, root_node: Optional["libyang.SNode"] = None,
+                  output: bool = False) -> Optional["libyang.SNode"]:
+        if root_node is not None:
+            ctx_node = root_node.cdata
+        else:
+            ctx_node = ffi.NULL
+
+        ret = lib.lys_find_path(self.context.cdata, ctx_node, str2c(path), output)
+        if ret is None:
+            return
+        return SNode.new(self.context, ret)
+
     def create_data_path(
         self,
         path: str,

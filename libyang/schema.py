@@ -454,7 +454,6 @@ class Type:
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_type*"
         self.cdata_parsed = cdata_parsed  # C type: "struct lysp_type*"
-        print(cdata_parsed)
 
     @property
     def _type(self):
@@ -493,10 +492,16 @@ class Type:
             yield b.basename()
 
     def leafref_type(self) -> Optional["Type"]:
-        if self.cdata.base != self.LEAFREF:
+        if self.cdata.basetype != self.LEAFREF:
             return None
-        lref = self.cdata.info.lref
-        return Type(self.context, ffi.addressof(lref.target.type))
+        lr = ffi.cast("struct lysc_type_leafref *", self.cdata)
+        return Type(self.context, lr.realtype, None)
+
+    def leafref_path(self) -> Optional["str"]:
+        if self.cdata.basetype != self.LEAFREF:
+            return None
+        lr = ffi.cast("struct lysc_type_leafref *", self.cdata)
+        return c2str(lib.lyxp_get_expr(lr.path))
 
     def union_types(self) -> Iterator["Type"]:
         if self.cdata.basetype != self.UNION:

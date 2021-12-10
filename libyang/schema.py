@@ -556,20 +556,23 @@ class Type:
     STR_TYPES = frozenset((STRING, BINARY, ENUM, IDENT, BITS))
 
     def length(self) -> Optional[str]:
-        if self.cdata.base == self.STRING and self.cdata.info.str.length:
-            return c2str(self.cdata.info.str.length.expr)
-        if self.cdata.base == self.BINARY and self.cdata.info.binary.length:
-            return c2str(self.cdata.info.binary.length.expr)
-        return None
+        if not self.cdata_parsed:
+            return
+        if ((self.cdata.basetype == self.STRING or self.cdata.basetype == self.BINARY)
+           and self.cdata_parsed.length != ffi.NULL):
+            return c2str(self.cdata_parsed.length.arg.str)
+        return
 
     def all_lengths(self) -> Iterator[str]:
-        if self.cdata.base == lib.LY_TYPE_UNION:
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_lengths()
         else:
             length = self.length()
             if length is not None:
                 yield length
+            else:
+                return iter(())
 
     def patterns(self) -> Iterator[Tuple[str, bool]]:
         if self.cdata.base != self.STRING:

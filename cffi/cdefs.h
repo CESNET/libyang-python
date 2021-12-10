@@ -778,5 +778,9 @@ const struct lysc_node* lys_find_path(const struct ly_ctx *, const struct lysc_n
 const char* lyxp_get_expr(const struct lyxp_expr *);
 const char* lyd_value_get_canonical(const struct ly_ctx *, const struct lyd_value *);
 
+#define LYS_FIND_XP_SCHEMA ...
+#define LYS_FIND_XP_OUTPUT ...
+#define LYS_FIND_NO_MATCH_ERROR ...
+
 /* from libc, needed to free allocated strings */
 void free(void *);

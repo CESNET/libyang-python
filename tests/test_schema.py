@@ -349,16 +349,15 @@ class LeafTypeTest(unittest.TestCase):
 
     def test_leaf_type_bits(self):
         leaf = next(
-            self.ctx.find_path("/yolo-system:chmod/yolo-system:input/yolo-system:perms")
+            self.ctx.find_path("/yolo-system:chmod/yolo-system:perms")
         )
         self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)
-        self.assertEqual(t.name(), "permissions")
+        self.assertEqual(t.name(), "types:permissions")
         self.assertEqual(t.base(), Type.BITS)
         bits = [b.name() for b in t.bits()]
         self.assertEqual(bits, ["read", "write", "execute"])
-        self.assertIs(t.derived_type().module(), None)
 
     def test_leaf_parent(self):
         leaf = next(

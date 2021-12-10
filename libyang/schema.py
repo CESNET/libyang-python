@@ -538,20 +538,20 @@ class Type:
     NUM_TYPES = frozenset((INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
 
     def range(self) -> Optional[str]:
-        if self.cdata.base in self.NUM_TYPES and self.cdata.info.num.range:
-            return c2str(self.cdata.info.num.range.expr)
-        if self.cdata.base == self.DEC64 and self.cdata.info.dec64.range:
-            return c2str(self.cdata.info.dec64.range.expr)
-        return None
+        if ((self.cdata.basetype in self.NUM_TYPES or self.cdata.basetype == self.DEC64)
+           and self.cdata_parsed.range != ffi.NULL):
+            return c2str(self.cdata_parsed.range.arg.str)
 
     def all_ranges(self) -> Iterator[str]:
-        if self.cdata.base == lib.LY_TYPE_UNION:
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
             for t in self.union_types():
                 yield from t.all_ranges()
         else:
             rng = self.range()
             if rng is not None:
                 yield rng
+            else:
+                return iter(())
 
     STR_TYPES = frozenset((STRING, BINARY, ENUM, IDENT, BITS))
 

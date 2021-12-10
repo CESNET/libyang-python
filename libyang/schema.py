@@ -923,6 +923,8 @@ class SNode:
 
     def extensions(self) -> Iterator[Extension]:
         ext = ffi.cast('struct lysc_ext_instance *', self.cdata.exts)
+        if ext == ffi.NULL:
+            return iter(())
         arr_length = ffi.cast("uint64_t *", ext)[-1]  # calc length of Sized Arrays
         for i in range(arr_length):
             yield Extension(self.context, ext[i])

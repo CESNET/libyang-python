@@ -132,9 +132,13 @@ class Context:
 
         return Module(self, mod)
 
-    def find_path(self, path: str) -> Iterator[SNode]:
+    def find_path(self, path: str, output: bool = False) -> Iterator[SNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
+
+        flags = 0
+        if output:
+            flags |= lib.LYS_FIND_XP_OUTPUT
 
         node_set = ffi.new("struct ly_set **")
         if lib.lys_find_xpath(self.cdata, ffi.NULL, str2c(path), 0, node_set) != lib.LY_SUCCESS:
@@ -156,10 +160,10 @@ class Context:
         else:
             ctx_node = ffi.NULL
 
-        ret = lib.lys_find_path(self.context.cdata, ctx_node, str2c(path), output)
-        if ret is None:
+        ret = lib.lys_find_path(self.cdata, ctx_node, str2c(path), output)
+        if ret == ffi.NULL:
             return
-        return SNode.new(self.context, ret)
+        return SNode.new(self, ret)
 
     def create_data_path(
         self,

@@ -17,7 +17,7 @@ from .schema import (
     SRpc,
     Type,
 )
-from .util import LibyangError, c2str, deprecated, str2c, IO_type, DataType
+from .util import LibyangError, c2str, str2c, IO_type, DataType
 
 
 LOG = logging.getLogger(__name__)
@@ -210,11 +210,6 @@ class DNode:
         """
         self.context = context
         self.cdata = cdata  # C type: "struct lyd_node *"
-
-    @property
-    def _node(self):
-        deprecated("_node", "cdata", "2.0.0")
-        return self.cdata
 
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
@@ -683,11 +678,6 @@ class DList(DContainer):
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
-    @property
-    def _leaf(self):
-        deprecated("_leaf", "cdata_leaf", "2.0.0")
-        return ffi.cast("struct lyd_node_leaf_list *", self.cdata)
-
     def value(self) -> Any:
         return DLeaf.cdata_leaf_value(self.cdata)
 

@@ -4,7 +4,7 @@
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import c2str, deprecated, str2c, p_str2c, IO_type, DataType
+from .util import c2str, str2c, p_str2c, IO_type, DataType
 
 
 # -------------------------------------------------------------------------------------
@@ -52,11 +52,6 @@ class Module:
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
         self.cdata = cdata  # C type: "struct lys_module *"
-
-    @property
-    def _module(self):
-        deprecated("_module", "cdata", "2.0.0")
-        return self.cdata
 
     def name(self) -> str:
         return c2str(self.cdata.name)
@@ -249,11 +244,6 @@ class Revision:
         self.context = context
         self.cdata = cdata  # C type: "struct lys_revision *"
 
-    @property
-    def _rev(self):
-        deprecated("_rev", "cdata", "2.0.0")
-        return self.cdata
-
     def date(self) -> str:
         return c2str(self.cdata.date)
 
@@ -297,14 +287,6 @@ class Extension:
         self.context = context
         self.cdata = cdata  # C type: "struct lys_ext_instance *"
         self.cdata_def = getattr(cdata, "def")
-
-    @property
-    def _ext(self):
-        deprecated("_ext", "cdata", "2.0.0")
-
-    @property
-    def _def(self):
-        deprecated("_def", "cdata_def", "2.0.0")
 
     def name(self) -> str:
         return c2str(self.cdata_def.name)
@@ -430,11 +412,6 @@ class Type:
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_type*"
         self.cdata_parsed = cdata_parsed  # C type: "struct lysp_type*"
-
-    @property
-    def _type(self):
-        deprecated("_type", "cdata", "2.0.0")
-        return self.cdata
 
     def get_bases(self) -> Iterator["Type"]:
         if self.cdata.basetype == lib.LY_TYPE_LEAFREF:
@@ -613,11 +590,6 @@ class Feature:
         self.context = context
         self.cdata = cdata  # C type: "struct lys_feature *"
 
-    @property
-    def _feature(self):
-        deprecated("_feature", "cdata", "2.0.0")
-        return self.cdata
-
     def name(self) -> str:
         return c2str(self.cdata.name)
 
@@ -658,11 +630,6 @@ class IfFeatureExpr:
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
         self.cdata = cdata  # C type: "struct lys_iffeature *"
-
-    @property
-    def _iffeature(self):
-        deprecated("_iffeature", "cdata", "2.0.0")
-        return self.cdata
 
     def _get_operator(self, position: int) -> int:
         # the ->exp field is a 2bit array of operator values stored under a uint8_t C
@@ -728,11 +695,6 @@ class IfFeature(IfFeatureExprTree):
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
         self.cdata = cdata  # C type: "struct lys_feature *"
-
-    @property
-    def _feature(self):
-        deprecated("_feature", "cdata", "2.0.0")
-        return self.cdata
 
     def feature(self) -> Feature:
         return Feature(self.context, self.cdata)
@@ -837,11 +799,6 @@ class SNode:
         self.cdata_parsed = None
         if self.cdata.priv != ffi.NULL:
             self.cdata_parsed = ffi.cast('struct lysp_node *', self.cdata.priv)
-
-    @property
-    def _node(self):
-        deprecated("_node", "cdata", "2.0.0")
-        return self.cdata
 
     def nodetype(self) -> int:
         return self.cdata.nodetype
@@ -972,11 +929,6 @@ class SLeaf(SNode):
         self.cdata_leaf = ffi.cast("struct lysc_node_leaf *", cdata)
         self.cdata_leaf_parsed = ffi.cast("struct lysp_node_leaf *", self.cdata_parsed)
 
-    @property
-    def _leaf(self):
-        deprecated("_leaf", "cdata_leaf", "2.0.0")
-        return self.cdata_leaf
-
     def default(self) -> Optional[str]:
         if not self.cdata_leaf.dflt:
             return
@@ -1024,11 +976,6 @@ class SLeafList(SNode):
         super().__init__(context, cdata)
         self.cdata_leaflist = ffi.cast("struct lysc_node_leaflist *", cdata)
         self.cdata_leaflist_parsed = ffi.cast("struct lysp_node_leaflist *", self.cdata_parsed)
-
-    @property
-    def _leaflist(self):
-        deprecated("_leaflist", "cdata_leaflist", "2.0.0")
-        return self.cdata_leaflist
 
     def ordered(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
@@ -1078,11 +1025,6 @@ class SContainer(SNode):
         self.cdata_container = ffi.cast("struct lysc_node_container *", cdata)
         self.cdata_container_parsed = ffi.cast("struct lysp_node_container *", self.cdata_parsed)
 
-    @property
-    def _container(self):
-        deprecated("_container", "cdata_container", "2.0.0")
-        return self.cdata_container
-
     def presence(self) -> Optional[str]:
         if not self.cdata_container.flags & lib.LYS_PRESENCE:
             return None
@@ -1114,11 +1056,6 @@ class SList(SNode):
         super().__init__(context, cdata)
         self.cdata_list = ffi.cast("struct lysc_node_list *", cdata)
         self.cdata_list_parsed = ffi.cast("struct lysp_node_list *", self.cdata_parsed)
-
-    @property
-    def _list(self):
-        deprecated("_list", "cdata_list", "2.0.0")
-        return self.cdata_list
 
     def ordered(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_ORDBY_USER)

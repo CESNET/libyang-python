@@ -488,12 +488,6 @@ class DNode:
             tree starting from the root.
         :arg bool with_siblings:
             If True, include the node's siblings.
-        :arg bool include_implicit_defaults:
-            Include implicit default nodes.
-        :arg bool trim_default_values:
-            Exclude nodes with the value equal to their default value.
-        :arg bool keep_empty_containers:
-            Preserve empty non-presence containers.
         """
         name_cache = {}
 
@@ -590,31 +584,20 @@ class DNode:
 
         :arg dic:
             The python dictionary to convert.
-        :arg data:
-            Complete datastore content with configuration as well as state data. To
-            handle possibly missing (but by default required) ietf-yang-library data,
-            use no_yanglib=True.
-        :arg config:
-            Complete datastore without state data.
-        :arg get:
-            Data content from a reply message to the NETCONF <get> operation.
-        :arg getconfig:
-            Data content from a reply message to the NETCONF <get-config> operation.
-        :arg edit:
-            Content of the NETCONF <edit-config> config element.
-        :arg rpc:
-            Data represents RPC or action input parameters.
+        :arg no_state:
+            Consider state data not allowed and raise an error during validation if they are found.
+        :arg validate_present:
+            Validate result of the operation against schema.
+        :arg validate:
+            Run validation on result of the operation.
         :arg rpcreply:
             Data represents RPC or action output parameters.
         :arg strict:
-            Instead of ignoring (with a warning message) data without schema
-            definition, raise an error.
-        :arg no_yanglib:
-            Ignore (possibly) missing ietf-yang-library data. Applicable only with
-            data=True.
-        :arg validate:
-            If False, do not validate the modified tree before returning. The validation
-            is performed on the top of the modified data tree.
+            Instead of ignoring data without schema definition, raise an error.
+        :arg operation_type:
+            The operation cannot be determined automatically since RPC/action and a reply to it share
+            the common top level node referencing the RPC/action schema node and may not have any
+            input/output children to use for distinction. See DataType for options.
         """
         return dict_to_dnode(
             dic,
@@ -769,33 +752,20 @@ def dict_to_dnode(
     :arg parent:
         Optional parent to update. If not specified a new top-level DNode will be
         created.
-    :arg data:
-        Complete datastore content with configuration as well as state data. To handle
-        possibly missing (but by default required) ietf-yang-library data, use
-        no_yanglib=True.
-    :arg config:
-        Complete datastore without state data.
-    :arg get:
-        Data content from a reply message to the NETCONF <get> operation.
-    :arg getconfig:
-        Data content from a reply message to the NETCONF <get-config> operation.
-    :arg edit:
-        Content of the NETCONF <edit-config> config element.
-    :arg rpc:
-        Data represents RPC or action input parameters.
+    :arg no_state:
+        Consider state data not allowed and raise an error during validation if they are found.
+    :arg validate_present:
+        Validate result of the operation against schema.
+    :arg validate:
+        Run validation on result of the operation.
     :arg rpcreply:
         Data represents RPC or action output parameters.
-    :arg notification:
-        Data represents notification parameters.
     :arg strict:
-        Instead of ignoring (with a warning message) data without schema definition,
-        raise an error.
-    :arg no_yanglib:
-        Ignore (possibly) missing ietf-yang-library data. Applicable only with
-        data=True.
-    :arg validate:
-        If False, do not validate the modified tree before returning. The validation is
-        performed on the top of the data tree.
+        Instead of ignoring data without schema definition, raise an error.
+    :arg operation_type:
+        The operation cannot be determined automatically since RPC/action and a reply to it share
+        the common top level node referencing the RPC/action schema node and may not have any
+        input/output children to use for distinction. See DataType for options.
     """
     if not dic:
         return None

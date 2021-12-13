@@ -211,32 +211,20 @@ class Module:
 
         :arg dic:
             The python dictionary to convert.
-        :arg data:
-            Complete datastore content with configuration as well as state data. To
-            handle possibly missing (but by default required) ietf-yang-library data,
-            use no_yanglib=True.
-        :arg config:
-            Complete datastore without state data.
-        :arg get:
-            Data content from a reply message to the NETCONF <get> operation.
-        :arg getconfig:
-            Data content from a reply message to the NETCONF <get-config> operation.
-        :arg edit:
-            Content of the NETCONF <edit-config> config element.
-        :arg rpc:
-            Data represents RPC or action input parameters.
+        :arg no_state:
+            Consider state data not allowed and raise an error during validation if they are found.
+        :arg validate_present:
+            Validate result of the operation against schema.
+        :arg validate:
+            Run validation on result of the operation.
         :arg rpcreply:
             Data represents RPC or action output parameters.
-        :arg notification:
-            Data represents a NETCONF notification.
         :arg strict:
-            Instead of ignoring (with a warning message) data without schema definition,
-            raise an error.
-        :arg no_yanglib:
-            Ignore (possibly) missing ietf-yang-library data. Applicable only with
-            data=True.
-        :arg validate:
-            If False, do not validate the created data tree.
+            Instead of ignoring data without schema definition, raise an error.
+        :arg operation_type:
+            The operation cannot be determined automatically since RPC/action and a reply to it share
+            the common top level node referencing the RPC/action schema node and may not have any
+            input/output children to use for distinction. See DataType for options.
         """
         from .data import dict_to_dnode  # circular import
 

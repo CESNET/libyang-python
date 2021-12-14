@@ -189,9 +189,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_netconf(self):
-        dnode = self.ctx.parse_op("xml", in_type=IO_type.MEMORY,
-                                  in_data=self.XML_NETCONF_IN,
-                                  dtype=DataType.RPC_NETCONF)
+        dnode = self.ctx.parse_op_mem("xml", self.XML_NETCONF_IN, DataType.RPC_NETCONF)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print("xml", out_type=IO_type.MEMORY)

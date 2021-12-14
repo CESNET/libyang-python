@@ -247,6 +247,9 @@ class Context:
 
         return DNode.new(self, op[0])
 
+    def parse_op_mem(self, fmt: str, data: str, dtype: DataType = DataType.DATA_YANG):
+        return self.parse_op(fmt, in_type=IO_type.MEMORY, in_data=data, dtype=dtype)
+
     def parse_data(  # pylint: disable=too-many-arguments
         self,
         fmt: str,

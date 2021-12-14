@@ -111,9 +111,9 @@ def data_load(in_type, in_data, data, data_keepalive, encode=True):
     if in_type == IO_type.FD:
         ret = lib.ly_in_new_fd(in_data.fileno(), data)
     elif in_type == IO_type.FILE:
-        raise NotImplementedError
+        ret = lib.ly_in_new_file(in_data, data)
     elif in_type == IO_type.FILEPATH:
-        raise NotImplementedError
+        ret = lib.ly_in_new_filepath(str2c(in_data), len(in_data), data)
     elif in_type == IO_type.MEMORY:
         c_str = str2c(in_data, encode=encode)
         data_keepalive.append(c_str)

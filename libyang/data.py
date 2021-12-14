@@ -569,7 +569,6 @@ class DNode:
         no_state: bool = False,
         validate_present: bool = False,
         validate: bool = True,
-        rpcreply: bool = False,
         strict: bool = False,
         operation_type: DataType = None,
     ) -> Optional["DNode"]:
@@ -585,8 +584,6 @@ class DNode:
             Validate result of the operation against schema.
         :arg validate:
             Run validation on result of the operation.
-        :arg rpcreply:
-            Data represents RPC or action output parameters.
         :arg strict:
             Instead of ignoring data without schema definition, raise an error.
         :arg operation_type:
@@ -601,7 +598,6 @@ class DNode:
             no_state=no_state,
             validate_present=validate_present,
             validate=validate,
-            rpcreply=rpcreply,
             strict=strict,
             operation_type=operation_type,
         )
@@ -727,7 +723,6 @@ def dict_to_dnode(
     no_state: bool = False,
     validate_present: bool = False,
     validate: bool = True,
-    rpcreply: bool = False,
     strict: bool = False,
     operation_type: DataType = None,
 ) -> Optional[DNode]:
@@ -748,8 +743,6 @@ def dict_to_dnode(
         Validate result of the operation against schema.
     :arg validate:
         Run validation on result of the operation.
-    :arg rpcreply:
-        Data represents RPC or action output parameters.
     :arg strict:
         Instead of ignoring data without schema definition, raise an error.
     :arg operation_type:
@@ -766,6 +759,10 @@ def dict_to_dnode(
         raise TypeError("module argument must be a Module object")
     if parent is not None and not isinstance(parent, DNode):
         raise TypeError("parent argument must be a DNode object or None")
+
+    rpcreply = False
+    if operation_type == DataType.REPLY_YANG or operation_type == DataType.REPLY_NETCONF:
+        rpcreply = True
 
     created = []
 

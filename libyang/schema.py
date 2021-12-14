@@ -195,7 +195,6 @@ class Module:
         no_state: bool = False,
         validate_present: bool = False,
         validate: bool = True,
-        rpcreply: bool = False,
         strict: bool = False,
         operation_type: DataType = None,
     ) -> "libyang.data.DNode":
@@ -212,8 +211,6 @@ class Module:
             Validate result of the operation against schema.
         :arg validate:
             Run validation on result of the operation.
-        :arg rpcreply:
-            Data represents RPC or action output parameters.
         :arg strict:
             Instead of ignoring data without schema definition, raise an error.
         :arg operation_type:
@@ -229,7 +226,6 @@ class Module:
             no_state=no_state,
             validate_present=validate_present,
             validate=validate,
-            rpcreply=rpcreply,
             strict=strict,
             operation_type=operation_type
         )

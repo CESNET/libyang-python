@@ -62,6 +62,17 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
+    def test_data_parse_config_json_file(self):
+        with open('./tests/data/config.json') as f:
+            dnode = self.ctx.parse_data_file(f, "json", validation_no_state=True)
+
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem("json", printer_with_siblings=True)
+            self.assertEqual(j, self.JSON_CONFIG)
+        finally:
+            dnode.free()
+
     JSON_STATE = """{
   "yolo-system:state": {
     "hostname": "foo",

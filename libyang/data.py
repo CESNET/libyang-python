@@ -109,7 +109,7 @@ def parser_flags(
 # -------------------------------------------------------------------------------------
 def data_load(in_type, in_data, data, data_keepalive, encode=True):
     if in_type == IO_type.FD:
-        raise NotImplementedError
+        ret = lib.ly_in_new_fd(in_data.fileno(), data)
     elif in_type == IO_type.FILE:
         raise NotImplementedError
     elif in_type == IO_type.FILEPATH:

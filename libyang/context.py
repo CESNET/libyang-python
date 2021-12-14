@@ -254,7 +254,7 @@ class Context:
         self,
         fmt: str,
         in_type: IO_type,
-        in_data: Union[str, bytes],
+        in_data: Union[str, bytes, IO],
         parser_lyb_mod_update: bool = False,
         parser_no_state: bool = False,
         parser_parse_only: bool = False,
@@ -327,48 +327,28 @@ class Context:
         self,
         fileobj: IO,
         fmt: str,
-        data: bool = False,
-        config: bool = False,
-        get: bool = False,
-        getconfig: bool = False,
-        edit: bool = False,
-        rpc: bool = False,
-        rpcreply: bool = False,
-        strict: bool = False,
-        trusted: bool = False,
-        no_yanglib: bool = False,
-        rpc_request: Optional[DNode] = None,
-        data_tree: Optional[DNode] = None,
+        parser_lyb_mod_update: bool = False,
+        parser_no_state: bool = False,
+        parser_parse_only: bool = False,
+        parser_opaq: bool = False,
+        parser_ordered: bool = False,
+        parser_strict: bool = False,
+        validation_no_state: bool = False,
+        validation_validate_present: bool = False
     ) -> DNode:
-        if self.cdata is None:
-            raise RuntimeError("context already destroyed")
-        flags = parser_flags(
-            data=data,
-            config=config,
-            get=get,
-            getconfig=getconfig,
-            edit=edit,
-            rpc=rpc,
-            rpcreply=rpcreply,
-            strict=strict,
-            trusted=trusted,
-            no_yanglib=no_yanglib,
-        )
-        fmt = data_format(fmt)
-        args = []
-        if rpcreply:
-            if rpc_request is None:
-                raise ValueError("rpc_request node is required when rpcreply=True")
-            args.append(rpc_request.cdata)
-        if rpc or rpcreply:
-            if data_tree is not None:
-                args.append(data_tree.cdata)
-            else:
-                args.append(ffi.cast("struct lyd_node *", ffi.NULL))
-        dnode = lib.lyd_parse_fd(self.cdata, fileobj.fileno(), fmt, flags, *args)
-        if not dnode:
-            raise self.error("failed to parse data tree")
-        return DNode.new(self, dnode)
+
+        return self.parse_data(fmt,
+                               in_type=IO_type.FD,
+                               in_data=fileobj,
+                               parser_lyb_mod_update=parser_lyb_mod_update,
+                               parser_no_state=parser_no_state,
+                               parser_parse_only=parser_parse_only,
+                               parser_opaq=parser_opaq,
+                               parser_ordered=parser_ordered,
+                               parser_strict=parser_strict,
+                               validation_no_state=validation_no_state,
+                               validation_validate_present=validation_validate_present
+                               )
 
     def __iter__(self) -> Iterator[Module]:
         """

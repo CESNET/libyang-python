@@ -89,25 +89,33 @@ class Context:
 
         return LibyangError(msg)
 
-    def parse_module_file(self, fileobj: IO, fmt: str = "yang") -> Module:
-        if self.cdata is None:
-            raise RuntimeError("context already destroyed")
+    def parse_module(self, in_data: Union[IO, str], in_type: IO_type, fmt: str = "yang", features=None):
+        data = ffi.new("struct ly_in **")
+        data_keepalive = []
+        ret = data_load(in_type, in_data, data, data_keepalive)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("failed to read input data")
+
+        feat = ffi.NULL
+        if features:
+            feat = ffi.new(f"char *[{len(features) + 1}]")
+            features = [str2c(i) for i in features]
+            for i, val in enumerate(features):
+                feat[i] = val
+            feat[len(features)] = ffi.NULL
+
+        mod = ffi.new("struct lys_module **")
         fmt = schema_in_format(fmt)
-        mod = lib.lys_parse_fd(self.cdata, fileobj.fileno(), fmt)
-        if not mod:
-            raise self.error("cannot parse module")
+        if lib.lys_parse(self.cdata, data[0], fmt, feat, mod) != lib.LY_SUCCESS:
+            raise self.error("failed to parse module")
 
         return Module(self, mod)
 
-    def parse_module_str(self, s: str, fmt: str = "yang") -> Module:
-        if self.cdata is None:
-            raise RuntimeError("context already destroyed")
-        fmt = schema_in_format(fmt)
-        mod = lib.lys_parse_mem(self.cdata, str2c(s), fmt)
-        if not mod:
-            raise self.error("cannot parse module")
+    def parse_module_file(self, fileobj: IO, fmt: str = "yang", features=None) -> Module:
+        return self.parse_module(fileobj, IO_type.FILE, fmt, features)
 
-        return Module(self, mod)
+    def parse_module_str(self, s: str, fmt: str = "yang", features=None) -> Module:
+        return self.parse_module(s, IO_type.MEMORY, fmt, features)
 
     def load_module(self, name: str) -> Module:
         if self.cdata is None:

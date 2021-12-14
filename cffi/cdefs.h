@@ -782,5 +782,13 @@ const char* lyd_value_get_canonical(const struct ly_ctx *, const struct lyd_valu
 #define LYS_FIND_XP_OUTPUT ...
 #define LYS_FIND_NO_MATCH_ERROR ...
 
+typedef enum {
+    LYS_IN_UNKNOWN = 0,
+    LYS_IN_YANG = 1,
+    LYS_IN_YIN = 3
+} LYS_INFORMAT;
+
+LY_ERR lys_parse(struct ly_ctx *, struct ly_in *, LYS_INFORMAT, const char **, struct lys_module **);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

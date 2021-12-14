@@ -4,8 +4,7 @@
 import os
 import unittest
 
-from libyang import Context, LibyangError, Module, SRpc
-
+from libyang import Context, LibyangError, Module, SRpc, IO_type
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 
@@ -74,3 +73,17 @@ class ContextTest(unittest.TestCase):
             ctx.load_module("yolo-system")
             modules = list(iter(ctx))
             self.assertGreater(len(modules), 0)
+
+    YOLO_MOD_PATH = './tests/yang/yolo/yolo-system.yang'
+
+    def test_ctx_parse_module(self):
+        with open(self.YOLO_MOD_PATH) as f:
+            mod_str = f.read()
+        with Context(YANG_DIR) as ctx:
+            mod = ctx.parse_module_str(mod_str, features=['turbo-boost', 'networking'])
+            self.assertIsInstance(mod, Module)
+
+        with open(self.YOLO_MOD_PATH) as f:
+            with Context(YANG_DIR) as ctx:
+                mod = ctx.parse_module_file(f, features=['turbo-boost', 'networking'])
+                self.assertIsInstance(mod, Module)

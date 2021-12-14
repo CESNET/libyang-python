@@ -153,8 +153,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_data_xml(self):
-        dnode = self.ctx.parse_data('xml', in_type=IO_type.MEMORY, in_data=self.XML_STATE,
-                                    validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(self.XML_STATE, 'xml', validation_validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print("xml", out_type=IO_type.MEMORY, printer_with_siblings=True)
@@ -266,9 +265,7 @@ class DataTest(unittest.TestCase):
 
     def test_data_to_dict_rpc_input(self):
         in_data = '{"yolo-system:format-disk": {"disk": "/dev/sda"}}'
-        dnode = self.ctx.parse_op("json", in_type=IO_type.MEMORY,
-                                  in_data=in_data,
-                                  dtype=DataType.RPC_YANG)
+        dnode = self.ctx.parse_op_mem("json", in_data, DataType.RPC_YANG)
         self.assertIsInstance(dnode, DRpc)
         try:
             dic = dnode.print_dict()
@@ -490,13 +487,10 @@ class DataTest(unittest.TestCase):
             operation_type=DataType.RPC_YANG,
         )
         request = request.find_path("/yolo-system:conf/url[proto='https'][host='github.com']/fetch")
-        dnode = self.ctx.parse_op(
-            "json",
-            in_data='{"yolo-system:result":"not found"}',
-            in_type=IO_type.MEMORY,
-            dtype=DataType.REPLY_YANG,
-            parent=request
-        )
+        dnode = self.ctx.parse_op_mem("json",
+                                      '{"yolo-system:result":"not found"}',
+                                      dtype=DataType.REPLY_YANG,
+                                      parent=request)
         try:
             dic = dnode.print_dict()
         finally:

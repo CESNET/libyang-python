@@ -247,14 +247,14 @@ class Context:
 
         return DNode.new(self, op[0])
 
-    def parse_op_mem(self, fmt: str, data: str, dtype: DataType = DataType.DATA_YANG):
-        return self.parse_op(fmt, in_type=IO_type.MEMORY, in_data=data, dtype=dtype)
+    def parse_op_mem(self, fmt: str, data: str, dtype: DataType = DataType.DATA_YANG, parent: DNode = None):
+        return self.parse_op(fmt, in_type=IO_type.MEMORY, in_data=data, dtype=dtype, parent=parent)
 
     def parse_data(  # pylint: disable=too-many-arguments
         self,
         fmt: str,
         in_type: IO_type,
-        in_data: Union[IO, str],
+        in_data: Union[str, bytes],
         parser_lyb_mod_update: bool = False,
         parser_no_state: bool = False,
         parser_parse_only: bool = False,
@@ -279,10 +279,12 @@ class Context:
             validate_present=validation_validate_present
         )
         fmt = data_format(fmt)
+        encode = True
+        if fmt == lib.LYD_LYB:
+            encode = False
         data = ffi.new("struct ly_in **")
-
         data_keepalive = []
-        ret = data_load(in_type, in_data, data, data_keepalive)
+        ret = data_load(in_type, in_data, data, data_keepalive, encode)
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to read input data")
 
@@ -297,7 +299,7 @@ class Context:
 
     def parse_data_mem(  # pylint: disable=too-many-arguments
         self,
-        d: Union[str, bytes],
+        data: Union[str, bytes],
         fmt: str,
         parser_lyb_mod_update: bool = False,
         parser_no_state: bool = False,
@@ -308,31 +310,18 @@ class Context:
         validation_no_state: bool = False,
         validation_validate_present: bool = False
     ) -> DNode:
-        if self.cdata is None:
-            raise RuntimeError("context already destroyed")
-        parser_flgs = parser_flags(
-            lyb_mod_update=parser_lyb_mod_update,
-            no_state=parser_no_state,
-            parse_only=parser_parse_only,
-            opaq=parser_opaq,
-            ordered=parser_ordered,
-            strict=parser_strict
-        )
-        validation_flgs = validation_flags(
-            no_state=validation_no_state,
-            validate_present=validation_validate_present
-        )
-        fmt = data_format(fmt)
-        if fmt == lib.LYD_LYB:
-            d = str2c(d, encode=False)
-        else:
-            d = str2c(d, encode=True)
-        dnode = ffi.new("struct lyd_node **")
-        ret = lib.lyd_parse_data_mem(self.cdata, d, fmt, parser_flgs, validation_flgs, dnode)
-        if ret != lib.LY_SUCCESS:
-            raise self.error("failed to parse data tree")
-        dnode = dnode[0]
-        return DNode.new(self, dnode)
+        return self.parse_data(fmt,
+                               in_type=IO_type.MEMORY,
+                               in_data=data,
+                               parser_lyb_mod_update=parser_lyb_mod_update,
+                               parser_no_state=parser_no_state,
+                               parser_parse_only=parser_parse_only,
+                               parser_opaq=parser_opaq,
+                               parser_ordered=parser_ordered,
+                               parser_strict=parser_strict,
+                               validation_no_state=validation_no_state,
+                               validation_validate_present=validation_validate_present
+                               )
 
     def parse_data_file(
         self,

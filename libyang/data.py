@@ -107,7 +107,7 @@ def parser_flags(
 
 
 # -------------------------------------------------------------------------------------
-def data_load(in_type, in_data, data, data_keepalive):
+def data_load(in_type, in_data, data, data_keepalive, encode=True):
     if in_type == IO_type.FD:
         raise NotImplementedError
     elif in_type == IO_type.FILE:
@@ -115,7 +115,7 @@ def data_load(in_type, in_data, data, data_keepalive):
     elif in_type == IO_type.FILEPATH:
         raise NotImplementedError
     elif in_type == IO_type.MEMORY:
-        c_str = str2c(in_data, encode=True)
+        c_str = str2c(in_data, encode=encode)
         data_keepalive.append(c_str)
         ret = lib.ly_in_new_memory(c_str, data)
     return ret

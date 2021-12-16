@@ -109,7 +109,7 @@ class Context:
         if lib.lys_parse(self.cdata, data[0], fmt, feat, mod) != lib.LY_SUCCESS:
             raise self.error("failed to parse module")
 
-        return Module(self, mod)
+        return Module(self, mod[0])
 
     def parse_module_file(self, fileobj: IO, fmt: str = "yang", features=None) -> Module:
         return self.parse_module(fileobj, IO_type.FILE, fmt, features)
@@ -121,7 +121,7 @@ class Context:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         mod = lib.ly_ctx_load_module(self.cdata, str2c(name), ffi.NULL, ffi.NULL)
-        if not mod:
+        if mod == ffi.NULL:
             raise self.error("cannot load module")
 
         return Module(self, mod)
@@ -130,7 +130,7 @@ class Context:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         mod = lib.ly_ctx_get_module_latest(self.cdata, str2c(name))
-        if not mod:
+        if mod == ffi.NULL:
             raise self.error("cannot get module")
 
         return Module(self, mod)

@@ -41,6 +41,9 @@ class ModuleTest(unittest.TestCase):
         s = self.module.print('tree', IO_type.MEMORY)
         self.assertGreater(len(s), 0)
 
+        s = self.module.print_mem('tree')
+        self.assertGreater(len(s), 0)
+
     def test_mod_attrs(self):
         self.assertEqual(self.module.name(), "yolo-system")
         self.assertEqual(self.module.description(), "YOLO.")

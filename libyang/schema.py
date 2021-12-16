@@ -4,7 +4,7 @@
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import c2str, str2c, p_str2c, IO_type, DataType
+from .util import c2str, str2c, IO_type, DataType, init_output
 
 
 # -------------------------------------------------------------------------------------
@@ -132,62 +132,47 @@ class Module:
         out_target: Union[IO, str, None] = None,
         printer_no_substmt: bool = False,
         printer_shrink: bool = False,
-    ) -> Union[str, bytes]:
+    ) -> Union[str, bytes, None]:
         fmt = schema_out_format(fmt)
         flags = printer_flags(
             no_substmt=printer_no_substmt,
             shrink=printer_shrink
         )
         out_data = ffi.new("struct ly_out **")
+        ret, output = init_output(out_type, out_target, out_data)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("failed to initialize output target")
 
-        if out_type == IO_type.FD:
-            raise NotImplementedError
+        ret = lib.lys_print_module(out_data[0], self.cdata, fmt, 0, flags)
+        if output is not None:
+            tmp = output[0]
+            output = c2str(tmp)
+            lib.free(tmp)
+        lib.ly_out_free(out_data[0], ffi.NULL, False)
 
-        elif out_type == IO_type.FILE:
-            raise NotImplementedError
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("failed to write data")
 
-        elif out_type == IO_type.FILEPATH:
-            raise NotImplementedError
-
-        elif out_type == IO_type.MEMORY:
-
-            buf = ffi.new("char **")
-            ret = lib.ly_out_new_memory(buf, 0, out_data)
-            if ret != lib.LY_SUCCESS:
-                raise self.context.error("failed to initialize output target")
-
-            ret = lib.lys_print_module(out_data[0], self.cdata, fmt, 0, flags)
-            lib.ly_out_free(out_data[0], ffi.NULL, 0)
-            if ret != lib.LY_SUCCESS:
-                raise self.context.error("failed to write data")
-
-            ret = c2str(buf[0], decode=True)
-
-        else:
-            raise ValueError('no output specified')
-
-        return ret
+        return output
 
     def print_mem(
-        self, fmt: str = "tree", path: Optional[str] = None
+        self,
+        fmt: str = "tree",
+        printer_no_substmt: bool = False,
+        printer_shrink: bool = False,
     ) -> Union[str, bytes]:
-        fmt = schema_out_format(fmt)
-        buf = ffi.new("char **")
-        ret = lib.lys_print_mem(buf, self.cdata, fmt, str2c(path), 0, 0)
-        if ret != 0:
-            raise self.context.error("cannot print module")
-        try:
-            return c2str(buf[0])
-        finally:
-            lib.free(buf[0])
+        return self.print(fmt, IO_type.MEMORY, None,
+                          printer_no_substmt=printer_no_substmt, printer_shrink=printer_shrink)
 
     def print_file(
-        self, fileobj: IO, fmt: str = "tree", path: Optional[str] = None
+        self,
+        fileobj: IO,
+        fmt: str = "tree",
+        printer_no_substmt: bool = False,
+        printer_shrink: bool = False,
     ) -> None:
-        fmt = schema_out_format(fmt)
-        ret = lib.lys_print_fd(fileobj.fileno(), self.cdata, fmt, str2c(path), 0, 0)
-        if ret != 0:
-            raise self.context.error("cannot print module")
+        return self.print(fmt, IO_type.FD, fileobj,
+                          printer_no_substmt=printer_no_substmt, printer_shrink=printer_shrink)
 
     def parse_data_dict(
         self,

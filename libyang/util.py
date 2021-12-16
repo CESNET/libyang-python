@@ -5,7 +5,7 @@ from typing import Optional
 import enum
 import warnings
 
-from _libyang import ffi
+from _libyang import ffi, lib
 
 
 # -------------------------------------------------------------------------------------
@@ -53,6 +53,7 @@ class IO_type(enum.Enum):
     MEMORY = enum.auto()
 
 
+# -------------------------------------------------------------------------------------
 class DataType(enum.Enum):
     DATA_YANG = enum.auto()
     RPC_YANG = enum.auto()
@@ -61,3 +62,26 @@ class DataType(enum.Enum):
     RPC_NETCONF = enum.auto()
     NOTIF_NETCONF = enum.auto()
     REPLY_NETCONF = enum.auto()
+
+
+# -------------------------------------------------------------------------------------
+def init_output(out_type, out_target, out_data):
+    output = None
+    if out_type == IO_type.FD:
+        ret = lib.ly_out_new_fd(out_target.fileno(), out_data)
+
+    elif out_type == IO_type.FILE:
+        ret = lib.ly_out_new_file(out_target, out_data)
+
+    elif out_type == IO_type.FILEPATH:
+        out_target = str2c(out_target)
+        ret = lib.ly_out_new_filepath(out_target, out_data)
+
+    elif out_type == IO_type.MEMORY:
+        output = ffi.new("char **")
+        ret = lib.ly_out_new_memory(output, 0, out_data)
+
+    else:
+        raise ValueError('invalid output')
+
+    return ret, output

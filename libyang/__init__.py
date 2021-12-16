@@ -1,5 +1,6 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # Copyright (c) 2020 6WIND S.A.
+# Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
 

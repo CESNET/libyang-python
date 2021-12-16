@@ -6,9 +6,9 @@ import os
 from typing import IO, Any, Iterator, Optional, Union
 
 from _libyang import ffi, lib
-from .data import DNode, data_format, parser_flags, path_flags, validation_flags, data_load, data_type
+from .data import DNode, data_format, parser_flags, path_flags, validation_flags, data_type
 from .schema import Module, SNode, schema_in_format
-from .util import LibyangError, c2str, str2c, IO_type, DataType
+from .util import LibyangError, c2str, str2c, IO_type, DataType, data_load
 
 
 # -------------------------------------------------------------------------------------

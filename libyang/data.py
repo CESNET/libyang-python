@@ -107,21 +107,6 @@ def parser_flags(
 
 
 # -------------------------------------------------------------------------------------
-def data_load(in_type, in_data, data, data_keepalive, encode=True):
-    if in_type == IO_type.FD:
-        ret = lib.ly_in_new_fd(in_data.fileno(), data)
-    elif in_type == IO_type.FILE:
-        ret = lib.ly_in_new_file(in_data, data)
-    elif in_type == IO_type.FILEPATH:
-        ret = lib.ly_in_new_filepath(str2c(in_data), len(in_data), data)
-    elif in_type == IO_type.MEMORY:
-        c_str = str2c(in_data, encode=encode)
-        data_keepalive.append(c_str)
-        ret = lib.ly_in_new_memory(c_str, data)
-    return ret
-
-
-# -------------------------------------------------------------------------------------
 def data_type(dtype):
     if dtype == DataType.DATA_YANG:
         return lib.LYD_TYPE_DATA_YANG

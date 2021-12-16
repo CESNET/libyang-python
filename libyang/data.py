@@ -74,10 +74,6 @@ def path_flags(
         flags |= lib.LYD_NEW_PATH_UPDATE
     if rpc_output:
         flags |= lib.LYD_NEW_PATH_OUTPUT
-    #TODO: No constant like LYD_PATH_OPT_NOPARENTRET in tree_data.h for lyd_new_path().
-    # Not sure what should be a replacement for this.
-    #if no_parent_ret:
-    #    flags |= lib.LYD_PATH_OPT_NOPARENTRET
     return flags
 
 

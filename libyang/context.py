@@ -36,7 +36,6 @@ class Context:
         ctx = ffi.new("struct ly_ctx **")
 
         if lib.ly_ctx_new(ffi.NULL, options, ctx) != lib.LY_SUCCESS:
-            #NOTE: Make errors in more detail with log information.
             raise self.error("cannot create context")
 
         self.cdata = ffi.gc(

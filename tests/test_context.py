@@ -10,10 +10,18 @@ YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 
 
 # -------------------------------------------------------------------------------------
+
 class ContextTest(unittest.TestCase):
     def test_ctx_no_dir(self):
         with Context() as ctx:
             self.assertIsNot(ctx, None)
+
+    def test_ctx_yanglib(self):
+        ctx = Context(YANG_DIR, yanglib_path=YANG_DIR + '/yang-library.json')
+        ctx.load_module('yolo-system')
+        dnode = ctx.get_yanglib_data()
+        j = dnode.print_mem("json", printer_with_siblings=True)
+        self.assertIsInstance(j, str)
 
     def test_ctx_dir(self):
         with Context(YANG_DIR) as ctx:

@@ -22,6 +22,8 @@ class Context:
         search_path: Optional[str] = None,
         disable_searchdir_cwd: bool = True,
         set_priv_parsed: bool = True,
+        yanglib_path: Optional[str] = None,
+        yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
     ):
         if cdata is not None:
@@ -34,10 +36,20 @@ class Context:
         if set_priv_parsed:
             options |= lib.LY_CTX_SET_PRIV_PARSED
 
+        self.cdata = None
         ctx = ffi.new("struct ly_ctx **")
 
-        if lib.ly_ctx_new(ffi.NULL, options, ctx) != lib.LY_SUCCESS:
-            raise self.error("cannot create context")
+        if yanglib_path is None:
+            if lib.ly_ctx_new(ffi.NULL, options, ctx) != lib.LY_SUCCESS:
+                raise self.error("cannot create context")
+        else:
+            if yanglib_fmt == 'json':
+                fmt = lib.LYD_JSON
+            else:
+                fmt = lib.LYD_XML
+            ret = lib.ly_ctx_new_ylpath(str2c(search_path), str2c(yanglib_path), fmt, options, ctx)
+            if ret != lib.LY_SUCCESS:
+                raise self.error("cannot create context")
 
         self.cdata = ffi.gc(
             ctx[0],
@@ -56,11 +68,21 @@ class Context:
         if search_path:
             search_dirs.extend(search_path.strip(": \t\r\n'\"").split(":"))
 
+        if yanglib_path:
+            return
+
         for path in search_dirs:
             if not os.path.isdir(path):
                 continue
             if lib.ly_ctx_set_searchdir(self.cdata, str2c(path)) != 0:
                 raise self.error("cannot set search dir")
+
+    def get_yanglib_data(self, content_id_format=""):
+        dnode = ffi.new("struct lyd_node **")
+        ret = lib.ly_ctx_get_yanglib_data(self.cdata, dnode, str2c(content_id_format));
+        if ret != lib.LY_SUCCESS:
+            raise self.error("cannot get yanglib data")
+        return DNode.new(self, dnode[0])
 
     def destroy(self):
         if self.cdata is not None:

@@ -789,6 +789,8 @@ typedef enum {
 } LYS_INFORMAT;
 
 LY_ERR lys_parse(struct ly_ctx *, struct ly_in *, LYS_INFORMAT, const char **, struct lys_module **);
+LY_ERR ly_ctx_new_ylpath(const char *, const char *, LYD_FORMAT, int, struct ly_ctx **);
+LY_ERR ly_ctx_get_yanglib_data(const struct ly_ctx *, struct lyd_node **, const char *, ...);
 
 /* from libc, needed to free allocated strings */
 void free(void *);

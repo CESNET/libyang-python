@@ -1,0 +1,16 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "e595da11ace92c0d881995fa7e56bbe86f1f48e9",
+    "module": [
+      {
+        "name": "yolo-system",
+        "revision": "1999-04-01",
+        "namespace": "urn:yang:yolo:system",
+        "conformance-type": "implement"
+      }
+    ]
+  },
+  "ietf-yang-library:yang-library": {
+    "content-id": "321566"
+  }
+}

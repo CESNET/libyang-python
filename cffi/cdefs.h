@@ -800,5 +800,41 @@ struct lyd_meta {
     struct lyd_value value;
 };
 
+typedef enum {
+   LYD_ANYDATA_DATATREE,
+   LYD_ANYDATA_STRING,
+   LYD_ANYDATA_XML,
+   LYD_ANYDATA_JSON,
+   LYD_ANYDATA_LYB
+} LYD_ANYDATA_VALUETYPE;
+
+union lyd_any_value {
+    struct lyd_node *tree;
+    const char *str;
+    const char *xml;
+    const char *json;
+    char *mem;
+};
+
+struct lyd_node_any {
+    union {
+        struct lyd_node node;
+        struct {
+            uint32_t hash;
+            uint32_t flags;
+            const struct lysc_node *schema;
+            struct lyd_node_inner *parent;
+            struct lyd_node *next;
+            struct lyd_node *prev;
+            struct lyd_meta *meta;
+            void *priv;
+        };
+    };
+    union lyd_any_value value;
+    LYD_ANYDATA_VALUETYPE value_type;
+};
+
+LY_ERR lyd_any_value_str(const struct lyd_node *, char **);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

@@ -709,7 +709,12 @@ class DNotif(DContainer):
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.ANYXML)
 class DAnyxml(DNode):
-    pass
+    def value(self, fmt: str = 'xml'):
+        anystr = ffi.new('char **', ffi.NULL)
+        ret = lib.lyd_any_value_str(self.cdata, anystr)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot get data")
+        return c2str(anystr[0])
 
 
 # -------------------------------------------------------------------------------------

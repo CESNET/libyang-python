@@ -698,6 +698,12 @@ class DNotif(DContainer):
 
 
 # -------------------------------------------------------------------------------------
+@DNode.register(SNode.ANYXML)
+class DAnyxml(DNode):
+    pass
+
+
+# -------------------------------------------------------------------------------------
 def dict_to_dnode(
     dic: Dict[str, Any],
     module: Module,

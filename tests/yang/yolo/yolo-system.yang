@@ -150,6 +150,7 @@ module yolo-system {
         ext:human-name "Disk";
         type types:str;
       }
+      anyxml html-info;
     }
     output {
       leaf duration {

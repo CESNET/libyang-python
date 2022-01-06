@@ -763,6 +763,7 @@ class SNode:
     INPUT = lib.LYS_INPUT
     OUTPUT = lib.LYS_OUTPUT
     NOTIF = lib.LYS_NOTIF
+    ANYXML = lib.LYS_ANYXML
     KEYWORDS = {
         CONTAINER: "container",
         LEAF: "leaf",
@@ -773,6 +774,7 @@ class SNode:
         INPUT: "input",
         OUTPUT: "output",
         NOTIF: "notification",
+        ANYXML: "anyxml",
     }
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -1122,6 +1124,12 @@ class SNotif(SNode):
 
 
 # -------------------------------------------------------------------------------------
+@SNode.register(SNode.ANYXML)
+class SAnyxml(SNode):
+    pass
+
+
+# -------------------------------------------------------------------------------------
 def iter_children(
     context: "libyang.Context",
     parent,  # C type: Union["struct lys_module *", "struct lys_node *"]
@@ -1174,3 +1182,4 @@ List = SList
 Node = SNode
 Rpc = SRpc
 RpcInOut = SRpcInOut
+Anyxml = SAnyxml

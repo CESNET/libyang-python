@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DDiff, DNode, DNotif, DRpc, LibyangError, IO_type, DataType
+from libyang import Context, DContainer, DDiff, DNode, DNotif, DRpc, LibyangError, IO_type, DataType, DAnyxml
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -215,6 +215,19 @@ class DataTest(unittest.TestCase):
             self.assertEqual(xml, self.XML_NETCONF_OUT)
         finally:
             dnode.free()
+
+    ANYMXML = """<format-disk xmlns="urn:yang:yolo:system">
+      <html-info>
+        <p xmlns="http://www.w3.org/1999/xhtml">
+        </p>
+      </html-info>
+</format-disk>
+"""
+
+    def test_data_parse_anyxml(self):
+        dnode = self.ctx.parse_op_mem('xml', self.ANYMXML, dtype=DataType.RPC_YANG)
+        dnode = dnode.find_path('/yolo-system:format-disk/html-info')
+        self.assertIsInstance(dnode, DAnyxml)
 
     def test_data_create_paths(self):
         state = self.ctx.create_data_path("/yolo-system:state")

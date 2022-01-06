@@ -325,6 +325,8 @@ class Context:
             raise self.error("failed to parse data tree")
 
         dnode = dnode[0]
+        if dnode == ffi.NULL:
+            return
         return DNode.new(self, dnode)
 
     def parse_data_mem(  # pylint: disable=too-many-arguments

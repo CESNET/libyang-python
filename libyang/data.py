@@ -193,6 +193,12 @@ class DNode:
         self.context = context
         self.cdata = cdata  # C type: "struct lyd_node *"
 
+    def meta(self):
+        item = self.cdata.meta
+        while item != ffi.NULL:
+            yield {c2str(item.name): c2str(lib.lyd_value_get_canonical(self.context.cdata, ffi.addressof(item.value)))}
+            item = item.next
+
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
 
@@ -633,7 +639,8 @@ class DContainer(DNode):
     def children(self) -> Iterator[DNode]:
         child = lib.lyd_child_no_keys(self.cdata)
         while child:
-            yield DNode.new(self.context, child)
+            if child.schema != ffi.NULL:
+                yield DNode.new(self.context, child)
             child = child.next
 
     def __iter__(self):

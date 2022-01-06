@@ -194,10 +194,12 @@ class DNode:
         self.cdata = cdata  # C type: "struct lyd_node *"
 
     def meta(self):
+        ret = {}
         item = self.cdata.meta
         while item != ffi.NULL:
-            yield {c2str(item.name): c2str(lib.lyd_value_get_canonical(self.context.cdata, ffi.addressof(item.value)))}
+            ret[c2str(item.name)] = c2str(lib.lyd_value_get_canonical(self.context.cdata, ffi.addressof(item.value)))
             item = item.next
+        return ret
 
     def name(self) -> str:
         return c2str(self.cdata.schema.name)

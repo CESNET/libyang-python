@@ -836,5 +836,12 @@ struct lyd_node_any {
 
 LY_ERR lyd_any_value_str(const struct lyd_node *, char **);
 
+#define LYD_MERGE_DEFAULTS ...
+#define LYD_MERGE_DESTRUCT ...
+#define LYD_MERGE_WITH_FLAGS ...
+
+LY_ERR lyd_merge_tree(struct lyd_node **, const struct lyd_node *, uint16_t);
+LY_ERR lyd_merge_siblings(struct lyd_node **, const struct lyd_node *, uint16_t);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

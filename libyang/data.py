@@ -104,6 +104,22 @@ def parser_flags(
 
 
 # -------------------------------------------------------------------------------------
+def merge_flags(
+    defaults: bool = False,
+    destruct: bool = False,
+    with_flags: bool = False,
+) -> int:
+    flags = 0
+    if defaults:
+        flags |= lib.LYD_MERGE_DEFAULTS
+    if destruct:
+        flags |= lib.LYD_MERGE_DESTRUCT
+    if with_flags:
+        flags |= lib.LYD_MERGE_WITH_FLAGS
+    return flags
+
+
+# -------------------------------------------------------------------------------------
 def data_type(dtype):
     if dtype == DataType.DATA_YANG:
         return lib.LYD_TYPE_DATA_YANG
@@ -290,7 +306,7 @@ class DNode:
         node_set = ffi.new("struct ly_set **")
         ret = lib.lyd_find_xpath(self.cdata, str2c(xpath), node_set)
         if ret != lib.LY_SUCCESS:
-            raise self.error("cannot find path: %s", xpath)
+            raise self.context.error("cannot find path: %s", xpath)
 
         node_set = node_set[0]
         try:
@@ -356,15 +372,22 @@ class DNode:
     def merge(
         self,
         source: "DNode",
+        with_siblings: bool = False,
+        defaults: bool = False,
         destruct: bool = False,
-        no_siblings: bool = False,
-        explicit: bool = False,
+        with_flags: bool = False,
     ) -> None:
-        flags = parser_flags(
-            destruct=destruct, no_siblings=no_siblings, explicit=explicit
+        flags = merge_flags(
+            defaults=defaults, destruct=destruct, with_flags=with_flags
         )
-        ret = lib.lyd_merge(self.cdata, source.cdata, flags)
-        if ret != 0:
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+        if with_siblings:
+            pass
+        else:
+            ret = lib.lyd_merge_tree(node_p, source.cdata, flags)
+
+        if ret != lib.LY_SUCCESS:
             raise self.context.error("merge failed")
 
     def print(

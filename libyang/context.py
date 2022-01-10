@@ -285,6 +285,7 @@ class Context:
         fmt: str,
         in_type: IO_type,
         in_data: Union[str, bytes, IO],
+        parent: DNode = None,
         parser_lyb_mod_update: bool = False,
         parser_no_state: bool = False,
         parser_parse_only: bool = False,
@@ -293,7 +294,7 @@ class Context:
         parser_strict: bool = False,
         validation_no_state: bool = False,
         validation_validate_present: bool = False
-    ) -> DNode:
+    ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         parser_flgs = parser_flags(
@@ -318,6 +319,13 @@ class Context:
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to read input data")
 
+        if parent is not None:
+            ret = lib.lyd_parse_data(self.cdata, parent.cdata, data[0], fmt, parser_flgs, validation_flgs, ffi.NULL)
+            lib.ly_in_free(data[0], 0)
+            if ret != lib.LY_SUCCESS:
+                raise self.error("failed to parse data tree")
+            return
+
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_parse_data(self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode)
         lib.ly_in_free(data[0], 0)
@@ -333,6 +341,7 @@ class Context:
         self,
         data: Union[str, bytes],
         fmt: str,
+        parent: DNode = None,
         parser_lyb_mod_update: bool = False,
         parser_no_state: bool = False,
         parser_parse_only: bool = False,
@@ -341,10 +350,11 @@ class Context:
         parser_strict: bool = False,
         validation_no_state: bool = False,
         validation_validate_present: bool = False
-    ) -> DNode:
+    ) -> Optional[DNode]:
         return self.parse_data(fmt,
                                in_type=IO_type.MEMORY,
                                in_data=data,
+                               parent=parent,
                                parser_lyb_mod_update=parser_lyb_mod_update,
                                parser_no_state=parser_no_state,
                                parser_parse_only=parser_parse_only,
@@ -359,6 +369,7 @@ class Context:
         self,
         fileobj: IO,
         fmt: str,
+        parent: DNode = None,
         parser_lyb_mod_update: bool = False,
         parser_no_state: bool = False,
         parser_parse_only: bool = False,
@@ -367,11 +378,11 @@ class Context:
         parser_strict: bool = False,
         validation_no_state: bool = False,
         validation_validate_present: bool = False
-    ) -> DNode:
-
+    ) -> Optional[DNode]:
         return self.parse_data(fmt,
                                in_type=IO_type.FD,
                                in_data=fileobj,
+                               parent=parent,
                                parser_lyb_mod_update=parser_lyb_mod_update,
                                parser_no_state=parser_no_state,
                                parser_parse_only=parser_parse_only,

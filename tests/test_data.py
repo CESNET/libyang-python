@@ -62,6 +62,49 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
+    JSON_CONFIG_ADD_LIST_ITEM = """{
+  "yolo-system:conf": {
+    "hostname": "foo",
+    "url": [
+      {
+        "proto": "https",
+        "host": "github.com",
+        "path": "/CESNET/libyang-python",
+        "enabled": false
+      },
+      {
+        "proto": "http",
+        "host": "foobar.com",
+        "port": 8080,
+        "path": "/index.html",
+        "enabled": true
+      },
+      {
+        "proto": "http",
+        "host": "barfoo.com",
+        "path": "/barfoo/index.html"
+      }
+    ],
+    "number": [
+      1000,
+      2000,
+      3000
+    ],
+    "speed": 1234
+  }
+}
+"""
+
+    def test_data_add_path(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_no_state=True)
+        dnode.new_path('/yolo-system:conf/url[host="barfoo.com"][proto="http"]/path', '/barfoo/index.html')
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem("json", printer_with_siblings=True)
+            self.assertEqual(j, self.JSON_CONFIG_ADD_LIST_ITEM)
+        finally:
+            dnode.free()
+
     JSON_CONFIG_FILE = './tests/data/config.json'
 
     def test_data_parse_config_json_file(self):

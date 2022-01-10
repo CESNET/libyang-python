@@ -201,6 +201,30 @@ class DNode:
             item = item.next
         return ret
 
+    def new_path(self, path: str,
+                 value: str,
+                 opt_update: bool = False,
+                 opt_output: bool = False,
+                 opt_opaq: bool = False,
+                 opt_bin_value: bool = False,
+                 opt_canon_value: bool = False):
+
+        opt = 0
+        if opt_update:
+            opt |= lib.LYD_NEWOPT_UPDATE
+        if opt_output:
+            opt |= lib.LYD_NEW_PATH_OUTPUT
+        if opt_opaq:
+            opt |= lib.LYD_NEW_PATH_OPAQ
+        if opt_bin_value:
+            opt |= lib.LYD_NEW_PATH_BIN_VALUE
+        if opt_canon_value:
+            opt |= lib.LYD_NEW_PATH_CANON_VALUE
+
+        ret = lib.lyd_new_path(self.cdata, ffi.NULL, str2c(path), str2c(value), opt, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot get module")
+
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
 

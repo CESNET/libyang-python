@@ -240,7 +240,7 @@ class Context:
             try:
                 if not node_set or not node_set.count:
                     raise self.error("cannot find path: %s", path)
-                dnode = node_set.set.s[0]
+                dnode = node_set.dnodes[0]
             finally:
                 lib.ly_set_free(node_set, ffi.NULL)
 

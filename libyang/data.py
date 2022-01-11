@@ -383,7 +383,7 @@ class DNode:
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
         if with_siblings:
-            pass
+            ret = lib.lyd_merge_siblings(node_p, source.cdata, flags)
         else:
             ret = lib.lyd_merge_tree(node_p, source.cdata, flags)
 

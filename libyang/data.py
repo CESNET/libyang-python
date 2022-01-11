@@ -241,6 +241,11 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get module")
 
+    def insert_child(self, node):
+        ret = lib.lyd_insert_child(self.cdata, node.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot insert node")
+
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
 

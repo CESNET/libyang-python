@@ -934,7 +934,7 @@ class SLeaf(SNode):
         return Type(self.context, self.cdata_leaf.type, self.cdata_leaf_parsed.type)
 
     def is_key(self) -> bool:
-        if lib.lys_is_key(self.cdata_leaf, ffi.NULL):
+        if self.cdata_leaf.flags & lib.LYS_KEY:
             return True
         return False
 

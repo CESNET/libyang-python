@@ -265,7 +265,7 @@ class Context:
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to read input data")
 
-        tree = ffi.new("struct lyd_node **")
+        tree = ffi.new("struct lyd_node **", ffi.NULL)
         op = ffi.new("struct lyd_node **", ffi.NULL)
         par = ffi.new("struct lyd_node **", ffi.NULL)
         if parent is not None:

@@ -374,6 +374,19 @@ class DNode:
 
         return self.new(self.context, node_p[0])
 
+    def diff_apply(
+        self,
+        diff_node: "DNode"
+    ) -> None:
+        #node = ffi.addressof()
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+
+        #node_p = ffi.addressof(self.cdata)
+        ret = lib.lyd_diff_apply_all(node_p, diff_node.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("apply diff error")
+
     def merge(
         self,
         source: "DNode",

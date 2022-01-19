@@ -120,6 +120,25 @@ def merge_flags(
 
 
 # -------------------------------------------------------------------------------------
+def dup_flags(
+    no_meta: bool = False,
+    recursive: bool = False,
+    with_flags: bool = False,
+    with_parents: bool = False,
+) -> int:
+    flags = 0
+    if no_meta:
+        flags |= lib.LYD_DUP_NO_META
+    if recursive:
+        flags |= lib.LYD_DUP_RECURSIVE
+    if with_flags:
+        flags |= lib.LYD_DUP_WITH_FLAGS
+    if with_parents:
+        flags |= lib.LYD_DUP_WITH_PARENTS
+    return flags
+
+
+# -------------------------------------------------------------------------------------
 def data_type(dtype):
     if dtype == DataType.DATA_YANG:
         return lib.LYD_TYPE_DATA_YANG
@@ -378,14 +397,41 @@ class DNode:
         self,
         diff_node: "DNode"
     ) -> None:
-        #node = ffi.addressof()
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
 
-        #node_p = ffi.addressof(self.cdata)
         ret = lib.lyd_diff_apply_all(node_p, diff_node.cdata)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("apply diff error")
+
+    def duplicate(
+        self,
+        with_siblings: bool = False,
+        no_meta: bool = False,
+        recursive: bool = False,
+        with_flags: bool = False,
+        with_parents: bool = False,
+        parent: Optional['DNode'] = None,
+    ) -> "DNode":
+        flags = dup_flags(
+            no_meta=no_meta,
+            recursive=recursive,
+            with_flags=with_flags,
+            with_parents=with_parents
+        )
+
+        if parent is not None:
+            parent = parent.cdata
+        else:
+            parent = ffi.NULL
+
+        node = ffi.new("struct lyd_node **")
+        if with_siblings:
+            lib.lyd_dup_siblings(self.cdata, parent, flags, node)
+        else:
+            lib.lyd_dup_single(self.cdata, parent, flags, node)
+
+        return DNode.new(self.context, node[0])
 
     def merge(
         self,

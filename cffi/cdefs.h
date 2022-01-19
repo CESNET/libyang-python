@@ -845,5 +845,13 @@ LY_ERR lyd_merge_siblings(struct lyd_node **, const struct lyd_node *, uint16_t)
 LY_ERR lyd_insert_child(struct lyd_node *, struct lyd_node *);
 LY_ERR lyd_diff_apply_all(struct lyd_node **, const struct lyd_node *);
 
+#define LYD_DUP_NO_META  ...
+#define LYD_DUP_RECURSIVE  ...
+#define LYD_DUP_WITH_FLAGS  ...
+#define LYD_DUP_WITH_PARENTS  ...
+
+LY_ERR lyd_dup_siblings(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
+LY_ERR lyd_dup_single(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

@@ -749,8 +749,12 @@ class DContainer(DNode):
             path, parent=self, value=value, rpc_output=rpc_output
         )
 
-    def children(self) -> Iterator[DNode]:
-        child = lib.lyd_child_no_keys(self.cdata)
+    def children(self, no_keys=False) -> Iterator[DNode]:
+        if no_keys:
+            child = lib.lyd_child_no_keys(self.cdata)
+        else:
+            child = lib.lyd_child(self.cdata)
+
         while child:
             if child.schema != ffi.NULL:
                 yield DNode.new(self.context, child)

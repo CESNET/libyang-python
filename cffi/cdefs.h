@@ -852,6 +852,7 @@ LY_ERR lyd_diff_apply_all(struct lyd_node **, const struct lyd_node *);
 
 LY_ERR lyd_dup_siblings(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
 LY_ERR lyd_dup_single(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
+void lyd_free_meta_single(struct lyd_meta *);
 
 /* from libc, needed to free allocated strings */
 void free(void *);

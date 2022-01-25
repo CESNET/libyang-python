@@ -236,6 +236,13 @@ class DNode:
             item = item.next
         return ret
 
+    def meta_free(self, name):
+        item = self.cdata.meta
+        while item != ffi.NULL:
+            if c2str(item.name) == name:
+                lib.lyd_free_meta_single(item)
+                break
+
     def new_path(self, path: str,
                  value: str,
                  opt_update: bool = False,

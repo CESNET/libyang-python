@@ -323,7 +323,7 @@ class DNode:
     def find_path(self, path: str, output: bool = False):
         node = ffi.new("struct lyd_node **")
         ret = lib.lyd_find_path(self.cdata, str2c(path), output, node)
-        if ret == lib.LY_SUCCESS or ret == lib.LY_EINCOMPLETE:
+        if ret == lib.LY_SUCCESS:
             return DNode.new(self.context, node[0])
         return None
 

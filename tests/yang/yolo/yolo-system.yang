@@ -204,4 +204,12 @@ module yolo-system {
       type uint32;
     }
   }
+
+  notification config-change {
+    list edit {
+      leaf target {
+        type string;
+      }
+    }
+  }
 }

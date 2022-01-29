@@ -56,7 +56,7 @@ class ModuleTest(unittest.TestCase):
 
     def test_mod_iter(self):
         children = list(iter(self.module))
-        self.assertEqual(len(children), 5)
+        self.assertEqual(len(children), 6)
 
     def test_mod_children_rpcs(self):
         rpcs = list(self.module.children(types=(SNode.RPC,)))

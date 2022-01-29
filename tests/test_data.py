@@ -512,6 +512,22 @@ class DataTest(unittest.TestCase):
             dnotif.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_NOTIF))
 
+    DICT_NOTIF_KEYLESS_LIST = {
+        "config-change": {"edit": [{"target": "a"}, {"target": "b"}]},
+    }
+
+    def test_data_to_dict_keyless_list(self):
+        module = self.ctx.get_module("yolo-system")
+        dnotif = module.parse_data_dict(
+            self.DICT_NOTIF_KEYLESS_LIST, strict=True, notification=True
+        )
+        self.assertIsInstance(dnotif, DNotif)
+        try:
+            dic = dnotif.print_dict(allow_keyless_list=True)
+        finally:
+            dnotif.free()
+        self.assertEqual(dic, self.DICT_NOTIF_KEYLESS_LIST)
+
     XML_DIFF_STATE1 = """<state xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
   <speed>1234</speed>

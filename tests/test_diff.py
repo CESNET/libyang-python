@@ -71,6 +71,12 @@ class DiffTest(unittest.TestCase):
             (SNodeAdded, "/yolo-system:alarm-triggered"),
             (SNodeAdded, "/yolo-system:alarm-triggered/yolo-system:severity"),
             (SNodeAdded, "/yolo-system:alarm-triggered/yolo-system:description"),
+            (
+                SNodeAdded,
+                "/yolo-system:config-change/yolo-system:edit/yolo-system:target",
+            ),
+            (SNodeAdded, "/yolo-system:config-change/yolo-system:edit"),
+            (SNodeAdded, "/yolo-system:config-change"),
             (EnumRemoved, "/yolo-system:conf/yolo-system:url/yolo-system:proto"),
             (EnumRemoved, "/yolo-system:state/yolo-system:url/yolo-system:proto"),
             (EnumStatusAdded, "/yolo-system:conf/yolo-system:url/yolo-system:proto"),

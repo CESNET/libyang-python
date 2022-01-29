@@ -420,6 +420,7 @@ class DNode:
         include_implicit_defaults: bool = False,
         trim_default_values: bool = False,
         keep_empty_containers: bool = False,
+        allow_keyless_list: bool = False,
     ) -> Dict[str, Any]:
         """
         Convert a DNode object to a python dictionary.
@@ -438,6 +439,8 @@ class DNode:
             Exclude nodes with the value equal to their default value.
         :arg bool keep_empty_containers:
             Preserve empty non-presence containers.
+        :arg bool allow_keyless_list:
+            If True, allow key-less list.
         """
         flags = printer_flags(
             include_implicit_defaults=include_implicit_defaults,
@@ -474,6 +477,8 @@ class DNode:
                 for i in range(list_snode.keys_size):
                     key = ffi.cast("struct lys_node *", list_snode.keys[i])
                     keys.append(c2str(key.name))
+                if allow_keyless_list and len(keys) == 0:
+                    return []
                 if len(keys) == 1:
                     list_keys_cache[snode] = keys[0]
                 else:

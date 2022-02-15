@@ -854,5 +854,22 @@ LY_ERR lyd_dup_siblings(const struct lyd_node *, struct lyd_node_inner *, uint32
 LY_ERR lyd_dup_single(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
 void lyd_free_meta_single(struct lyd_meta *);
 
+struct lysc_when {
+    struct lyxp_expr *cond;
+    struct lysc_node *context;
+    struct lysc_prefix *prefixes;
+    const char *dsc;
+    const char *ref;
+    struct lysc_ext_instance *exts;
+    uint32_t refcount;
+    uint16_t flags;
+};
+
+struct lysc_when** lysc_node_when(const struct lysc_node *);
+
+#define LYD_DEFAULT ...
+#define LYD_WHEN_TRUE ...
+#define LYD_NEW ...
+
 /* from libc, needed to free allocated strings */
 void free(void *);

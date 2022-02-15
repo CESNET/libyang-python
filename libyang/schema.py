@@ -878,6 +878,15 @@ class SNode:
             return SNode.new(self.context, parent_p)
         return None
 
+    def when_conditions(self):
+        wh = ffi.new("struct lysc_when **")
+        wh = lib.lysc_node_when(self.cdata)
+        if wh == ffi.NULL:
+            return iter(())
+        arr_length = ffi.cast("uint64_t *", wh)[-1]  # calc length of Sized Arrays
+        for i in range(arr_length):
+            yield c2str(lib.lyxp_get_expr(wh[i].cond))
+
     def __repr__(self):
         cls = self.__class__
         return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))

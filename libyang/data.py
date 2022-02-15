@@ -243,6 +243,16 @@ class DNode:
                 lib.lyd_free_meta_single(item)
                 break
 
+    def flags(self):
+        ret = {'default': False, 'when_true': False, 'new': False}
+        if self.cdata.flags & lib.LYD_DEFAULT:
+            ret['default'] = True
+        if self.cdata.flags & lib.LYD_WHEN_TRUE:
+            ret['when_true'] = True
+        if self.cdata.flags & lib.LYD_NEW:
+            ret['new'] = True
+        return ret
+
     def new_path(self, path: str,
                  value: str,
                  opt_update: bool = False,

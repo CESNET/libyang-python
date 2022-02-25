@@ -1,0 +1,26 @@
+{
+  "yolo-system:conf": {
+    "hostname": "foo",
+    "speed": 1234,
+    "number": [
+      1000,
+      2000,
+      3000
+    ],
+    "url": [
+      {
+        "proto": "https",
+        "host": "github.com",
+        "path": "/CESNET/libyang-python",
+        "enabled": false
+      },
+      {
+        "proto": "http",
+        "host": "foobar.com",
+        "port": 8080,
+        "path": "/index.html",
+        "enabled": true
+      }
+    ]
+  }
+}

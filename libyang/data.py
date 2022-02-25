@@ -253,6 +253,12 @@ class DNode:
             ret['new'] = True
         return ret
 
+    def set_when(self, value: bool):
+        if value:
+            self.cdata.flags |= lib.LYD_WHEN_TRUE
+        else:
+            self.cdata.flags &= ~lib.LYD_WHEN_TRUE
+
     def new_path(self, path: str,
                  value: str,
                  opt_update: bool = False,
@@ -356,6 +362,15 @@ class DNode:
                 yield n
         finally:
             lib.ly_set_free(node_set, ffi.NULL)
+
+    def eval_xpath(self, xpath: str):
+        lbool = ffi.new("ly_bool *")
+        ret = lib.lyd_eval_xpath(self.cdata, str2c(xpath), lbool)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot eva xpath: %s", xpath)
+        if lbool[0]:
+            return True
+        return False
 
     def path(self) -> str:
         path = lib.lyd_path(self.cdata, lib.LYD_PATH_STD, ffi.NULL, 0)

@@ -871,5 +871,7 @@ struct lysc_when** lysc_node_when(const struct lysc_node *);
 #define LYD_WHEN_TRUE ...
 #define LYD_NEW ...
 
+LY_ERR lyd_eval_xpath(const struct lyd_node *, const char *, ly_bool *);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

@@ -423,6 +423,9 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("diff error")
 
+        if node_p[0] == ffi.NULL:
+            return None
+
         return self.new(self.context, node_p[0])
 
     def diff_apply(

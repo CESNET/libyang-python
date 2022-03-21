@@ -7,7 +7,7 @@ lint:
 	tox -e lint
 
 tests:
-	tox -e py3-libyang1
+	tox -e py37
 
 format:
 	tox -e format

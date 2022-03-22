@@ -21,7 +21,6 @@ class Context:
         self,
         search_path: Optional[str] = None,
         disable_searchdir_cwd: bool = True,
-        set_priv_parsed: bool = True,
         yanglib_path: Optional[str] = None,
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
@@ -33,8 +32,8 @@ class Context:
         options = 0
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
-        if set_priv_parsed:
-            options |= lib.LY_CTX_SET_PRIV_PARSED
+        # force priv parsed
+        options |= lib.LY_CTX_SET_PRIV_PARSED
 
         self.cdata = None
         ctx = ffi.new("struct ly_ctx **")

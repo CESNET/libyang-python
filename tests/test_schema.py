@@ -216,7 +216,7 @@ class ContainerTest(unittest.TestCase):
 # -------------------------------------------------------------------------------------
 class ListTest(unittest.TestCase):
 
-    SCHEMA_PATH = "/yolo-system:conf/yolo-system:url"
+    SCHEMA_PATH = "/yolo-system:conf/url"
     DATA_PATH = "/yolo-system:conf/url[proto='%s'][host='%s']"
 
     def setUp(self):
@@ -233,7 +233,9 @@ class ListTest(unittest.TestCase):
         self.assertIsInstance(self.list, SList)
         self.assertEqual(self.list.nodetype(), SNode.LIST)
         self.assertEqual(self.list.keyword(), "list")
+
         self.assertEqual(self.list.schema_path(), self.SCHEMA_PATH)
+
         self.assertEqual(self.list.data_path(), self.DATA_PATH)
         self.assertFalse(self.list.ordered())
 

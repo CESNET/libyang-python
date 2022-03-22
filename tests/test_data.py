@@ -105,7 +105,7 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
-    JSON_CONFIG_FILE = './tests/data/config.json'
+    JSON_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "data/config.json")
 
     def test_data_parse_config_json_file(self):
         with open(self.JSON_CONFIG_FILE) as f:

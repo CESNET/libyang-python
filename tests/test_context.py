@@ -82,7 +82,7 @@ class ContextTest(unittest.TestCase):
             modules = list(iter(ctx))
             self.assertGreater(len(modules), 0)
 
-    YOLO_MOD_PATH = './tests/yang/yolo/yolo-system.yang'
+    YOLO_MOD_PATH = os.path.join(YANG_DIR, 'yolo/yolo-system.yang')
 
     def test_ctx_parse_module(self):
         with open(self.YOLO_MOD_PATH) as f:

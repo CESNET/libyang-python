@@ -951,8 +951,11 @@ class SNode:
 
     def data_path(self, key_placeholder: str = "'%s'") -> str:
         try:
-            s = lib.lysc_path(self.cdata, lib.LYSC_PATH_DATA, ffi.NULL, 0)
-            return c2str(s)
+            s = lib.lysc_path(self.cdata, lib.LYSC_PATH_DATA_PATTERN, ffi.NULL, 0)
+            val = c2str(s)
+            if key_placeholder != "'%s'":
+                val = val.replace("'%s'", key_placeholder)
+            return val
         finally:
             lib.free(s)
 

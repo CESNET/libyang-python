@@ -511,7 +511,8 @@ struct lysp_revision {
 
 typedef enum {
     LYSC_PATH_LOG,
-    LYSC_PATH_DATA
+    LYSC_PATH_DATA,
+    LYSC_PATH_DATA_PATTERN
 } LYSC_PATH_TYPE;
 
 char* lysc_path(const struct lysc_node *, LYSC_PATH_TYPE, char *, size_t);

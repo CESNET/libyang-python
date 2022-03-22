@@ -217,7 +217,7 @@ class ContainerTest(unittest.TestCase):
 class ListTest(unittest.TestCase):
 
     SCHEMA_PATH = "/yolo-system:conf/url"
-    DATA_PATH = "/yolo-system:conf/url[proto='%s'][host='%s']"
+    DATA_PATH = "/yolo-system:conf/url[host='%s'][proto='%s']"
 
     def setUp(self):
         self.ctx = Context(YANG_DIR)

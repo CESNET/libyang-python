@@ -5,7 +5,18 @@
 
 
 from .context import Context
-from .data import DContainer, DDiff, DLeaf, DLeafList, DList, DNode, DNotif, DRpc, DAnyxml, DAnydata
+from .data import (
+    DAnydata,
+    DAnyxml,
+    DContainer,
+    DDiff,
+    DLeaf,
+    DLeafList,
+    DList,
+    DNode,
+    DNotif,
+    DRpc,
+)
 from .diff import (
     BaseTypeAdded,
     BaseTypeRemoved,
@@ -74,11 +85,7 @@ from .schema import (
     SRpcInOut,
     Type,
 )
-from .util import (
-    LibyangError,
-    IO_type,
-    DataType
-)
+from .util import DataType, IO_type, LibyangError
 from .xpath import (
     xpath_del,
     xpath_get,

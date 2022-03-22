@@ -2,8 +2,8 @@
 # Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
-from typing import Optional
 import enum
+from typing import Optional
 import warnings
 
 from _libyang import ffi, lib
@@ -96,7 +96,7 @@ def init_output(out_type, out_target, out_data):
         ret = lib.ly_out_new_memory(output, 0, out_data)
 
     else:
-        raise ValueError('invalid output')
+        raise ValueError("invalid output")
 
     return ret, output
 

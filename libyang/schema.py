@@ -2,11 +2,11 @@
 # Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
-from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 from contextlib import suppress
+from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import c2str, str2c, IO_type, DataType, init_output, ly_array_iter
+from .util import DataType, IO_type, c2str, init_output, ly_array_iter, str2c
 
 
 # -------------------------------------------------------------------------------------
@@ -135,10 +135,7 @@ class Module:
         printer_shrink: bool = False,
     ) -> Union[str, bytes, None]:
         fmt = schema_out_format(fmt)
-        flags = printer_flags(
-            no_substmt=printer_no_substmt,
-            shrink=printer_shrink
-        )
+        flags = printer_flags(no_substmt=printer_no_substmt, shrink=printer_shrink)
         out_data = ffi.new("struct ly_out **")
         ret, output = init_output(out_type, out_target, out_data)
         if ret != lib.LY_SUCCESS:
@@ -162,8 +159,13 @@ class Module:
         printer_no_substmt: bool = False,
         printer_shrink: bool = False,
     ) -> Union[str, bytes]:
-        return self.print(fmt, IO_type.MEMORY, None,
-                          printer_no_substmt=printer_no_substmt, printer_shrink=printer_shrink)
+        return self.print(
+            fmt,
+            IO_type.MEMORY,
+            None,
+            printer_no_substmt=printer_no_substmt,
+            printer_shrink=printer_shrink,
+        )
 
     def print_file(
         self,
@@ -172,8 +174,13 @@ class Module:
         printer_no_substmt: bool = False,
         printer_shrink: bool = False,
     ) -> None:
-        return self.print(fmt, IO_type.FD, fileobj,
-                          printer_no_substmt=printer_no_substmt, printer_shrink=printer_shrink)
+        return self.print(
+            fmt,
+            IO_type.FD,
+            fileobj,
+            printer_no_substmt=printer_no_substmt,
+            printer_shrink=printer_shrink,
+        )
 
     def parse_data_dict(
         self,
@@ -213,7 +220,7 @@ class Module:
             validate_present=validate_present,
             validate=validate,
             strict=strict,
-            operation_type=operation_type
+            operation_type=operation_type,
         )
 
 
@@ -266,9 +273,7 @@ class Extension:
 
     __slots__ = ("context", "cdata")
 
-
-    def __init__(self, context: "libyang.Context", cdata,
-                 module_parent: Module = None):
+    def __init__(self, context: "libyang.Context", cdata, module_parent: Module = None):
         self.context = context
         self.cdata = cdata
 
@@ -286,22 +291,21 @@ class Extension:
 # -------------------------------------------------------------------------------------
 class ExtensionParsed(Extension):
 
-    __slots__ = ("module_parent")
+    __slots__ = "module_parent"
 
-    def __init__(self, context: "libyang.Context", cdata,
-                 module_parent: Module = None):
+    def __init__(self, context: "libyang.Context", cdata, module_parent: Module = None):
         super().__init__(context, cdata)
         self.module_parent = module_parent
 
     def _module_from_parsed(self) -> Module:
-        prefix = c2str(self.cdata.name).split(':')[0]
+        prefix = c2str(self.cdata.name).split(":")[0]
         for cdata_imp_mod in ly_array_iter(self.module_parent.cdata.parsed.imports):
             if ffi.string(cdata_imp_mod.prefix).decode() == prefix:
                 return Module(self.context, cdata_imp_mod.module)
         raise self.context.error("cannot get module")
 
     def name(self) -> str:
-        return c2str(self.cdata.name).split(':')[1]
+        return c2str(self.cdata.name).split(":")[1]
 
     def module(self) -> Module:
         return self._module_from_parsed()
@@ -310,7 +314,7 @@ class ExtensionParsed(Extension):
 # -------------------------------------------------------------------------------------
 class ExtensionCompiled(Extension):
 
-    __slots__ = ("cdata_def")
+    __slots__ = "cdata_def"
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
@@ -477,14 +481,14 @@ class Type:
     def union_types(self) -> Iterator["Type"]:
         if self.cdata.basetype != self.UNION:
             return
-        t = ffi.cast('struct lysc_type_union *', self.cdata)
+        t = ffi.cast("struct lysc_type_union *", self.cdata)
         for union_type in ly_array_iter(t.types):
             yield Type(self.context, union_type, None)
 
     def enums(self) -> Iterator[Enum]:
         if self.cdata.basetype != self.ENUM:
             return
-        t = ffi.cast('struct lysc_type_enum *', self.cdata)
+        t = ffi.cast("struct lysc_type_enum *", self.cdata)
         for enum in ly_array_iter(t.enums):
             yield Enum(self.context, enum)
 
@@ -495,7 +499,7 @@ class Type:
     def bits(self) -> Iterator[Bit]:
         if self.cdata.basetype != self.BITS:
             return
-        t = ffi.cast('struct lysc_type_bits *', self.cdata)
+        t = ffi.cast("struct lysc_type_bits *", self.cdata)
         for bit in ly_array_iter(t.bits):
             yield Enum(self.context, bit)
 
@@ -506,8 +510,9 @@ class Type:
     NUM_TYPES = frozenset((INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
 
     def range(self) -> Optional[str]:
-        if ((self.cdata.basetype in self.NUM_TYPES or self.cdata.basetype == self.DEC64)
-           and self.cdata_parsed.range != ffi.NULL):
+        if (
+            self.cdata.basetype in self.NUM_TYPES or self.cdata.basetype == self.DEC64
+        ) and self.cdata_parsed.range != ffi.NULL:
             return c2str(self.cdata_parsed.range.arg.str)
 
     def all_ranges(self) -> Iterator[str]:
@@ -526,8 +531,9 @@ class Type:
     def length(self) -> Optional[str]:
         if not self.cdata_parsed:
             return
-        if ((self.cdata.basetype == self.STRING or self.cdata.basetype == self.BINARY)
-           and self.cdata_parsed.length != ffi.NULL):
+        if (
+            self.cdata.basetype == self.STRING or self.cdata.basetype == self.BINARY
+        ) and self.cdata_parsed.length != ffi.NULL:
             return c2str(self.cdata_parsed.length.arg.str)
         return
 
@@ -674,10 +680,10 @@ class IfFeatureExpr:
         operators = []
         features = []
         operators_map = {
-            'or': lib.LYS_IFF_OR,
-            'and': lib.LYS_IFF_AND,
-            'not': lib.LYS_IFF_NOT,
-            'f': lib.LYS_IFF_F,
+            "or": lib.LYS_IFF_OR,
+            "and": lib.LYS_IFF_AND,
+            "not": lib.LYS_IFF_NOT,
+            "f": lib.LYS_IFF_F,
         }
 
         def get_feature(name):
@@ -690,25 +696,25 @@ class IfFeatureExpr:
             def oper2(op):
                 op_index = tokens.index(op)
                 operators.append(operators_map[op])
-                left, right = tokens[:op_index], tokens[op_index+1:]
+                left, right = tokens[:op_index], tokens[op_index + 1 :]
                 parse_iffeature(left)
                 parse_iffeature(right)
 
             def oper1(op):
                 op_index = tokens.index(op)
-                feature_name = tokens[op_index+1]
+                feature_name = tokens[op_index + 1]
                 operators.append(operators_map[op])
-                operators.append(operators_map['f'])
+                operators.append(operators_map["f"])
                 features.append(get_feature(feature_name))
 
-            oper_map = {'or': oper2, 'and': oper2, 'not': oper1}
+            oper_map = {"or": oper2, "and": oper2, "not": oper1}
             for op, fun in oper_map.items():
                 with suppress(ValueError):
                     fun(op)
                     return
 
             # Token is a feature
-            operators.append(operators_map['f'])
+            operators.append(operators_map["f"])
             features.append(get_feature(tokens[0]))
 
         parse_iffeature(tokens)
@@ -717,13 +723,16 @@ class IfFeatureExpr:
 
     def _operands(self) -> Iterator[Union["IfFeature", type]]:
         if self.compiled:
+
             def get_operator(op_index):
                 return self._get_operator(op_index)
 
             def get_feature(ft_index):
                 return self.cdata.features[ft_index]
+
         else:
             operators, features = self._get_operands_parsed()
+
             def get_operator(op_index):
                 return operators[op_index]
 
@@ -891,7 +900,7 @@ class SNode:
         self.cdata = cdata  # C type: "struct lysc_node *"
         self.cdata_parsed = None
         if self.cdata.priv != ffi.NULL:
-            self.cdata_parsed = ffi.cast('struct lysp_node *', self.cdata.priv)
+            self.cdata_parsed = ffi.cast("struct lysp_node *", self.cdata.priv)
 
     def nodetype(self) -> int:
         return self.cdata.nodetype
@@ -948,7 +957,7 @@ class SNode:
             lib.free(s)
 
     def extensions(self) -> Iterator[ExtensionCompiled]:
-        ext = ffi.cast('struct lysc_ext_instance *', self.cdata.exts)
+        ext = ffi.cast("struct lysc_ext_instance *", self.cdata.exts)
         if ext == ffi.NULL:
             return iter(())
         for extension in ly_array_iter(ext):
@@ -971,11 +980,10 @@ class SNode:
         return None
 
     def if_features(self) -> Iterator[IfFeatureExpr]:
-        iff = ffi.cast('struct  lysp_qname *', self.cdata_parsed.iffeatures)
+        iff = ffi.cast("struct  lysp_qname *", self.cdata_parsed.iffeatures)
         module_features = self.module().features()
         for if_feature in ly_array_iter(iff):
             yield IfFeatureExpr(self.context, if_feature, list(module_features))
-
 
     def parent(self) -> Optional["SNode"]:
         parent_p = self.cdata.parent
@@ -1039,7 +1047,7 @@ class SLeaf(SNode):
         val = c2str(val)
         val_type = self.cdata_leaf.dflt.realtype
         if val_type == Type.BOOL:
-            return True if val == 'true' else False
+            return True if val == "true" else False
         elif val_type in Type.NUM_TYPES:
             return int(val)
         return val
@@ -1075,7 +1083,9 @@ class SLeafList(SNode):
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaflist = ffi.cast("struct lysc_node_leaflist *", cdata)
-        self.cdata_leaflist_parsed = ffi.cast("struct lysp_node_leaflist *", self.cdata_parsed)
+        self.cdata_leaflist_parsed = ffi.cast(
+            "struct lysp_node_leaflist *", self.cdata_parsed
+        )
 
     def ordered(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
@@ -1084,20 +1094,24 @@ class SLeafList(SNode):
         return c2str(self.cdata_leaflist.units)
 
     def type(self) -> Type:
-        return Type(self.context, self.cdata_leaflist.type, self.cdata_leaflist_parsed.type)
+        return Type(
+            self.context, self.cdata_leaflist.type, self.cdata_leaflist_parsed.type
+        )
 
     def defaults(self) -> Iterator[str]:
         if self.cdata_leaflist.dflts == ffi.NULL:
             return iter(())
         arr_length = ffi.cast("uint64_t *", self.cdata_leaflist.dflts)[-1]
         for i in range(arr_length):
-            val = lib.lyd_value_get_canonical(self.context.cdata, self.cdata_leaflist.dflts[i])
+            val = lib.lyd_value_get_canonical(
+                self.context.cdata, self.cdata_leaflist.dflts[i]
+            )
             if not val:
                 yield None
             ret = c2str(val)
             val_type = self.cdata_leaflist.dflts[i].realtype
             if val_type == Type.BOOL:
-                ret =  True if val == 'true' else False
+                ret = True if val == "true" else False
             elif val_type in Type.NUM_TYPES:
                 ret = int(val)
             yield ret
@@ -1122,7 +1136,9 @@ class SContainer(SNode):
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_container = ffi.cast("struct lysc_node_container *", cdata)
-        self.cdata_container_parsed = ffi.cast("struct lysp_node_container *", self.cdata_parsed)
+        self.cdata_container_parsed = ffi.cast(
+            "struct lysp_node_container *", self.cdata_parsed
+        )
 
     def presence(self) -> Optional[str]:
         if not self.cdata_container.flags & lib.LYS_PRESENCE:
@@ -1226,8 +1242,9 @@ class SRpc(SNode):
         yield from iter_children(self.context, self.cdata, types=types)
         # With libyang2, you can get only input or output
         # To keep behavior, we iter 2 times witt output options
-        yield from iter_children(self.context, self.cdata,
-                                 types=types, options=lib.LYS_GETNEXT_OUTPUT)
+        yield from iter_children(
+            self.context, self.cdata, types=types, options=lib.LYS_GETNEXT_OUTPUT
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -1245,10 +1262,12 @@ class SNotif(SNode):
 class SAnyxml(SNode):
     pass
 
+
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.ANYDATA)
 class SAnydata(SNode):
     pass
+
 
 # -------------------------------------------------------------------------------------
 def iter_children(

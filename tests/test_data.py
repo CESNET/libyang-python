@@ -7,7 +7,18 @@ import unittest
 from unittest.mock import patch
 
 from _libyang import lib
-from libyang import Context, DContainer, DDiff, DNode, DNotif, DRpc, LibyangError, IO_type, DataType, DAnyxml
+from libyang import (
+    Context,
+    DAnyxml,
+    DataType,
+    DContainer,
+    DDiff,
+    DNode,
+    DNotif,
+    DRpc,
+    IO_type,
+    LibyangError,
+)
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -54,7 +65,9 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_json(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_no_state=True)
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_CONFIG, "json", validation_no_state=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", printer_with_siblings=True)
@@ -96,8 +109,13 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_add_path(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_no_state=True)
-        dnode.new_path('/yolo-system:conf/url[host="barfoo.com"][proto="http"]/path', '/barfoo/index.html')
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_CONFIG, "json", validation_no_state=True
+        )
+        dnode.new_path(
+            '/yolo-system:conf/url[host="barfoo.com"][proto="http"]/path',
+            "/barfoo/index.html",
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", printer_with_siblings=True)
@@ -114,14 +132,18 @@ class DataTest(unittest.TestCase):
         dnode.free()
 
         with open(self.JSON_CONFIG_FILE) as f:
-            dnode = self.ctx.parse_data("json", in_data=f, in_type=IO_type.FILE,
-                                        validation_no_state=True)
+            dnode = self.ctx.parse_data(
+                "json", in_data=f, in_type=IO_type.FILE, validation_no_state=True
+            )
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
 
-        dnode = self.ctx.parse_data("json", in_data=self.JSON_CONFIG_FILE,
-                                    in_type=IO_type.FILEPATH,
-                                    validation_no_state=True)
+        dnode = self.ctx.parse_data(
+            "json",
+            in_data=self.JSON_CONFIG_FILE,
+            in_type=IO_type.FILEPATH,
+            validation_no_state=True,
+        )
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
 
@@ -154,7 +176,9 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_state_json(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_STATE, "json", validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_STATE, "json", validation_validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", printer_with_siblings=True)
@@ -185,7 +209,9 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.XML_CONFIG, "xml", validation_validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print_mem("xml", printer_with_siblings=True)
@@ -216,10 +242,14 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_data_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_STATE, 'xml', validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.XML_STATE, "xml", validation_validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print("xml", out_type=IO_type.MEMORY, printer_with_siblings=True)
+            xml = dnode.print(
+                "xml", out_type=IO_type.MEMORY, printer_with_siblings=True
+            )
             self.assertEqual(xml, self.XML_STATE)
         finally:
             dnode.free()
@@ -268,8 +298,8 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_anyxml(self):
-        dnode = self.ctx.parse_op_mem('xml', self.ANYMXML, dtype=DataType.RPC_YANG)
-        dnode = dnode.find_path('/yolo-system:format-disk/html-info')
+        dnode = self.ctx.parse_op_mem("xml", self.ANYMXML, dtype=DataType.RPC_YANG)
+        dnode = dnode.find_path("/yolo-system:format-disk/html-info")
         self.assertIsInstance(dnode, DAnyxml)
 
     def test_data_create_paths(self):
@@ -331,7 +361,9 @@ class DataTest(unittest.TestCase):
     }
 
     def test_data_to_dict_config(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_CONFIG, "json", validation_validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             dic = dnode.print_dict()
@@ -351,7 +383,9 @@ class DataTest(unittest.TestCase):
 
     def test_data_from_dict_module(self):
         module = self.ctx.get_module("yolo-system")
-        dnode = module.parse_data_dict(self.DICT_CONFIG, strict=True, validate_present=True)
+        dnode = module.parse_data_dict(
+            self.DICT_CONFIG, strict=True, validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json")
@@ -435,7 +469,8 @@ class DataTest(unittest.TestCase):
         fake_lib = FakeLib(lib)
         root = module.parse_data_dict(
             {"conf": {"hostname": "foo", "speed": 1234, "number": [1000, 2000, 3000]}},
-            strict=True, validate_present=True
+            strict=True,
+            validate_present=True,
         )
         invalid_dict = {
             "url": [
@@ -458,7 +493,9 @@ class DataTest(unittest.TestCase):
         try:
             with patch("libyang.data.lib", fake_lib):
                 with self.assertRaises(LibyangError):
-                    root.merge_data_dict(invalid_dict, strict=True, validate_present=True)
+                    root.merge_data_dict(
+                        invalid_dict, strict=True, validate_present=True
+                    )
 
             self.assertGreater(len(created), 0)
             self.assertGreater(len(freed), 0)
@@ -497,8 +534,12 @@ class DataTest(unittest.TestCase):
     def test_data_from_dict_rpc(self):
         dnode = self.ctx.create_data_path("/yolo-system:format-disk")
         self.assertIsInstance(dnode, DRpc)
-        dnode.merge_data_dict({"duration": 42}, strict=True,
-                              validate=True, operation_type=DataType.REPLY_YANG)
+        dnode.merge_data_dict(
+            {"duration": 42},
+            strict=True,
+            validate=True,
+            operation_type=DataType.REPLY_YANG,
+        )
         try:
             j = dnode.print_mem("json", printer_shrink=True)
         finally:
@@ -520,7 +561,7 @@ class DataTest(unittest.TestCase):
                 },
             },
             strict=True,
-            operation_type=DataType.RPC_YANG
+            operation_type=DataType.RPC_YANG,
         )
         self.assertIsInstance(dnode, DContainer)
         try:
@@ -542,7 +583,7 @@ class DataTest(unittest.TestCase):
     ]
   }
 }
-"""
+""",
         )
 
     def test_data_to_dict_action(self):
@@ -562,11 +603,15 @@ class DataTest(unittest.TestCase):
             strict=True,
             operation_type=DataType.RPC_YANG,
         )
-        request = request.find_path("/yolo-system:conf/url[proto='https'][host='github.com']/fetch")
-        dnode = self.ctx.parse_op_mem("json",
-                                      '{"yolo-system:result":"not found"}',
-                                      dtype=DataType.REPLY_YANG,
-                                      parent=request)
+        request = request.find_path(
+            "/yolo-system:conf/url[proto='https'][host='github.com']/fetch"
+        )
+        dnode = self.ctx.parse_op_mem(
+            "json",
+            '{"yolo-system:result":"not found"}',
+            dtype=DataType.REPLY_YANG,
+            parent=request,
+        )
         try:
             dic = dnode.print_dict()
         finally:
@@ -582,7 +627,7 @@ class DataTest(unittest.TestCase):
                             "host": "github.com",
                             "fetch": {
                                 "result": "not found",
-                                "timeout": 42  # probably bug in linyang, this is part of input
+                                "timeout": 42,  # probably bug in linyang, this is part of input
                             },
                         },
                     ],
@@ -604,8 +649,9 @@ class DataTest(unittest.TestCase):
 
     def test_notification_from_dict_module(self):
         module = self.ctx.get_module("yolo-system")
-        dnotif = module.parse_data_dict(self.DICT_NOTIF, strict=True,
-                                        operation_type=DataType.NOTIF_YANG)
+        dnotif = module.parse_data_dict(
+            self.DICT_NOTIF, strict=True, operation_type=DataType.NOTIF_YANG
+        )
         self.assertIsInstance(dnotif, DNotif)
         try:
             j = dnotif.print_mem("json")
@@ -699,7 +745,9 @@ class DataTest(unittest.TestCase):
         dnode2.free()
 
     def test_find_one(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_CONFIG, "json", validation_validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             hostname = dnode.find_one("hostname")
@@ -709,7 +757,9 @@ class DataTest(unittest.TestCase):
             dnode.free()
 
     def test_find_all(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validation_validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_CONFIG, "json", validation_validate_present=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             urls = dnode.find_all("url")

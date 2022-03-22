@@ -6,10 +6,12 @@ import unittest
 
 from libyang import Context, LibyangError, Module, SRpc
 
+
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 
 
 # -------------------------------------------------------------------------------------
+
 
 class ContextTest(unittest.TestCase):
     def test_ctx_no_dir(self):
@@ -17,8 +19,8 @@ class ContextTest(unittest.TestCase):
             self.assertIsNot(ctx, None)
 
     def test_ctx_yanglib(self):
-        ctx = Context(YANG_DIR, yanglib_path=YANG_DIR + '/yang-library.json')
-        ctx.load_module('yolo-system')
+        ctx = Context(YANG_DIR, yanglib_path=YANG_DIR + "/yang-library.json")
+        ctx.load_module("yolo-system")
         dnode = ctx.get_yanglib_data()
         j = dnode.print_mem("json", printer_with_siblings=True)
         self.assertIsInstance(j, str)
@@ -82,16 +84,16 @@ class ContextTest(unittest.TestCase):
             modules = list(iter(ctx))
             self.assertGreater(len(modules), 0)
 
-    YOLO_MOD_PATH = os.path.join(YANG_DIR, 'yolo/yolo-system.yang')
+    YOLO_MOD_PATH = os.path.join(YANG_DIR, "yolo/yolo-system.yang")
 
     def test_ctx_parse_module(self):
         with open(self.YOLO_MOD_PATH) as f:
             mod_str = f.read()
         with Context(YANG_DIR) as ctx:
-            mod = ctx.parse_module_str(mod_str, features=['turbo-boost', 'networking'])
+            mod = ctx.parse_module_str(mod_str, features=["turbo-boost", "networking"])
             self.assertIsInstance(mod, Module)
 
         with open(self.YOLO_MOD_PATH) as f:
             with Context(YANG_DIR) as ctx:
-                mod = ctx.parse_module_file(f, features=['turbo-boost', 'networking'])
+                mod = ctx.parse_module_file(f, features=["turbo-boost", "networking"])
                 self.assertIsInstance(mod, Module)

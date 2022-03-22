@@ -18,7 +18,7 @@ from .schema import (
     SRpc,
     Type,
 )
-from .util import LibyangError, c2str, str2c, IO_type, DataType
+from .util import DataType, IO_type, LibyangError, c2str, str2c
 
 
 LOG = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ def parser_flags(
     parse_only: bool = False,
     opaq: bool = False,
     ordered: bool = False,
-    strict: bool = False
+    strict: bool = False,
 ) -> int:
     flags = 0
     if lyb_mod_update:
@@ -154,14 +154,11 @@ def data_type(dtype):
         return lib.LYD_TYPE_NOTIF_NETCONF
     elif dtype == DataType.REPLY_NETCONF:
         return lib.LYD_TYPE_REPLY_NETCONF
-    raise ValueError('Unknown data type')
+    raise ValueError("Unknown data type")
 
 
 # -------------------------------------------------------------------------------------
-def validation_flags(
-    no_state: bool = False,
-    validate_present: bool = False
-) -> int:
+def validation_flags(no_state: bool = False, validate_present: bool = False) -> int:
     flags = 0
     if no_state:
         flags |= lib.LYD_VALIDATE_NO_STATE
@@ -170,9 +167,7 @@ def validation_flags(
     return flags
 
 
-def diff_flags(
-    with_defaults: bool = False
-) -> int:
+def diff_flags(with_defaults: bool = False) -> int:
     flags = 0
     if with_defaults:
         flags |= lib.LYD_DIFF_DEFAULTS
@@ -232,7 +227,11 @@ class DNode:
         ret = {}
         item = self.cdata.meta
         while item != ffi.NULL:
-            ret[c2str(item.name)] = c2str(lib.lyd_value_get_canonical(self.context.cdata, ffi.addressof(item.value)))
+            ret[c2str(item.name)] = c2str(
+                lib.lyd_value_get_canonical(
+                    self.context.cdata, ffi.addressof(item.value)
+                )
+            )
             item = item.next
         return ret
 
@@ -244,13 +243,13 @@ class DNode:
                 break
 
     def flags(self):
-        ret = {'default': False, 'when_true': False, 'new': False}
+        ret = {"default": False, "when_true": False, "new": False}
         if self.cdata.flags & lib.LYD_DEFAULT:
-            ret['default'] = True
+            ret["default"] = True
         if self.cdata.flags & lib.LYD_WHEN_TRUE:
-            ret['when_true'] = True
+            ret["when_true"] = True
         if self.cdata.flags & lib.LYD_NEW:
-            ret['new'] = True
+            ret["new"] = True
         return ret
 
     def set_when(self, value: bool):
@@ -259,13 +258,16 @@ class DNode:
         else:
             self.cdata.flags &= ~lib.LYD_WHEN_TRUE
 
-    def new_path(self, path: str,
-                 value: str,
-                 opt_update: bool = False,
-                 opt_output: bool = False,
-                 opt_opaq: bool = False,
-                 opt_bin_value: bool = False,
-                 opt_canon_value: bool = False):
+    def new_path(
+        self,
+        path: str,
+        value: str,
+        opt_update: bool = False,
+        opt_output: bool = False,
+        opt_opaq: bool = False,
+        opt_bin_value: bool = False,
+        opt_canon_value: bool = False,
+    ):
 
         opt = 0
         if opt_update:
@@ -279,7 +281,9 @@ class DNode:
         if opt_canon_value:
             opt |= lib.LYD_NEW_PATH_CANON_VALUE
 
-        ret = lib.lyd_new_path(self.cdata, ffi.NULL, str2c(path), str2c(value), opt, ffi.NULL)
+        ret = lib.lyd_new_path(
+            self.cdata, ffi.NULL, str2c(path), str2c(value), opt, ffi.NULL
+        )
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get module")
 
@@ -428,10 +432,7 @@ class DNode:
 
         return self.new(self.context, node_p[0])
 
-    def diff_apply(
-        self,
-        diff_node: "DNode"
-    ) -> None:
+    def diff_apply(self, diff_node: "DNode") -> None:
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
 
@@ -446,13 +447,13 @@ class DNode:
         recursive: bool = False,
         with_flags: bool = False,
         with_parents: bool = False,
-        parent: Optional['DNode'] = None,
+        parent: Optional["DNode"] = None,
     ) -> "DNode":
         flags = dup_flags(
             no_meta=no_meta,
             recursive=recursive,
             with_flags=with_flags,
-            with_parents=with_parents
+            with_parents=with_parents,
         )
 
         if parent is not None:
@@ -476,9 +477,7 @@ class DNode:
         destruct: bool = False,
         with_flags: bool = False,
     ) -> None:
-        flags = merge_flags(
-            defaults=defaults, destruct=destruct, with_flags=with_flags
-        )
+        flags = merge_flags(defaults=defaults, destruct=destruct, with_flags=with_flags)
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
         if with_siblings:
@@ -543,7 +542,7 @@ class DNode:
             ret = c2str(buf[0], decode=True)
 
         else:
-            raise ValueError('no input specified')
+            raise ValueError("no input specified")
 
         return ret
 
@@ -567,7 +566,7 @@ class DNode:
             wd_explicit=printer_wd_explicit,
             wd_impl_tag=printer_wd_impl_tag,
             wd_trim=printer_wd_trim,
-            with_siblings=printer_with_siblings
+            with_siblings=printer_with_siblings,
         )
         buf = ffi.new("char **")
         fmt = data_format(fmt)
@@ -651,7 +650,9 @@ class DNode:
                         if strip_prefixes:
                             keys.append(c2str(child.name))
                         else:
-                            keys.append("%s:%s" % (c2str(child.module.name), c2str(child.name)))
+                            keys.append(
+                                "%s:%s" % (c2str(child.module.name), c2str(child.name))
+                            )
                     child = child.next
                 if len(keys) == 1:
                     list_keys_cache[snode] = keys[0]
@@ -830,18 +831,25 @@ class DLeaf(DNode):
         val_type = ffi.new("const struct lysc_type **", ffi.NULL)
 
         # get real value type
-        ret = lib.lyd_value_validate(ffi.NULL, term_node.schema, str2c(val),
-                                     len(val), ffi.NULL, val_type, ffi.NULL)
+        ret = lib.lyd_value_validate(
+            ffi.NULL,
+            term_node.schema,
+            str2c(val),
+            len(val),
+            ffi.NULL,
+            val_type,
+            ffi.NULL,
+        )
 
         if ret == lib.LY_SUCCESS or ret == lib.LY_EINCOMPLETE:
             val_type = val_type[0].basetype
             if val_type == Type.BOOL:
-                return True if val == 'true' else False
+                return True if val == "true" else False
             elif val_type in Type.NUM_TYPES:
                 return int(val)
             return val
 
-        raise TypeError('value type validation error')
+        raise TypeError("value type validation error")
 
 
 # -------------------------------------------------------------------------------------
@@ -859,8 +867,8 @@ class DNotif(DContainer):
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.ANYXML)
 class DAnyxml(DNode):
-    def value(self, fmt: str = 'xml'):
-        anystr = ffi.new('char **', ffi.NULL)
+    def value(self, fmt: str = "xml"):
+        anystr = ffi.new("char **", ffi.NULL)
         ret = lib.lyd_any_value_str(self.cdata, anystr)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get data")
@@ -870,8 +878,8 @@ class DAnyxml(DNode):
 # -------------------------------------------------------------------------------------
 @DNode.register(SNode.ANYDATA)
 class DAnydata(DNode):
-    def value(self, fmt: str = 'xml'):
-        anystr = ffi.new('char **', ffi.NULL)
+    def value(self, fmt: str = "xml"):
+        anystr = ffi.new("char **", ffi.NULL)
         ret = lib.lyd_any_value_str(self.cdata, anystr)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get data")
@@ -924,7 +932,10 @@ def dict_to_dnode(
         raise TypeError("parent argument must be a DNode object or None")
 
     rpcreply = False
-    if operation_type == DataType.REPLY_YANG or operation_type == DataType.REPLY_NETCONF:
+    if (
+        operation_type == DataType.REPLY_YANG
+        or operation_type == DataType.REPLY_NETCONF
+    ):
         rpcreply = True
 
     created = []
@@ -936,8 +947,10 @@ def dict_to_dnode(
             elif not isinstance(value, str):
                 value = str(value)
 
-        n = ffi.new('struct lyd_node **')
-        ret = lib.lyd_new_term(_parent, module.cdata, str2c(name), str2c(value), in_rpc_output, n)
+        n = ffi.new("struct lyd_node **")
+        ret = lib.lyd_new_term(
+            _parent, module.cdata, str2c(name), str2c(value), in_rpc_output, n
+        )
 
         if ret != lib.LY_SUCCESS:
             if _parent:
@@ -950,7 +963,7 @@ def dict_to_dnode(
         created.append(n[0])
 
     def _create_container(_parent, module, name, in_rpc_output=False):
-        n = ffi.new('struct lyd_node **')
+        n = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_inner(_parent, module.cdata, str2c(name), in_rpc_output, n)
         if ret != lib.LY_SUCCESS:
             if _parent:
@@ -966,8 +979,15 @@ def dict_to_dnode(
         return n[0]
 
     def _create_list(_parent, module, name, key_values, in_rpc_output=False):
-        n = ffi.new('struct lyd_node **')
-        ret = lib.lyd_new_list(_parent, module.cdata, str2c(name), in_rpc_output, n, *[str2c(i) for i in key_values])
+        n = ffi.new("struct lyd_node **")
+        ret = lib.lyd_new_list(
+            _parent,
+            module.cdata,
+            str2c(name),
+            in_rpc_output,
+            n,
+            *[str2c(i) for i in key_values],
+        )
         if ret != lib.LY_SUCCESS:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
@@ -1088,7 +1108,7 @@ def dict_to_dnode(
                         try:
                             key_values.append(val.pop(k))
                         except KeyError:
-                            raise ValueError('Missing key %s in the list' % (k))
+                            raise ValueError("Missing key %s in the list" % (k))
 
                     n = _create_list(_parent, module, name, key_values, in_rpc_output)
                     _to_dnode(val, s, n, in_rpc_output)
@@ -1117,7 +1137,9 @@ def dict_to_dnode(
             result = DNode.new(module.context, created[0])
             if validate:
                 if operation_type is None:
-                    result.root().validate(no_state=no_state, validate_present=validate_present)
+                    result.root().validate(
+                        no_state=no_state, validate_present=validate_present
+                    )
                 else:
                     result.root().validate_op(operation_type)
 

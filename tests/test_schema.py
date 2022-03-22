@@ -9,6 +9,7 @@ from libyang import (
     Extension,
     IfFeature,
     IfOrFeatures,
+    IO_type,
     LibyangError,
     Module,
     Revision,
@@ -19,7 +20,6 @@ from libyang import (
     SNode,
     SRpc,
     Type,
-    IO_type
 )
 
 
@@ -38,10 +38,10 @@ class ModuleTest(unittest.TestCase):
         self.ctx = None
 
     def test_mod_print_mem(self):
-        s = self.module.print('tree', IO_type.MEMORY)
+        s = self.module.print("tree", IO_type.MEMORY)
         self.assertGreater(len(s), 0)
 
-        s = self.module.print_mem('tree')
+        s = self.module.print_mem("tree")
         self.assertGreater(len(s), 0)
 
     def test_mod_attrs(self):
@@ -353,9 +353,7 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(enums, ["http", "https", "ftp", "sftp"])
 
     def test_leaf_type_bits(self):
-        leaf = next(
-            self.ctx.find_path("/yolo-system:chmod/yolo-system:perms")
-        )
+        leaf = next(self.ctx.find_path("/yolo-system:chmod/yolo-system:perms"))
         self.assertIsInstance(leaf, SLeaf)
         t = leaf.type()
         self.assertIsInstance(t, Type)

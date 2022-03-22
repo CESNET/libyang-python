@@ -7,9 +7,16 @@ import os
 from typing import IO, Any, Iterator, Optional, Union
 
 from _libyang import ffi, lib
-from .data import DNode, data_format, parser_flags, path_flags, validation_flags, data_type
+from .data import (
+    DNode,
+    data_format,
+    data_type,
+    parser_flags,
+    path_flags,
+    validation_flags,
+)
 from .schema import Module, SNode, schema_in_format
-from .util import LibyangError, c2str, str2c, IO_type, DataType, data_load
+from .util import DataType, IO_type, LibyangError, c2str, data_load, str2c
 
 
 # -------------------------------------------------------------------------------------
@@ -42,11 +49,13 @@ class Context:
             if lib.ly_ctx_new(ffi.NULL, options, ctx) != lib.LY_SUCCESS:
                 raise self.error("cannot create context")
         else:
-            if yanglib_fmt == 'json':
+            if yanglib_fmt == "json":
                 fmt = lib.LYD_JSON
             else:
                 fmt = lib.LYD_XML
-            ret = lib.ly_ctx_new_ylpath(str2c(search_path), str2c(yanglib_path), fmt, options, ctx)
+            ret = lib.ly_ctx_new_ylpath(
+                str2c(search_path), str2c(yanglib_path), fmt, options, ctx
+            )
             if ret != lib.LY_SUCCESS:
                 raise self.error("cannot create context")
 
@@ -78,7 +87,7 @@ class Context:
 
     def get_yanglib_data(self, content_id_format=""):
         dnode = ffi.new("struct lyd_node **")
-        ret = lib.ly_ctx_get_yanglib_data(self.cdata, dnode, str2c(content_id_format));
+        ret = lib.ly_ctx_get_yanglib_data(self.cdata, dnode, str2c(content_id_format))
         if ret != lib.LY_SUCCESS:
             raise self.error("cannot get yanglib data")
         return DNode.new(self, dnode[0])
@@ -110,7 +119,13 @@ class Context:
 
         return LibyangError(msg)
 
-    def parse_module(self, in_data: Union[IO, str], in_type: IO_type, fmt: str = "yang", features=None):
+    def parse_module(
+        self,
+        in_data: Union[IO, str],
+        in_type: IO_type,
+        fmt: str = "yang",
+        features=None,
+    ):
         data = ffi.new("struct ly_in **")
         data_keepalive = []
         ret = data_load(in_type, in_data, data, data_keepalive)
@@ -132,7 +147,9 @@ class Context:
 
         return Module(self, mod[0])
 
-    def parse_module_file(self, fileobj: IO, fmt: str = "yang", features=None) -> Module:
+    def parse_module_file(
+        self, fileobj: IO, fmt: str = "yang", features=None
+    ) -> Module:
         return self.parse_module(fileobj, IO_type.FILE, fmt, features)
 
     def parse_module_str(self, s: str, fmt: str = "yang", features=None) -> Module:
@@ -165,7 +182,10 @@ class Context:
             flags |= lib.LYS_FIND_XP_OUTPUT
 
         node_set = ffi.new("struct ly_set **")
-        if lib.lys_find_xpath(self.cdata, ffi.NULL, str2c(path), 0, node_set) != lib.LY_SUCCESS:
+        if (
+            lib.lys_find_xpath(self.cdata, ffi.NULL, str2c(path), 0, node_set)
+            != lib.LY_SUCCESS
+        ):
             raise self.error("cannot find path")
 
         node_set = node_set[0]
@@ -177,8 +197,12 @@ class Context:
         finally:
             lib.ly_set_free(node_set, ffi.NULL)
 
-    def find_jsonpath(self, path: str, root_node: Optional["libyang.SNode"] = None,
-                  output: bool = False) -> Optional["libyang.SNode"]:
+    def find_jsonpath(
+        self,
+        path: str,
+        root_node: Optional["libyang.SNode"] = None,
+        output: bool = False,
+    ) -> Optional["libyang.SNode"]:
         if root_node is not None:
             ctx_node = root_node.cdata
         else:
@@ -216,7 +240,7 @@ class Context:
             str2c(path),
             str2c(value),
             flags,
-            dnode
+            dnode,
         )
         dnode = dnode[0]
         if ret != lib.LY_SUCCESS:
@@ -254,7 +278,7 @@ class Context:
         in_type: IO_type,
         in_data: Union[IO, str],
         dtype: DataType,
-        parent: DNode = None
+        parent: DNode = None,
     ) -> DNode:
         fmt = data_format(fmt)
         data = ffi.new("struct ly_in **")
@@ -276,8 +300,16 @@ class Context:
 
         return DNode.new(self, op[0])
 
-    def parse_op_mem(self, fmt: str, data: str, dtype: DataType = DataType.DATA_YANG, parent: DNode = None):
-        return self.parse_op(fmt, in_type=IO_type.MEMORY, in_data=data, dtype=dtype, parent=parent)
+    def parse_op_mem(
+        self,
+        fmt: str,
+        data: str,
+        dtype: DataType = DataType.DATA_YANG,
+        parent: DNode = None,
+    ):
+        return self.parse_op(
+            fmt, in_type=IO_type.MEMORY, in_data=data, dtype=dtype, parent=parent
+        )
 
     def parse_data(  # pylint: disable=too-many-arguments
         self,
@@ -292,7 +324,7 @@ class Context:
         parser_ordered: bool = False,
         parser_strict: bool = False,
         validation_no_state: bool = False,
-        validation_validate_present: bool = False
+        validation_validate_present: bool = False,
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -302,11 +334,10 @@ class Context:
             parse_only=parser_parse_only,
             opaq=parser_opaq,
             ordered=parser_ordered,
-            strict=parser_strict
+            strict=parser_strict,
         )
         validation_flgs = validation_flags(
-            no_state=validation_no_state,
-            validate_present=validation_validate_present
+            no_state=validation_no_state, validate_present=validation_validate_present
         )
         fmt = data_format(fmt)
         encode = True
@@ -319,14 +350,24 @@ class Context:
             raise self.error("failed to read input data")
 
         if parent is not None:
-            ret = lib.lyd_parse_data(self.cdata, parent.cdata, data[0], fmt, parser_flgs, validation_flgs, ffi.NULL)
+            ret = lib.lyd_parse_data(
+                self.cdata,
+                parent.cdata,
+                data[0],
+                fmt,
+                parser_flgs,
+                validation_flgs,
+                ffi.NULL,
+            )
             lib.ly_in_free(data[0], 0)
             if ret != lib.LY_SUCCESS:
                 raise self.error("failed to parse data tree")
             return
 
         dnode = ffi.new("struct lyd_node **")
-        ret = lib.lyd_parse_data(self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode)
+        ret = lib.lyd_parse_data(
+            self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode
+        )
         lib.ly_in_free(data[0], 0)
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to parse data tree")
@@ -348,21 +389,22 @@ class Context:
         parser_ordered: bool = False,
         parser_strict: bool = False,
         validation_no_state: bool = False,
-        validation_validate_present: bool = False
+        validation_validate_present: bool = False,
     ) -> Optional[DNode]:
-        return self.parse_data(fmt,
-                               in_type=IO_type.MEMORY,
-                               in_data=data,
-                               parent=parent,
-                               parser_lyb_mod_update=parser_lyb_mod_update,
-                               parser_no_state=parser_no_state,
-                               parser_parse_only=parser_parse_only,
-                               parser_opaq=parser_opaq,
-                               parser_ordered=parser_ordered,
-                               parser_strict=parser_strict,
-                               validation_no_state=validation_no_state,
-                               validation_validate_present=validation_validate_present
-                               )
+        return self.parse_data(
+            fmt,
+            in_type=IO_type.MEMORY,
+            in_data=data,
+            parent=parent,
+            parser_lyb_mod_update=parser_lyb_mod_update,
+            parser_no_state=parser_no_state,
+            parser_parse_only=parser_parse_only,
+            parser_opaq=parser_opaq,
+            parser_ordered=parser_ordered,
+            parser_strict=parser_strict,
+            validation_no_state=validation_no_state,
+            validation_validate_present=validation_validate_present,
+        )
 
     def parse_data_file(
         self,
@@ -376,21 +418,22 @@ class Context:
         parser_ordered: bool = False,
         parser_strict: bool = False,
         validation_no_state: bool = False,
-        validation_validate_present: bool = False
+        validation_validate_present: bool = False,
     ) -> Optional[DNode]:
-        return self.parse_data(fmt,
-                               in_type=IO_type.FD,
-                               in_data=fileobj,
-                               parent=parent,
-                               parser_lyb_mod_update=parser_lyb_mod_update,
-                               parser_no_state=parser_no_state,
-                               parser_parse_only=parser_parse_only,
-                               parser_opaq=parser_opaq,
-                               parser_ordered=parser_ordered,
-                               parser_strict=parser_strict,
-                               validation_no_state=validation_no_state,
-                               validation_validate_present=validation_validate_present
-                               )
+        return self.parse_data(
+            fmt,
+            in_type=IO_type.FD,
+            in_data=fileobj,
+            parent=parent,
+            parser_lyb_mod_update=parser_lyb_mod_update,
+            parser_no_state=parser_no_state,
+            parser_parse_only=parser_parse_only,
+            parser_opaq=parser_opaq,
+            parser_ordered=parser_ordered,
+            parser_strict=parser_strict,
+            validation_no_state=validation_no_state,
+            validation_validate_present=validation_validate_present,
+        )
 
     def __iter__(self) -> Iterator[Module]:
         """

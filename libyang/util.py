@@ -47,6 +47,19 @@ def p_str2c(s: Optional[str], encode: bool = True):
 
 
 # -------------------------------------------------------------------------------------
+def ly_array_count(cdata):
+    if cdata == ffi.NULL:
+        return 0
+    return ffi.cast("uint64_t *", cdata)[-1]
+
+
+# -------------------------------------------------------------------------------------
+def ly_array_iter(cdata):
+    for i in range(ly_array_count(cdata)):
+        yield cdata[i]
+
+
+# -------------------------------------------------------------------------------------
 class IO_type(enum.Enum):
     FD = enum.auto()
     FILE = enum.auto()

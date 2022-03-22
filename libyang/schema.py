@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: MIT
 
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
+from contextlib import suppress
 
 from _libyang import ffi, lib
-from .util import c2str, str2c, IO_type, DataType, init_output
+from .util import c2str, str2c, IO_type, DataType, init_output, ly_array_iter
 
 
 # -------------------------------------------------------------------------------------
@@ -113,9 +114,8 @@ class Module:
         raise self.context.error("no such feature: %r" % name)
 
     def revisions(self) -> Iterator["Revision"]:
-        arr_length = ffi.cast("uint64_t *", self.cdata.parsed.revs)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield Revision(self.context, self.cdata.parsed.revs[i])
+        for revision in ly_array_iter(self.cdata.parsed.revs):
+            yield Revision(self.context, revision, self)
 
     def __iter__(self) -> Iterator["SNode"]:
         return self.children()
@@ -220,11 +220,12 @@ class Module:
 # -------------------------------------------------------------------------------------
 class Revision:
 
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "module")
 
-    def __init__(self, context: "libyang.Context", cdata):
+    def __init__(self, context: "libyang.Context", cdata, module):
         self.context = context
-        self.cdata = cdata  # C type: "struct lys_revision *"
+        self.cdata = cdata  # C type: "struct lysp_revision *"
+        self.module = module
 
     def date(self) -> str:
         return c2str(self.cdata.date)
@@ -235,13 +236,13 @@ class Revision:
     def reference(self) -> Optional[str]:
         return c2str(self.cdata.ref)
 
-    def extensions(self) -> Iterator["Extension"]:
-        for i in range(self.cdata.ext_size):
-            yield Extension(self.context, self.cdata.ext[i])
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
 
     def get_extension(
         self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
-    ) -> Optional["Extension"]:
+    ) -> Optional["ExtensionParsed"]:
         for ext in self.extensions():
             if ext.name() != name:
                 continue
@@ -263,23 +264,16 @@ class Revision:
 # -------------------------------------------------------------------------------------
 class Extension:
 
-    __slots__ = ("context", "cdata", "cdata_def")
+    __slots__ = ("context", "cdata")
 
-    def __init__(self, context: "libyang.Context", cdata):
+
+    def __init__(self, context: "libyang.Context", cdata,
+                 module_parent: Module = None):
         self.context = context
-        self.cdata = cdata  # C type: "struct lys_ext_instance *"
-        self.cdata_def = getattr(cdata, "def")
-
-    def name(self) -> str:
-        return c2str(self.cdata_def.name)
+        self.cdata = cdata
 
     def argument(self) -> Optional[str]:
         return c2str(self.cdata.argument)
-
-    def module(self) -> Module:
-        if not self.cdata_def.module:
-            raise self.context.error("cannot get module")
-        return Module(self.context, self.cdata_def.module)
 
     def __repr__(self):
         cls = self.__class__
@@ -287,6 +281,48 @@ class Extension:
 
     def __str__(self):
         return self.name()
+
+
+# -------------------------------------------------------------------------------------
+class ExtensionParsed(Extension):
+
+    __slots__ = ("module_parent")
+
+    def __init__(self, context: "libyang.Context", cdata,
+                 module_parent: Module = None):
+        super().__init__(context, cdata)
+        self.module_parent = module_parent
+
+    def _module_from_parsed(self) -> Module:
+        prefix = c2str(self.cdata.name).split(':')[0]
+        for cdata_imp_mod in ly_array_iter(self.module_parent.cdata.parsed.imports):
+            if ffi.string(cdata_imp_mod.prefix).decode() == prefix:
+                return Module(self.context, cdata_imp_mod.module)
+        raise self.context.error("cannot get module")
+
+    def name(self) -> str:
+        return c2str(self.cdata.name).split(':')[1]
+
+    def module(self) -> Module:
+        return self._module_from_parsed()
+
+
+# -------------------------------------------------------------------------------------
+class ExtensionCompiled(Extension):
+
+    __slots__ = ("cdata_def")
+
+    def __init__(self, context: "libyang.Context", cdata):
+        super().__init__(context, cdata)
+        self.cdata_def = getattr(cdata, "def", None)
+
+    def name(self) -> str:
+        return c2str(self.cdata_def.name)
+
+    def module(self) -> Module:
+        if not self.cdata_def.module:
+            raise self.context.error("cannot get module")
+        return Module(self.context, self.cdata_def.module)
 
 
 # -------------------------------------------------------------------------------------
@@ -442,17 +478,15 @@ class Type:
         if self.cdata.basetype != self.UNION:
             return
         t = ffi.cast('struct lysc_type_union *', self.cdata)
-        arr_length = ffi.cast("uint64_t *", t.types)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield Type(self.context, t.types[i], None)
+        for union_type in ly_array_iter(t.types):
+            yield Type(self.context, union_type, None)
 
     def enums(self) -> Iterator[Enum]:
         if self.cdata.basetype != self.ENUM:
             return
         t = ffi.cast('struct lysc_type_enum *', self.cdata)
-        arr_length = ffi.cast("uint64_t *", t.enums)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield Enum(self.context, t.enums[i])
+        for enum in ly_array_iter(t.enums):
+            yield Enum(self.context, enum)
 
     def all_enums(self) -> Iterator[Enum]:
         for b in self.get_bases():
@@ -462,9 +496,8 @@ class Type:
         if self.cdata.basetype != self.BITS:
             return
         t = ffi.cast('struct lysc_type_bits *', self.cdata)
-        arr_length = ffi.cast("uint64_t *", t.bits)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield Bit(self.context, t.bits[i])
+        for bit in ly_array_iter(t.bits):
+            yield Enum(self.context, bit)
 
     def all_bits(self) -> Iterator[Bit]:
         for b in self.get_bases():
@@ -535,16 +568,16 @@ class Type:
             raise self.context.error("cannot get module")
         return Module(self.context, module_p)
 
-    def extensions(self) -> Iterator[Extension]:
+    def extensions(self) -> Iterator[ExtensionCompiled]:
         for i in range(self.cdata.ext_size):
-            yield Extension(self.context, self.cdata.ext[i])
+            yield ExtensionCompiled(self.context, self.cdata.ext[i])
         if self.cdata.parent:
             for i in range(self.cdata.parent.ext_size):
-                yield Extension(self.context, self.cdata.parent.ext[i])
+                yield ExtensionCompiled(self.context, self.cdata.parent.ext[i])
 
     def get_extension(
         self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
-    ) -> Optional[Extension]:
+    ) -> Optional[ExtensionCompiled]:
         for ext in self.extensions():
             if ext.name() != name:
                 continue
@@ -570,7 +603,7 @@ class Feature:
 
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
-        self.cdata = cdata  # C type: "struct lys_feature *"
+        self.cdata = cdata  # C type: "struct lysp_feature *"
 
     def name(self) -> str:
         return c2str(self.cdata.name)
@@ -591,8 +624,14 @@ class Feature:
         return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
 
     def if_features(self) -> Iterator["IfFeatureExpr"]:
-        for i in range(self.cdata.iffeature_size):
-            yield IfFeatureExpr(self.context, self.cdata.iffeature[i])
+        arr_length = ffi.cast("uint64_t *", self.cdata.iffeatures)[-1]
+        for i in range(arr_length):
+            yield IfFeatureExpr(self.context, self.cdata.iffeatures[i])
+
+    def test_all_if_features(self) -> Iterator["IfFeatureExpr"]:
+        for cdata_lysc_iffeature in ly_array_iter(self.cdata.iffeatures_c):
+            for cdata_feature in ly_array_iter(cdata_lysc_iffeature.features):
+                yield Feature(self.context, cdata_feature)
 
     def module(self) -> Module:
         module_p = lib.lys_main_module(self.cdata.module)
@@ -607,11 +646,18 @@ class Feature:
 # -------------------------------------------------------------------------------------
 class IfFeatureExpr:
 
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "module_features", "compiled")
 
-    def __init__(self, context: "libyang.Context", cdata):
+    def __init__(self, context: "libyang.Context", cdata, module_features=None):
+        """
+        if module_features is not None, it means we are using a parsed IfFeatureExpr
+        """
         self.context = context
-        self.cdata = cdata  # C type: "struct lys_iffeature *"
+        # Can be "struct lysc_iffeature *" if comes from module feature
+        # Can be "struct lysp_qname *" if comes from lysp_node
+        self.cdata = cdata
+        self.module_features = module_features
+        self.compiled = not module_features
 
     def _get_operator(self, position: int) -> int:
         # the ->exp field is a 2bit array of operator values stored under a uint8_t C
@@ -622,15 +668,76 @@ class IfFeatureExpr:
         result = item & (mask << shift)
         return result >> shift
 
+    def _get_operands_parsed(self):
+        qname = ffi.string(self.cdata.str).decode()
+        tokens = qname.split()
+        operators = []
+        features = []
+        operators_map = {
+            'or': lib.LYS_IFF_OR,
+            'and': lib.LYS_IFF_AND,
+            'not': lib.LYS_IFF_NOT,
+            'f': lib.LYS_IFF_F,
+        }
+
+        def get_feature(name):
+            for feature in self.module_features:
+                if feature.name() == name:
+                    return feature.cdata
+            raise Exception("No feature %s in module" % name)
+
+        def parse_iffeature(tokens):
+            def oper2(op):
+                op_index = tokens.index(op)
+                operators.append(operators_map[op])
+                left, right = tokens[:op_index], tokens[op_index+1:]
+                parse_iffeature(left)
+                parse_iffeature(right)
+
+            def oper1(op):
+                op_index = tokens.index(op)
+                feature_name = tokens[op_index+1]
+                operators.append(operators_map[op])
+                operators.append(operators_map['f'])
+                features.append(get_feature(feature_name))
+
+            oper_map = {'or': oper2, 'and': oper2, 'not': oper1}
+            for op, fun in oper_map.items():
+                with suppress(ValueError):
+                    fun(op)
+                    return
+
+            # Token is a feature
+            operators.append(operators_map['f'])
+            features.append(get_feature(tokens[0]))
+
+        parse_iffeature(tokens)
+
+        return operators, features
+
     def _operands(self) -> Iterator[Union["IfFeature", type]]:
+        if self.compiled:
+            def get_operator(op_index):
+                return self._get_operator(op_index)
+
+            def get_feature(ft_index):
+                return self.cdata.features[ft_index]
+        else:
+            operators, features = self._get_operands_parsed()
+            def get_operator(op_index):
+                return operators[op_index]
+
+            def get_feature(ft_index):
+                return features[ft_index]
+
         op_index = 0
         ft_index = 0
         expected = 1
         while expected > 0:
-            operator = self._get_operator(op_index)
+            operator = get_operator(op_index)
             op_index += 1
             if operator == lib.LYS_IFF_F:
-                yield IfFeature(self.context, self.cdata.features[ft_index])
+                yield IfFeature(self.context, get_feature(ft_index))
                 ft_index += 1
                 expected -= 1
             elif operator == lib.LYS_IFF_NOT:
@@ -840,20 +947,19 @@ class SNode:
         finally:
             lib.free(s)
 
-    def extensions(self) -> Iterator[Extension]:
+    def extensions(self) -> Iterator[ExtensionCompiled]:
         ext = ffi.cast('struct lysc_ext_instance *', self.cdata.exts)
         if ext == ffi.NULL:
             return iter(())
-        arr_length = ffi.cast("uint64_t *", ext)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield Extension(self.context, ext[i])
+        for extension in ly_array_iter(ext):
+            yield ExtensionCompiled(self.context, extension)
 
     def must_conditions(self) -> Iterator[str]:
         return iter(())
 
     def get_extension(
         self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
-    ) -> Optional[Extension]:
+    ) -> Optional[ExtensionCompiled]:
         for ext in self.extensions():
             if ext.name() != name:
                 continue
@@ -866,9 +972,10 @@ class SNode:
 
     def if_features(self) -> Iterator[IfFeatureExpr]:
         iff = ffi.cast('struct  lysp_qname *', self.cdata_parsed.iffeatures)
-        arr_length = ffi.cast("uint64_t *", iff)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield IfFeatureExpr(self.context, iff[i])
+        module_features = self.module().features()
+        for if_feature in ly_array_iter(iff):
+            yield IfFeatureExpr(self.context, if_feature, list(module_features))
+
 
     def parent(self) -> Optional["SNode"]:
         parent_p = self.cdata.parent
@@ -883,9 +990,8 @@ class SNode:
         wh = lib.lysc_node_when(self.cdata)
         if wh == ffi.NULL:
             return iter(())
-        arr_length = ffi.cast("uint64_t *", wh)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield c2str(lib.lyxp_get_expr(wh[i].cond))
+        for cond in ly_array_iter(wh):
+            yield c2str(lib.lyxp_get_expr(cond.cond))
 
     def __repr__(self):
         cls = self.__class__
@@ -953,9 +1059,8 @@ class SLeaf(SNode):
         pdata = self.cdata_leaf_parsed
         if pdata.musts == ffi.NULL:
             return iter(())
-        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield c2str(pdata.musts[i].arg.str)
+        for must in ly_array_iter(pdata.musts):
+            yield c2str(must.arg.str)
 
     def __str__(self):
         return "%s %s" % (self.name(), self.type().name())
@@ -1001,9 +1106,8 @@ class SLeafList(SNode):
         pdata = self.cdata_leaflist_parsed
         if pdata.musts == ffi.NULL:
             return iter(())
-        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield c2str(pdata.musts[i].arg.str)
+        for must in ly_array_iter(pdata.musts):
+            yield c2str(must.arg.str)
 
     def __str__(self):
         return "%s %s" % (self.name(), self.type().name())
@@ -1030,9 +1134,8 @@ class SContainer(SNode):
         pdata = self.cdata_container_parsed
         if pdata.musts == ffi.NULL:
             return iter(())
-        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield c2str(pdata.musts[i].arg.str)
+        for must in ly_array_iter(pdata.musts):
+            yield c2str(must.arg.str)
 
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
@@ -1074,9 +1177,8 @@ class SList(SNode):
         pdata = self.cdata_list_parsed
         if pdata.musts == ffi.NULL:
             return iter(())
-        arr_length = ffi.cast("uint64_t *", pdata.musts)[-1]  # calc length of Sized Arrays
-        for i in range(arr_length):
-            yield c2str(pdata.musts[i].arg.str)
+        for must in ly_array_iter(pdata.musts):
+            yield c2str(must.arg.str)
 
     def __str__(self):
         return "%s [%s]" % (self.name(), ", ".join(k.name() for k in self.keys()))
@@ -1121,7 +1223,11 @@ class SRpc(SNode):
         return self.children()
 
     def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+        yield from iter_children(self.context, self.cdata, types=types)
+        # With libyang2, you can get only input or output
+        # To keep behavior, we iter 2 times witt output options
+        yield from iter_children(self.context, self.cdata,
+                                 types=types, options=lib.LYS_GETNEXT_OUTPUT)
 
 
 # -------------------------------------------------------------------------------------

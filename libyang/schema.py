@@ -898,9 +898,7 @@ class SNode:
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_node *"
-        self.cdata_parsed = None
-        if self.cdata.priv != ffi.NULL:
-            self.cdata_parsed = ffi.cast("struct lysp_node *", self.cdata.priv)
+        self.cdata_parsed = ffi.cast("struct lysp_node *", self.cdata.priv)
 
     def nodetype(self) -> int:
         return self.cdata.nodetype

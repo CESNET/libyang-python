@@ -26,32 +26,23 @@ LOG = logging.getLogger(__name__)
 
 # -------------------------------------------------------------------------------------
 def printer_flags(
-    keepemptycont: bool = False,
-    shrink: bool = False,
-    wd_all: bool = False,
-    wd_all_tag: bool = False,
-    wd_explicit: bool = False,
-    wd_impl_tag: bool = False,
-    wd_trim: bool = False,
     with_siblings: bool = False,
+    pretty: bool = True,
+    keep_empty_containers: bool = False,
+    trim_default_values: bool = False,
+    include_implicit_defaults: bool = False,
 ) -> int:
     flags = 0
-    if wd_impl_tag:
-        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
-    if shrink:
-        flags |= lib.LYD_PRINT_SHRINK
-    if wd_all:
-        flags |= lib.LYD_PRINT_WD_ALL
-    if wd_all_tag:
-        flags |= lib.LYD_PRINT_WD_ALL_TAG
-    if wd_explicit:
-        flags |= lib.LYD_PRINT_WD_EXPLICIT
-    if wd_impl_tag:
-        flags |= lib.LYD_PRINT_WD_IMPL_TAG
-    if wd_trim:
-        flags |= lib.LYD_PRINT_WD_TRIM
     if with_siblings:
         flags |= lib.LYD_PRINT_WITHSIBLINGS
+    if not pretty:
+        flags |= lib.LYD_PRINT_SHRINK
+    if keep_empty_containers:
+        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
+    if trim_default_values:
+        flags |= lib.LYD_PRINT_WD_TRIM
+    if include_implicit_defaults:
+        flags |= lib.LYD_PRINT_WD_ALL
     return flags
 
 
@@ -493,23 +484,17 @@ class DNode:
         fmt: str,
         out_type: IO_type,
         out_target: Union[IO, str, None] = None,
-        printer_keepemptycont: bool = False,
-        printer_shrink: bool = False,
-        printer_wd_all: bool = False,
-        printer_wd_all_tag: bool = False,
-        printer_wd_explicit: bool = False,
-        printer_wd_impl_tag: bool = False,
-        printer_wd_trim: bool = False,
-        printer_with_siblings: bool = False,
+        with_siblings: bool = False,
+        pretty: bool = True,
+        keep_empty_containers: bool = False,
+        trim_default_values: bool = False,
+        include_implicit_defaults: bool = False,
     ) -> Union[str, bytes]:
         flags = printer_flags(
-            keepemptycont=printer_keepemptycont,
-            shrink=printer_shrink,
-            wd_all=printer_wd_all,
-            wd_all_tag=printer_wd_all_tag,
-            wd_explicit=printer_wd_explicit,
-            wd_impl_tag=printer_wd_impl_tag,
-            wd_trim=printer_wd_trim,
+            pretty=pretty,
+            keep_empty_containers=keep_empty_containers,
+            trim_default_values=trim_default_values,
+            include_implicit_defaults=include_implicit_defaults,
         )
         fmt = data_format(fmt)
         out_data = ffi.new("struct ly_out **")
@@ -530,7 +515,7 @@ class DNode:
             if ret != lib.LY_SUCCESS:
                 raise self.context.error("failed to initialize output target")
 
-            if printer_with_siblings:
+            if with_siblings:
                 ret = lib.lyd_print_all(out_data[0], self.cdata, fmt, flags)
             else:
                 ret = lib.lyd_print_tree(out_data[0], self.cdata, fmt, flags)
@@ -549,24 +534,18 @@ class DNode:
     def print_mem(
         self,
         fmt: str,
-        printer_keepemptycont: bool = False,
-        printer_shrink: bool = False,
-        printer_wd_all: bool = False,
-        printer_wd_all_tag: bool = False,
-        printer_wd_explicit: bool = False,
-        printer_wd_impl_tag: bool = False,
-        printer_wd_trim: bool = False,
-        printer_with_siblings: bool = False,
+        with_siblings: bool = False,
+        pretty: bool = True,
+        keep_empty_containers: bool = False,
+        trim_default_values: bool = False,
+        include_implicit_defaults: bool = False,
     ) -> Union[str, bytes]:
         flags = printer_flags(
-            keepemptycont=printer_keepemptycont,
-            shrink=printer_shrink,
-            wd_all=printer_wd_all,
-            wd_all_tag=printer_wd_all_tag,
-            wd_explicit=printer_wd_explicit,
-            wd_impl_tag=printer_wd_impl_tag,
-            wd_trim=printer_wd_trim,
-            with_siblings=printer_with_siblings,
+            with_siblings=with_siblings,
+            pretty=pretty,
+            keep_empty_containers=keep_empty_containers,
+            trim_default_values=trim_default_values,
+            include_implicit_defaults=include_implicit_defaults,
         )
         buf = ffi.new("char **")
         fmt = data_format(fmt)
@@ -586,26 +565,45 @@ class DNode:
         fileobj: IO,
         fmt: str,
         with_siblings: bool = False,
-        include_implicit_defaults: bool = False,
-        trim_default_values: bool = False,
+        pretty: bool = True,
         keep_empty_containers: bool = False,
+        trim_default_values: bool = False,
+        include_implicit_defaults: bool = False,
     ) -> None:
         flags = printer_flags(
             with_siblings=with_siblings,
-            include_implicit_defaults=include_implicit_defaults,
-            trim_default_values=trim_default_values,
+            pretty=pretty,
             keep_empty_containers=keep_empty_containers,
+            trim_default_values=trim_default_values,
+            include_implicit_defaults=include_implicit_defaults,
         )
         fmt = data_format(fmt)
         ret = lib.lyd_print_fd(fileobj.fileno(), self.cdata, fmt, flags)
         if ret != 0:
             raise self.context.error("cannot print node")
 
+    def should_print(
+        self,
+        trim_default_values: bool = False,
+        keep_empty_containers: bool = False,
+    ) -> bool:
+        """
+        Check if a node should be "printed".
+        :arg bool trim_default_values:
+            Exclude nodes with the value equal to their default value.
+        :arg bool keep_empty_containers:
+            Preserve empty non-presence containers.
+        """
+        return node_should_print(self.cdata, trim_default_values, keep_empty_containers)
+
     def print_dict(
         self,
         strip_prefixes: bool = True,
         absolute: bool = True,
         with_siblings: bool = False,
+        include_implicit_defaults: bool = False,
+        trim_default_values: bool = False,
+        keep_empty_containers: bool = False,
     ) -> Dict[str, Any]:
         """
         Convert a DNode object to a python dictionary.
@@ -618,7 +616,19 @@ class DNode:
             tree starting from the root.
         :arg bool with_siblings:
             If True, include the node's siblings.
+        :arg bool include_implicit_defaults:
+            Include implicit default nodes.
+        :arg bool trim_default_values:
+            Exclude nodes with the value equal to their default value.
+        :arg bool keep_empty_containers:
+            Preserve empty non-presence containers.
         """
+        flags = printer_flags(
+            include_implicit_defaults=include_implicit_defaults,
+            trim_default_values=trim_default_values,
+            keep_empty_containers=keep_empty_containers,
+        )
+
         name_cache = {}
 
         def _node_name(node):
@@ -662,6 +672,8 @@ class DNode:
             return KeyedList(key_name=list_keys_cache[snode])
 
         def _to_dict(node, parent_dic):
+            if not lib.lyd_node_should_print(node, flags):
+                return
             name = _node_name(node)
             if node.schema.nodetype == SNode.LIST:
                 list_element = {}

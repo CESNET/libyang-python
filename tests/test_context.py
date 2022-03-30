@@ -22,7 +22,7 @@ class ContextTest(unittest.TestCase):
         ctx = Context(YANG_DIR, yanglib_path=YANG_DIR + "/yang-library.json")
         ctx.load_module("yolo-system")
         dnode = ctx.get_yanglib_data()
-        j = dnode.print_mem("json", printer_with_siblings=True)
+        j = dnode.print_mem("json", with_siblings=True)
         self.assertIsInstance(j, str)
 
     def test_ctx_dir(self):

@@ -318,6 +318,7 @@ struct ly_out;
 typedef uint8_t ly_bool;
 void ly_in_free(struct ly_in *, ly_bool);
 void ly_out_free(struct ly_out *, void(*)(void *arg), ly_bool);
+ly_bool lyd_node_should_print(const struct lyd_node *node, uint32_t options);
 LY_ERR ly_in_new_memory(const char *, struct ly_in **);
 LY_ERR ly_in_new_filepath(const char *, size_t, struct ly_in **);
 LY_ERR ly_in_new_fd(int, struct ly_in **);

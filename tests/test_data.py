@@ -70,7 +70,7 @@ class DataTest(unittest.TestCase):
         )
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", printer_with_siblings=True)
+            j = dnode.print_mem("json", with_siblings=True)
             self.assertEqual(j, self.JSON_CONFIG)
         finally:
             dnode.free()
@@ -118,7 +118,7 @@ class DataTest(unittest.TestCase):
         )
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", printer_with_siblings=True)
+            j = dnode.print_mem("json", with_siblings=True)
             self.assertEqual(j, self.JSON_CONFIG_ADD_LIST_ITEM)
         finally:
             dnode.free()
@@ -181,7 +181,7 @@ class DataTest(unittest.TestCase):
         )
         self.assertIsInstance(dnode, DContainer)
         try:
-            j = dnode.print_mem("json", printer_with_siblings=True)
+            j = dnode.print_mem("json", with_siblings=True)
             self.assertEqual(j, self.JSON_STATE)
         finally:
             dnode.free()
@@ -214,7 +214,7 @@ class DataTest(unittest.TestCase):
         )
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", printer_with_siblings=True)
+            xml = dnode.print_mem("xml", with_siblings=True)
             self.assertEqual(xml, self.XML_CONFIG)
         finally:
             dnode.free()
@@ -247,9 +247,7 @@ class DataTest(unittest.TestCase):
         )
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print(
-                "xml", out_type=IO_type.MEMORY, printer_with_siblings=True
-            )
+            xml = dnode.print("xml", out_type=IO_type.MEMORY, with_siblings=True)
             self.assertEqual(xml, self.XML_STATE)
         finally:
             dnode.free()
@@ -526,7 +524,7 @@ class DataTest(unittest.TestCase):
             {"hostname": "foo"}, strict=True, validate=True, validate_present=True
         )
         try:
-            j = dnode.print_mem("json", printer_shrink=True)
+            j = dnode.print_mem("json", pretty=False)
         finally:
             dnode.free()
         self.assertEqual(j, '{"yolo-system:state":{"hostname":"foo"}}')
@@ -541,7 +539,7 @@ class DataTest(unittest.TestCase):
             operation_type=DataType.REPLY_YANG,
         )
         try:
-            j = dnode.print_mem("json", printer_shrink=True)
+            j = dnode.print_mem("json", pretty=False)
         finally:
             dnode.free()
         self.assertEqual(j, '{"yolo-system:format-disk":{"duration":42}}')

@@ -149,7 +149,10 @@ def data_type(dtype):
 
 
 # -------------------------------------------------------------------------------------
-def validation_flags(no_state: bool = False, validate_present: bool = False) -> int:
+def validation_flags(
+    no_state: bool = False,
+    validate_present: bool = False,
+) -> int:
     flags = 0
     if no_state:
         flags |= lib.LYD_VALIDATE_NO_STATE
@@ -375,6 +378,27 @@ class DNode:
             lib.free(path)
 
     def validate(
+        self,
+        no_state: bool = False,
+        validate_present: bool = False,
+        rpc: bool = False,
+        rpcreply: bool = False,
+        notification: bool = False,
+    ) -> None:
+        dtype = None
+        if rpc:
+            dtype = DataType.RPC_NETCONF
+        elif rpcreply:
+            dtype = DataType.REPLY_NETCONF
+        elif notification:
+            dtype = DataType.NOTIF_NETCONF
+
+        if dtype is None:
+            self.validate_all(no_state, validate_present)
+        else:
+            self.validate_op(dtype)
+
+    def validate_all(
         self,
         no_state: bool = False,
         validate_present: bool = False,
@@ -728,7 +752,8 @@ class DNode:
         validate_present: bool = False,
         validate: bool = True,
         strict: bool = False,
-        operation_type: DataType = None,
+        rpc: bool = False,
+        rpcreply: bool = False,
     ) -> Optional["DNode"]:
         """
         Merge a python dictionary into this node. The returned value is the first
@@ -744,10 +769,10 @@ class DNode:
             Run validation on result of the operation.
         :arg strict:
             Instead of ignoring data without schema definition, raise an error.
-        :arg operation_type:
-            The operation cannot be determined automatically since RPC/action and a reply to it share
-            the common top level node referencing the RPC/action schema node and may not have any
-            input/output children to use for distinction. See DataType for options.
+        :arg rpc:
+            Data represents RPC or action input parameters.
+        :arg rpcreply:
+            Data represents RPC or action output parameters.
         """
         return dict_to_dnode(
             dic,
@@ -757,7 +782,8 @@ class DNode:
             validate_present=validate_present,
             validate=validate,
             strict=strict,
-            operation_type=operation_type,
+            rpc=rpc,
+            rpcreply=rpcreply,
         )
 
     def free(self, with_siblings: bool = True) -> None:
@@ -916,7 +942,9 @@ def dict_to_dnode(
     validate_present: bool = False,
     validate: bool = True,
     strict: bool = False,
-    operation_type: DataType = None,
+    rpc: bool = False,
+    rpcreply: bool = False,
+    notification: bool = False,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -937,10 +965,12 @@ def dict_to_dnode(
         Run validation on result of the operation.
     :arg strict:
         Instead of ignoring data without schema definition, raise an error.
-    :arg operation_type:
-        The operation cannot be determined automatically since RPC/action and a reply to it share
-        the common top level node referencing the RPC/action schema node and may not have any
-        input/output children to use for distinction. See DataType for options.
+    :arg rpc:
+        Data represents RPC or action input parameters.
+    :arg rpcreply:
+        Data represents RPC or action output parameters.
+    :arg notification:
+        Data represents notification parameters.
     """
     if not dic:
         return None
@@ -951,13 +981,6 @@ def dict_to_dnode(
         raise TypeError("module argument must be a Module object")
     if parent is not None and not isinstance(parent, DNode):
         raise TypeError("parent argument must be a DNode object or None")
-
-    rpcreply = False
-    if (
-        operation_type == DataType.REPLY_YANG
-        or operation_type == DataType.REPLY_NETCONF
-    ):
-        rpcreply = True
 
     created = []
 
@@ -1157,12 +1180,13 @@ def dict_to_dnode(
         if created:
             result = DNode.new(module.context, created[0])
             if validate:
-                if operation_type is None:
-                    result.root().validate(
-                        no_state=no_state, validate_present=validate_present
-                    )
-                else:
-                    result.root().validate_op(operation_type)
+                result.root().validate(
+                    no_state=no_state,
+                    validate_present=validate_present,
+                    rpc=rpc,
+                    rpcreply=rpcreply,
+                    notification=notification,
+                )
 
     except:
         for c in reversed(created):

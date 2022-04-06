@@ -189,7 +189,9 @@ class Module:
         validate_present: bool = False,
         validate: bool = True,
         strict: bool = False,
-        operation_type: DataType = None,
+        rpc: bool = False,
+        rpcreply: bool = False,
+        notification: bool = False,
     ) -> "libyang.data.DNode":
         """
         Convert a python dictionary to a DNode object following the schema of this
@@ -206,10 +208,12 @@ class Module:
             Run validation on result of the operation.
         :arg strict:
             Instead of ignoring data without schema definition, raise an error.
-        :arg operation_type:
-            The operation cannot be determined automatically since RPC/action and a reply to it share
-            the common top level node referencing the RPC/action schema node and may not have any
-            input/output children to use for distinction. See DataType for options.
+        :arg rpc:
+            Data represents RPC or action input parameters.
+        :arg rpcreply:
+            Data represents RPC or action output parameters.
+        :arg notification:
+            Data represents a NETCONF notification.
         """
         from .data import dict_to_dnode  # circular import
 
@@ -220,7 +224,9 @@ class Module:
             validate_present=validate_present,
             validate=validate,
             strict=strict,
-            operation_type=operation_type,
+            rpc=rpc,
+            rpcreply=rpcreply,
+            notification=notification,
         )
 
 

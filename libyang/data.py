@@ -387,11 +387,11 @@ class DNode:
     ) -> None:
         dtype = None
         if rpc:
-            dtype = DataType.RPC_NETCONF
+            dtype = DataType.RPC_YANG
         elif rpcreply:
-            dtype = DataType.REPLY_NETCONF
+            dtype = DataType.REPLY_YANG
         elif notification:
-            dtype = DataType.NOTIF_NETCONF
+            dtype = DataType.NOTIF_YANG
 
         if dtype is None:
             self.validate_all(no_state, validate_present)

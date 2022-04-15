@@ -181,8 +181,7 @@ class Module:
     def parse_data_dict(
         self,
         dic: Dict[str, Any],
-        no_state: bool = False,
-        validate_present: bool = False,
+        config: bool = False,
         validate: bool = True,
         strict: bool = False,
         rpc: bool = False,
@@ -196,10 +195,8 @@ class Module:
 
         :arg dic:
             The python dictionary to convert.
-        :arg no_state:
+        :arg config:
             Consider state data not allowed and raise an error during validation if they are found.
-        :arg validate_present:
-            Validate result of the operation against schema.
         :arg validate:
             Run validation on result of the operation.
         :arg strict:
@@ -216,8 +213,7 @@ class Module:
         return dict_to_dnode(
             dic,
             self,
-            no_state=no_state,
-            validate_present=validate_present,
+            config=config,
             validate=validate,
             strict=strict,
             rpc=rpc,

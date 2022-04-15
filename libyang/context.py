@@ -313,126 +313,85 @@ class Context:
 
     def parse_data(
         self,
-        fmt: str,
         in_type: IOType,
         in_data: Union[str, bytes, IO],
-        parent: DNode = None,
-        parser_lyb_mod_update: bool = False,
-        parser_no_state: bool = False,
-        parser_parse_only: bool = False,
-        parser_opaq: bool = False,
-        parser_ordered: bool = False,
-        parser_strict: bool = False,
-        validation_no_state: bool = False,
-        validation_validate_present: bool = False,
-    ) -> Optional[DNode]:
+        fmt: str,
+        data: bool = False,
+        config: bool = False,
+        strict: bool = False,
+        trusted: bool = False,
+    ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        parser_flgs = parser_flags(
-            lyb_mod_update=parser_lyb_mod_update,
-            no_state=parser_no_state,
-            parse_only=parser_parse_only,
-            opaq=parser_opaq,
-            ordered=parser_ordered,
-            strict=parser_strict,
+        parse_flags = parser_flags(
+            config=config,
+            strict=strict,
+            trusted=trusted,
         )
-        validation_flgs = validation_flags(
-            no_state=validation_no_state, validate_present=validation_validate_present
-        )
+
+        if data:
+            strict = False
+        validate_flags = validation_flags(config=config, strict=strict)
+
         fmt = data_format(fmt)
-        encode = True
         if fmt == lib.LYD_LYB:
-            encode = False
-        data = ffi.new("struct ly_in **")
-        data_keepalive = []
-        ret = data_load(in_type, in_data, data, data_keepalive, encode)
-        if ret != lib.LY_SUCCESS:
-            raise self.error("failed to read input data")
+            in_data = str2c(in_data, encode=False)
+        else:
+            in_data = str2c(in_data, encode=True)
 
-        if parent is not None:
-            ret = lib.lyd_parse_data(
-                self.cdata,
-                parent.cdata,
-                data[0],
-                fmt,
-                parser_flgs,
-                validation_flgs,
-                ffi.NULL,
+        dnode = ffi.new("struct lyd_node**")
+        if in_type == IOType.MEMORY:
+            ret = lib.lyd_parse_data_mem(
+                self.cdata, in_data, fmt, parse_flags, validate_flags, dnode
             )
-            lib.ly_in_free(data[0], 0)
-            if ret != lib.LY_SUCCESS:
-                raise self.error("failed to parse data tree")
-            return None
+        elif in_type == IOType.FD:
+            ret = lib.lyd_parse_data_fd(
+                self.cdata, in_data, fmt, parse_flags, validate_flags, dnode
+            )
+        else:
+            raise self.error("can't parse %s data type" % in_type)
 
-        dnode = ffi.new("struct lyd_node **")
-        ret = lib.lyd_parse_data(
-            self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode
-        )
-        lib.ly_in_free(data[0], 0)
         if ret != lib.LY_SUCCESS:
-            raise self.error("failed to parse data tree")
+            raise self.error("can't parse data")
 
-        dnode = dnode[0]
-        if dnode == ffi.NULL:
-            return None
-        return DNode.new(self, dnode)
+        return DNode.new(self, dnode[0])
 
     def parse_data_mem(
         self,
-        data: Union[str, bytes],
+        d: Union[str, bytes],
         fmt: str,
-        parent: DNode = None,
-        parser_lyb_mod_update: bool = False,
-        parser_no_state: bool = False,
-        parser_parse_only: bool = False,
-        parser_opaq: bool = False,
-        parser_ordered: bool = False,
-        parser_strict: bool = False,
-        validation_no_state: bool = False,
-        validation_validate_present: bool = False,
-    ) -> Optional[DNode]:
+        data: bool = False,
+        config: bool = False,
+        strict: bool = False,
+        trusted: bool = False,
+    ) -> DNode:
         return self.parse_data(
-            fmt,
             in_type=IOType.MEMORY,
-            in_data=data,
-            parent=parent,
-            parser_lyb_mod_update=parser_lyb_mod_update,
-            parser_no_state=parser_no_state,
-            parser_parse_only=parser_parse_only,
-            parser_opaq=parser_opaq,
-            parser_ordered=parser_ordered,
-            parser_strict=parser_strict,
-            validation_no_state=validation_no_state,
-            validation_validate_present=validation_validate_present,
+            in_data=d,
+            fmt=fmt,
+            data=data,
+            config=config,
+            strict=strict,
+            trusted=trusted,
         )
 
     def parse_data_file(
         self,
         fileobj: IO,
         fmt: str,
-        parent: DNode = None,
-        parser_lyb_mod_update: bool = False,
-        parser_no_state: bool = False,
-        parser_parse_only: bool = False,
-        parser_opaq: bool = False,
-        parser_ordered: bool = False,
-        parser_strict: bool = False,
-        validation_no_state: bool = False,
-        validation_validate_present: bool = False,
+        data: bool = False,
+        config: bool = False,
+        strict: bool = False,
+        trusted: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
-            fmt,
             in_type=IOType.FD,
             in_data=fileobj,
-            parent=parent,
-            parser_lyb_mod_update=parser_lyb_mod_update,
-            parser_no_state=parser_no_state,
-            parser_parse_only=parser_parse_only,
-            parser_opaq=parser_opaq,
-            parser_ordered=parser_ordered,
-            parser_strict=parser_strict,
-            validation_no_state=validation_no_state,
-            validation_validate_present=validation_validate_present,
+            fmt=fmt,
+            data=data,
+            config=config,
+            strict=strict,
+            trusted=trusted,
         )
 
     def __iter__(self) -> Iterator[Module]:

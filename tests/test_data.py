@@ -64,9 +64,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_json(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_no_state=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", with_siblings=True)
@@ -108,9 +106,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_add_path(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_no_state=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", config=True)
         dnode.new_path(
             '/yolo-system:conf/url[host="barfoo.com"][proto="http"]/path',
             "/barfoo/index.html",
@@ -121,30 +117,6 @@ class DataTest(unittest.TestCase):
             self.assertEqual(j, self.JSON_CONFIG_ADD_LIST_ITEM)
         finally:
             dnode.free()
-
-    JSON_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "data/config.json")
-
-    def test_data_parse_config_json_file(self):
-        with open(self.JSON_CONFIG_FILE, encoding="utf-8") as f:
-            dnode = self.ctx.parse_data_file(f, "json", validation_no_state=True)
-        self.assertIsInstance(dnode, DContainer)
-        dnode.free()
-
-        with open(self.JSON_CONFIG_FILE, encoding="utf-8") as f:
-            dnode = self.ctx.parse_data(
-                "json", in_data=f, in_type=IOType.FILE, validation_no_state=True
-            )
-        self.assertIsInstance(dnode, DContainer)
-        dnode.free()
-
-        dnode = self.ctx.parse_data(
-            "json",
-            in_data=self.JSON_CONFIG_FILE,
-            in_type=IOType.FILEPATH,
-            validation_no_state=True,
-        )
-        self.assertIsInstance(dnode, DContainer)
-        dnode.free()
 
     JSON_STATE = """{
   "yolo-system:state": {
@@ -175,9 +147,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_state_json(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_STATE, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_STATE, "json")
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", with_siblings=True)
@@ -208,9 +178,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(
-            self.XML_CONFIG, "xml", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print_mem("xml", with_siblings=True)
@@ -241,9 +209,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_data_xml(self):
-        dnode = self.ctx.parse_data_mem(
-            self.XML_STATE, "xml", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.XML_STATE, "xml")
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print("xml", out_type=IOType.MEMORY, with_siblings=True)
@@ -358,9 +324,7 @@ class DataTest(unittest.TestCase):
     }
 
     def test_data_to_dict_config(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json")
         self.assertIsInstance(dnode, DContainer)
         try:
             dic = dnode.print_dict()
@@ -380,9 +344,7 @@ class DataTest(unittest.TestCase):
 
     def test_data_from_dict_module(self):
         module = self.ctx.get_module("yolo-system")
-        dnode = module.parse_data_dict(
-            self.DICT_CONFIG, strict=True, validate_present=True
-        )
+        dnode = module.parse_data_dict(self.DICT_CONFIG, strict=True, config=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json")
@@ -416,7 +378,7 @@ class DataTest(unittest.TestCase):
     def test_data_from_dict_module_with_prefix(self):
         module = self.ctx.get_module("yolo-system")
         dnode = module.parse_data_dict(
-            self.DICT_CONFIG_WITH_PREFIX, strict=True, validate_present=True
+            self.DICT_CONFIG_WITH_PREFIX, strict=True, config=True
         )
         self.assertIsInstance(dnode, DContainer)
         try:
@@ -467,7 +429,7 @@ class DataTest(unittest.TestCase):
         root = module.parse_data_dict(
             {"conf": {"hostname": "foo", "speed": 1234, "number": [1000, 2000, 3000]}},
             strict=True,
-            validate_present=True,
+            config=True,
         )
         invalid_dict = {
             "url": [
@@ -490,9 +452,7 @@ class DataTest(unittest.TestCase):
         try:
             with patch("libyang.data.lib", fake_lib):
                 with self.assertRaises(LibyangError):
-                    root.merge_data_dict(
-                        invalid_dict, strict=True, validate_present=True
-                    )
+                    root.merge_data_dict(invalid_dict, strict=True)
 
             self.assertGreater(len(created), 0)
             self.assertGreater(len(freed), 0)
@@ -504,13 +464,13 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.create_data_path("/yolo-system:conf")
         self.assertIsInstance(dnode, DContainer)
         subtree = dnode.merge_data_dict(
-            self.DICT_CONFIG["conf"], strict=True, validate_present=True
+            self.DICT_CONFIG["conf"], strict=True, validate=False
         )
         # make sure subtree validation is forbidden
         with self.assertRaises(LibyangError):
-            subtree.validate(validate_present=True)
+            subtree.validate()
         try:
-            dnode.validate(validate_present=True)
+            dnode.validate()
             j = dnode.print_mem("json")
         finally:
             dnode.free()
@@ -519,9 +479,7 @@ class DataTest(unittest.TestCase):
     def test_data_from_dict_leaf(self):
         dnode = self.ctx.create_data_path("/yolo-system:state")
         self.assertIsInstance(dnode, DContainer)
-        dnode.merge_data_dict(
-            {"hostname": "foo"}, strict=True, validate=True, validate_present=True
-        )
+        dnode.merge_data_dict({"hostname": "foo"}, strict=True, data=True)
         try:
             j = dnode.print_mem("json", pretty=False)
         finally:
@@ -725,13 +683,9 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_diff(self):
-        dnode1 = self.ctx.parse_data_mem(
-            self.XML_DIFF_STATE1, "xml", validation_validate_present=True
-        )
+        dnode1 = self.ctx.parse_data_mem(self.XML_DIFF_STATE1, "xml")
         self.assertIsInstance(dnode1, DContainer)
-        dnode2 = self.ctx.parse_data_mem(
-            self.XML_DIFF_STATE2, "xml", validation_validate_present=True
-        )
+        dnode2 = self.ctx.parse_data_mem(self.XML_DIFF_STATE2, "xml")
         self.assertIsInstance(dnode2, DContainer)
 
         result = dnode1.diff(dnode2)
@@ -740,9 +694,7 @@ class DataTest(unittest.TestCase):
         dnode2.free()
 
     def test_find_one(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json")
         self.assertIsInstance(dnode, DContainer)
         try:
             hostname = dnode.find_one("hostname")
@@ -752,9 +704,7 @@ class DataTest(unittest.TestCase):
             dnode.free()
 
     def test_find_all(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json")
         self.assertIsInstance(dnode, DContainer)
         try:
             urls = dnode.find_all("url")

@@ -71,26 +71,17 @@ def path_flags(
 
 # -------------------------------------------------------------------------------------
 def parser_flags(
-    lyb_mod_update: bool = False,
-    no_state: bool = False,
-    parse_only: bool = False,
-    opaq: bool = False,
-    ordered: bool = False,
+    config: bool = False,
     strict: bool = False,
+    trusted: bool = False,
 ) -> int:
     flags = 0
-    if lyb_mod_update:
-        flags |= lib.LYD_PARSE_LYB_MOD_UPDATE
-    if no_state:
+    if config:
         flags |= lib.LYD_PARSE_NO_STATE
-    if parse_only:
-        flags |= lib.LYD_PARSE_ONLY
-    if opaq:
-        flags |= lib.LYD_PARSE_OPAQ
-    if ordered:
-        flags |= lib.LYD_PARSE_ORDERED
     if strict:
         flags |= lib.LYD_PARSE_STRICT
+    if trusted:
+        flags |= lib.LYD_PARSE_ONLY
     return flags
 
 
@@ -150,13 +141,13 @@ def data_type(dtype):
 
 # -------------------------------------------------------------------------------------
 def validation_flags(
-    no_state: bool = False,
-    validate_present: bool = False,
+    config: bool = False,
+    strict: bool = False,
 ) -> int:
     flags = 0
-    if no_state:
+    if config:
         flags |= lib.LYD_VALIDATE_NO_STATE
-    if validate_present:
+    if not strict:
         flags |= lib.LYD_VALIDATE_PRESENT
     return flags
 
@@ -379,8 +370,9 @@ class DNode:
 
     def validate(
         self,
-        no_state: bool = False,
-        validate_present: bool = False,
+        data: bool = False,
+        config: bool = False,
+        strict: bool = False,
         rpc: bool = False,
         rpcreply: bool = False,
         notification: bool = False,
@@ -394,20 +386,25 @@ class DNode:
             dtype = DataType.NOTIF_YANG
 
         if dtype is None:
-            self.validate_all(no_state, validate_present)
+            self.validate_all(data, config, strict)
         else:
             self.validate_op(dtype)
 
     def validate_all(
         self,
-        no_state: bool = False,
-        validate_present: bool = False,
+        data: bool = False,
+        config: bool = False,
+        strict: bool = False,
     ) -> None:
         if self.cdata.parent:
             raise self.context.error("validation is only supported on top-level nodes")
+
+        if data:
+            strict = False
+
         flags = validation_flags(
-            no_state=no_state,
-            validate_present=validate_present,
+            config=config,
+            strict=strict,
         )
         node_p = ffi.new("struct lyd_node **")
         node_p[0] = self.cdata
@@ -431,7 +428,7 @@ class DNode:
         other: "DNode",
         no_siblings: bool = False,
         with_defaults: bool = False,
-    ) -> Iterator[DDiff]:
+    ) -> "libyang.data.DContainer":
         flags = diff_flags(with_defaults=with_defaults)
         node_p = ffi.new("struct lyd_node **")
         if no_siblings:
@@ -751,8 +748,8 @@ class DNode:
     def merge_data_dict(
         self,
         dic: Dict[str, Any],
-        no_state: bool = False,
-        validate_present: bool = False,
+        data: bool = False,
+        config: bool = False,
         validate: bool = True,
         strict: bool = False,
         rpc: bool = False,
@@ -764,10 +761,10 @@ class DNode:
 
         :arg dic:
             The python dictionary to convert.
-        :arg no_state:
+        :arg data:
+            Ignore validation errors for node without data.
+        :arg config:
             Consider state data not allowed and raise an error during validation if they are found.
-        :arg validate_present:
-            Validate result of the operation against schema.
         :arg validate:
             Run validation on result of the operation.
         :arg strict:
@@ -781,8 +778,8 @@ class DNode:
             dic,
             self.module(),
             parent=self,
-            no_state=no_state,
-            validate_present=validate_present,
+            data=data,
+            config=config,
             validate=validate,
             strict=strict,
             rpc=rpc,
@@ -941,8 +938,8 @@ def dict_to_dnode(
     dic: Dict[str, Any],
     module: Module,
     parent: Optional[DNode] = None,
-    no_state: bool = False,
-    validate_present: bool = False,
+    data: bool = False,
+    config: bool = False,
     validate: bool = True,
     strict: bool = False,
     rpc: bool = False,
@@ -960,10 +957,10 @@ def dict_to_dnode(
     :arg parent:
         Optional parent to update. If not specified a new top-level DNode will be
         created.
-    :arg no_state:
+    :arg data:
+        Ignore validation errors for node without data.
+    :arg config:
         Consider state data not allowed and raise an error during validation if they are found.
-    :arg validate_present:
-        Validate result of the operation against schema.
     :arg validate:
         Run validation on result of the operation.
     :arg strict:
@@ -1184,8 +1181,9 @@ def dict_to_dnode(
             result = DNode.new(module.context, created[0])
             if validate:
                 result.root().validate(
-                    no_state=no_state,
-                    validate_present=validate_present,
+                    data=data,
+                    config=config,
+                    strict=strict,
                     rpc=rpc,
                     rpcreply=rpcreply,
                     notification=notification,

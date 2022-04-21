@@ -793,6 +793,9 @@ class IfFeature(IfFeatureExprTree):
     def feature(self) -> Feature:
         return Feature(self.context, self.cdata)
 
+    def state(self) -> bool:
+        return self.feature().state()
+
     def dump(self, indent: int = 0) -> str:
         feat = self.feature()
         return "%s%s [%s]\n" % (" " * indent, feat.name(), feat.description())
@@ -809,6 +812,9 @@ class IfNotFeature(IfFeatureExprTree):
     def __init__(self, context: "libyang.Context", child: IfFeatureExprTree):
         self.context = context
         self.child = child
+
+    def state(self) -> bool:
+        return not self.child.state()
 
     def dump(self, indent: int = 0) -> str:
         return " " * indent + "NOT\n" + self.child.dump(indent + 1)
@@ -828,6 +834,9 @@ class IfAndFeatures(IfFeatureExprTree):
         self.context = context
         self.a = a
         self.b = b
+
+    def state(self) -> bool:
+        return self.a.state() and self.b.state()
 
     def dump(self, indent: int = 0) -> str:
         s = " " * indent + "AND\n"
@@ -850,6 +859,9 @@ class IfOrFeatures(IfFeatureExprTree):
         self.context = context
         self.a = a
         self.b = b
+
+    def state(self) -> bool:
+        return self.a.state() or self.b.state()
 
     def dump(self, indent: int = 0) -> str:
         s = " " * indent + "OR\n"

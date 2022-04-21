@@ -38,6 +38,8 @@ class DiffTest(unittest.TestCase):
             (NodeTypeAdded, "/yolo-system:state/number"),
             (NodeTypeRemoved, "/yolo-system:conf/number"),
             (NodeTypeRemoved, "/yolo-system:state/number"),
+            (SNodeAdded, "/yolo-system:conf/full"),
+            (SNodeAdded, "/yolo-system:state/full"),
             (SNodeAdded, "/yolo-system:conf/hostname-ref"),
             (SNodeAdded, "/yolo-system:conf/url/enabled"),
             (SNodeAdded, "/yolo-system:conf/url/fetch"),

@@ -106,6 +106,20 @@ module yolo-system {
       type uint32;
     }
 
+    leaf offline {
+      description
+        "When networking is disabled.";
+      if-feature "not networking";
+      type uint32;
+    }
+
+    leaf full {
+      description
+        "Fast and online.";
+      if-feature "turbo-boost and networking";
+      type uint32;
+    }
+
     leaf isolation-level {
       description
         "The level of isolation.";

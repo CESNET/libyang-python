@@ -135,8 +135,8 @@ class RevisionTest(unittest.TestCase):
 class IfFeatureTest(unittest.TestCase):
     def setUp(self):
         self.ctx = Context(YANG_DIR)
-        mod = self.ctx.load_module("yolo-system")
-        mod.feature_enable_all()
+        self.mod = self.ctx.load_module("yolo-system")
+        self.mod.feature_enable_all()
         self.leaf = next(
             self.ctx.find_path("/yolo-system:conf/yolo-system:isolation-level")
         )
@@ -157,6 +157,61 @@ class IfFeatureTest(unittest.TestCase):
         self.assertIsInstance(tree.b, IfFeature)
         self.assertEqual(tree.a.feature().name(), "turbo-boost")
         self.assertEqual(tree.b.feature().name(), "networking")
+
+    def test_iffeature_state(self):
+        def feature_disable_only(feature):
+            self.mod.feature_disable_all()
+            for f in self.mod.features():
+                if f.name() == feature:
+                    continue
+                self.mod.feature_enable(f.name())
+
+        leaf_simple = next(self.ctx.find_path("/yolo-system:conf/yolo-system:speed"))
+
+        self.mod.feature_disable_all()
+        leaf_not = next(self.ctx.find_path("/yolo-system:conf/yolo-system:offline"))
+        self.mod.feature_enable_all()
+
+        leaf_and = next(self.ctx.find_path("/yolo-system:conf/yolo-system:full"))
+        leaf_or = next(
+            self.ctx.find_path("/yolo-system:conf/yolo-system:isolation-level")
+        )
+
+        # if-feature is just a feature
+        tree = next(leaf_simple.if_features()).tree()
+        self.mod.feature_enable_all()
+        self.assertEqual(tree.state(), True)
+        self.mod.feature_disable_all()
+        self.assertEqual(tree.state(), False)
+
+        # if-feature is "NOT networking"
+        tree = next(leaf_not.if_features()).tree()
+        self.mod.feature_enable_all()
+        self.assertEqual(tree.state(), False)
+        self.mod.feature_disable_all()
+        self.assertEqual(tree.state(), True)
+
+        # if-feature is "turbo-boost AND networking"
+        tree = next(leaf_and.if_features()).tree()
+        self.mod.feature_enable_all()
+        self.assertEqual(tree.state(), True)
+        self.mod.feature_disable_all()
+        self.assertEqual(tree.state(), False)
+        feature_disable_only("turbo-boost")
+        self.assertEqual(tree.state(), False)
+        feature_disable_only("networking")
+        self.assertEqual(tree.state(), False)
+
+        # if-feature is "turbo-boost OR networking"
+        tree = next(leaf_or.if_features()).tree()
+        self.mod.feature_enable_all()
+        self.assertEqual(tree.state(), True)
+        self.mod.feature_disable_all()
+        self.assertEqual(tree.state(), False)
+        feature_disable_only("turbo-boost")
+        self.assertEqual(tree.state(), True)
+        feature_disable_only("networking")
+        self.assertEqual(tree.state(), True)
 
     def test_iffeature_str(self):
         iff = next(self.leaf.if_features())
@@ -203,11 +258,11 @@ class ContainerTest(unittest.TestCase):
 
     def test_cont_iter(self):
         children = list(iter(self.container))
-        self.assertEqual(len(children), 8)
+        self.assertEqual(len(children), 9)
 
     def test_cont_children_leafs(self):
         leafs = list(self.container.children(types=(SNode.LEAF,)))
-        self.assertEqual(len(leafs), 6)
+        self.assertEqual(len(leafs), 7)
 
     def test_cont_parent(self):
         self.assertIsNone(self.container.parent())

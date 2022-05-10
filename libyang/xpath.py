@@ -60,13 +60,11 @@ def xpath_split(xpath: str) -> Iterator[Tuple[str, str, List[Tuple[str, str]]]]:
             quote = xpath[j + 1]  # record opening quote character
             j = i = j + 2  # skip '=' and opening quote
             while True:
-                if xpath[j] == "\\":
-                    j += 1  # skip escaped character
-                elif xpath[j] == quote:
-                    break  # end of key value
+                if xpath[j] == quote and xpath[j - 1] != "\\":
+                    break
                 j += 1
             # replace escaped chars by their non-escape version
-            key_value = xpath[i:j].replace("\\", "")
+            key_value = xpath[i:j].replace(f"\\{quote}", f"{quote}")
             keys.append((key_name, key_value))
             i = j + 2  # skip closing quote and ']'
 

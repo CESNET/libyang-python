@@ -27,9 +27,13 @@ YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 class DataTest(unittest.TestCase):
     def setUp(self):
         self.ctx = Context(YANG_DIR)
-        self.ctx.load_module("ietf-netconf")
-        mod = self.ctx.load_module("yolo-system")
-        mod.feature_enable_all()
+        modules = [
+            self.ctx.load_module("ietf-netconf"),
+            self.ctx.load_module("yolo-system"),
+        ]
+
+        for mod in modules:
+            mod.feature_enable_all()
 
     def tearDown(self):
         self.ctx.destroy()

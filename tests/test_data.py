@@ -4,6 +4,7 @@
 import json
 import os
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from _libyang import lib
@@ -389,6 +390,22 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
         self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+
+    def test_data_from_dict_module_free_func(self):
+        module = self.ctx.get_module("yolo-system")
+
+        free_func = mock.Mock()
+        dnode = module.parse_data_dict(
+            self.DICT_CONFIG, strict=True, validate_present=True
+        )
+        dnode.free_func = free_func
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem("json")
+        finally:
+            dnode.free()
+        self.assertEqual(json.loads(j), json.loads(self.JSON_CONFIG))
+        free_func.assert_called()
 
     DICT_CONFIG_WITH_PREFIX = {
         "yolo-system:conf": {

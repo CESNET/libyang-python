@@ -66,15 +66,15 @@ class Context:
         if not self.cdata:
             raise self.error("cannot create context")
 
-        search_dirs = []
+        search_dirs = set()
         if "YANGPATH" in os.environ:
-            search_dirs.extend(os.environ["YANGPATH"].strip(": \t\r\n'\"").split(":"))
+            search_dirs.update(os.environ["YANGPATH"].strip(": \t\r\n'\"").split(":"))
         elif "YANG_MODPATH" in os.environ:
-            search_dirs.extend(
+            search_dirs.update(
                 os.environ["YANG_MODPATH"].strip(": \t\r\n'\"").split(":")
             )
         if search_path:
-            search_dirs.extend(search_path.strip(": \t\r\n'\"").split(":"))
+            search_dirs.update(search_path.strip(": \t\r\n'\"").split(":"))
 
         if yanglib_path:
             return
@@ -82,8 +82,9 @@ class Context:
         for path in search_dirs:
             if not os.path.isdir(path):
                 continue
-            if lib.ly_ctx_set_searchdir(self.cdata, str2c(path)) != 0:
-                raise self.error("cannot set search dir")
+            res = lib.ly_ctx_set_searchdir(self.cdata, str2c(path))
+            if res != lib.LY_SUCCESS:
+                raise self.error("cannot set search dir: %s error: %s" % (path, res))
 
     def get_yanglib_data(self, content_id_format=""):
         dnode = ffi.new("struct lyd_node **")

@@ -236,6 +236,7 @@ XPATH_SPLIT_EXPECTED_RESULTS = {
     "/nam1/p:nam2": [(None, "nam1", []), ("p", "nam2", [])],
     '/p:nam/lst[k1="foo"]': [("p", "nam", []), (None, "lst", [("k1", "foo")])],
     '/p:nam/lst[.="foo"]': [("p", "nam", []), (None, "lst", [(".", "foo")])],
+    '/p:nam/lst[.="foo\\bar"]': [("p", "nam", []), (None, "lst", [(".", "foo\\bar")])],
     "/nam/p:lst[k1='foo'][k2='bar']/x": [
         (None, "nam", []),
         ("p", "lst", [("k1", "foo"), ("k2", "bar")]),

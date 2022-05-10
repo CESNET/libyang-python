@@ -88,6 +88,7 @@ disable=
 	too-many-statements,
 	unused-argument,
 	wrong-import-position,
+	unnecessary-lambda,
 
 [REPORTS]
 

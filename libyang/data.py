@@ -205,7 +205,7 @@ class DNode:
     Data tree node.
     """
 
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "free_func")
 
     def __init__(self, context: "libyang.Context", cdata):
         """
@@ -216,6 +216,7 @@ class DNode:
         """
         self.context = context
         self.cdata = cdata  # C type: "struct lyd_node *"
+        self.free_func = None  # type: Callable[struct lyd_node *]
 
     def meta(self):
         ret = {}
@@ -791,7 +792,9 @@ class DNode:
 
     def free(self, with_siblings: bool = True) -> None:
         try:
-            if with_siblings:
+            if self.free_func:
+                self.free_func(self.cdata)  # pylint: disable=not-callable
+            elif with_siblings:
                 lib.lyd_free_all(self.cdata)
             else:
                 lib.lyd_free_tree(self.cdata)

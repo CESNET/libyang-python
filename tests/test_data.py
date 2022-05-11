@@ -136,16 +136,15 @@ class DataTest(unittest.TestCase):
         dnode.free()
 
         with open(self.JSON_CONFIG_FILE, encoding="utf-8") as f:
-            dnode = self.ctx.parse_data(
-                "json", in_data=f, in_type=IOType.FILE, validation_no_state=True
+            dnode = self.ctx.parse_data_file(
+                fileobj=f, fmt="json", validation_no_state=True
             )
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
 
-        dnode = self.ctx.parse_data(
-            "json",
-            in_data=self.JSON_CONFIG_FILE,
-            in_type=IOType.FILEPATH,
+        dnode = self.ctx.parse_data_filepath(
+            fileobj=self.JSON_CONFIG_FILE,
+            fmt="json",
             validation_no_state=True,
         )
         self.assertIsInstance(dnode, DContainer)

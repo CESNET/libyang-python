@@ -315,27 +315,26 @@ class Context:
         self,
         data: Union[str, bytes],
         fmt: str,
-        parser_lyb_mod_update: bool = False,
-        parser_no_state: bool = False,
-        parser_parse_only: bool = False,
-        parser_opaq: bool = False,
-        parser_ordered: bool = False,
-        parser_strict: bool = False,
-        validation_no_state: bool = False,
-        validation_validate_present: bool = False,
-    ) -> Optional[DNode]:
+        lyb_mod_update: bool = False,
+        no_state: bool = False,
+        parse_only: bool = False,
+        opaq: bool = False,
+        ordered: bool = False,
+        strict: bool = False,
+        validate_present: bool = False,
+    ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         parser_flgs = parser_flags(
-            lyb_mod_update=parser_lyb_mod_update,
-            no_state=parser_no_state,
-            parse_only=parser_parse_only,
-            opaq=parser_opaq,
-            ordered=parser_ordered,
-            strict=parser_strict,
+            lyb_mod_update=lyb_mod_update,
+            no_state=no_state,
+            parse_only=parse_only,
+            opaq=opaq,
+            ordered=ordered,
+            strict=strict,
         )
         validation_flgs = validation_flags(
-            no_state=validation_no_state, validate_present=validation_validate_present
+            no_state=no_state, validate_present=validate_present
         )
         fmt = data_format(fmt)
         encode = not fmt == lib.LYD_LYB
@@ -359,27 +358,26 @@ class Context:
         self,
         fileobj: IO,
         fmt: str,
-        parser_lyb_mod_update: bool = False,
-        parser_no_state: bool = False,
-        parser_parse_only: bool = False,
-        parser_opaq: bool = False,
-        parser_ordered: bool = False,
-        parser_strict: bool = False,
-        validation_no_state: bool = False,
-        validation_validate_present: bool = False,
-    ) -> Optional[DNode]:
+        lyb_mod_update: bool = False,
+        no_state: bool = False,
+        parse_only: bool = False,
+        opaq: bool = False,
+        ordered: bool = False,
+        strict: bool = False,
+        validate_present: bool = False,
+    ) -> DNode:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
         parser_flgs = parser_flags(
-            lyb_mod_update=parser_lyb_mod_update,
-            no_state=parser_no_state,
-            parse_only=parser_parse_only,
-            opaq=parser_opaq,
-            ordered=parser_ordered,
-            strict=parser_strict,
+            lyb_mod_update=lyb_mod_update,
+            no_state=no_state,
+            parse_only=parse_only,
+            opaq=opaq,
+            ordered=ordered,
+            strict=strict,
         )
         validation_flgs = validation_flags(
-            no_state=validation_no_state, validate_present=validation_validate_present
+            no_state=no_state, validate_present=validate_present
         )
         fmt = data_format(fmt)
         dnode = ffi.new("struct lyd_node **")

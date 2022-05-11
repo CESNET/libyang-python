@@ -29,6 +29,13 @@ class ContextTest(unittest.TestCase):
         with Context(YANG_DIR) as ctx:
             self.assertIsNot(ctx, None)
 
+    def test_ctx_duplicate_searchpath(self):
+        duplicate_search_path = ":".join([YANG_DIR, YANG_DIR])
+        try:
+            Context(duplicate_search_path)
+        except LibyangError:
+            self.fail("Context.__init__ should not raise LibyangError")
+
     def test_ctx_invalid_dir(self):
         with Context("/does/not/exist") as ctx:
             self.assertIsNot(ctx, None)

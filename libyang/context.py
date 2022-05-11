@@ -45,8 +45,21 @@ class Context:
         self.cdata = None
         ctx = ffi.new("struct ly_ctx **")
 
+        search_paths = []
+        if "YANGPATH" in os.environ:
+            search_paths.extend(os.environ["YANGPATH"].strip(": \t\r\n'\"").split(":"))
+        elif "YANG_MODPATH" in os.environ:
+            search_paths.extend(
+                os.environ["YANG_MODPATH"].strip(": \t\r\n'\"").split(":")
+            )
+        if search_path:
+            search_paths.extend(search_path.strip(": \t\r\n'\"").split(":"))
+
+        search_paths = [path for path in search_paths if os.path.isdir(path)]
+        search_path = ":".join(search_paths) if search_paths else None
+
         if yanglib_path is None:
-            if lib.ly_ctx_new(ffi.NULL, options, ctx) != lib.LY_SUCCESS:
+            if lib.ly_ctx_new(str2c(search_path), options, ctx) != lib.LY_SUCCESS:
                 raise self.error("cannot create context")
         else:
             if yanglib_fmt == "json":
@@ -65,25 +78,6 @@ class Context:
         )
         if not self.cdata:
             raise self.error("cannot create context")
-
-        search_dirs = []
-        if "YANGPATH" in os.environ:
-            search_dirs.extend(os.environ["YANGPATH"].strip(": \t\r\n'\"").split(":"))
-        elif "YANG_MODPATH" in os.environ:
-            search_dirs.extend(
-                os.environ["YANG_MODPATH"].strip(": \t\r\n'\"").split(":")
-            )
-        if search_path:
-            search_dirs.extend(search_path.strip(": \t\r\n'\"").split(":"))
-
-        if yanglib_path:
-            return
-
-        for path in search_dirs:
-            if not os.path.isdir(path):
-                continue
-            if lib.ly_ctx_set_searchdir(self.cdata, str2c(path)) != 0:
-                raise self.error("cannot set search dir")
 
     def get_yanglib_data(self, content_id_format=""):
         dnode = ffi.new("struct lyd_node **")

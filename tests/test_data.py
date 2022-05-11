@@ -69,9 +69,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_json(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_no_state=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", no_state=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", with_siblings=True)
@@ -113,9 +111,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_add_path(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_no_state=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", no_state=True)
         dnode.new_path(
             '/yolo-system:conf/url[host="barfoo.com"][proto="http"]/path',
             "/barfoo/index.html",
@@ -131,13 +127,13 @@ class DataTest(unittest.TestCase):
 
     def test_data_parse_config_json_file(self):
         with open(self.JSON_CONFIG_FILE, encoding="utf-8") as f:
-            dnode = self.ctx.parse_data_file(f, "json", validation_no_state=True)
+            dnode = self.ctx.parse_data_file(f, "json", no_state=True)
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
 
         with open(self.JSON_CONFIG_FILE, encoding="utf-8") as f:
             dnode = self.ctx.parse_data(
-                "json", in_data=f, in_type=IOType.FILE, validation_no_state=True
+                "json", in_data=f, in_type=IOType.FILE, no_state=True
             )
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
@@ -146,7 +142,7 @@ class DataTest(unittest.TestCase):
             "json",
             in_data=self.JSON_CONFIG_FILE,
             in_type=IOType.FILEPATH,
-            validation_no_state=True,
+            no_state=True,
         )
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
@@ -180,9 +176,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_state_json(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_STATE, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_STATE, "json", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", with_siblings=True)
@@ -213,9 +207,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(
-            self.XML_CONFIG, "xml", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print_mem("xml", with_siblings=True)
@@ -246,9 +238,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_data_xml(self):
-        dnode = self.ctx.parse_data_mem(
-            self.XML_STATE, "xml", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.XML_STATE, "xml", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print("xml", out_type=IOType.MEMORY, with_siblings=True)
@@ -363,9 +353,7 @@ class DataTest(unittest.TestCase):
     }
 
     def test_data_to_dict_config(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             dic = dnode.print_dict()
@@ -747,11 +735,11 @@ class DataTest(unittest.TestCase):
 
     def test_data_diff(self):
         dnode1 = self.ctx.parse_data_mem(
-            self.XML_DIFF_STATE1, "xml", validation_validate_present=True
+            self.XML_DIFF_STATE1, "xml", validate_present=True
         )
         self.assertIsInstance(dnode1, DContainer)
         dnode2 = self.ctx.parse_data_mem(
-            self.XML_DIFF_STATE2, "xml", validation_validate_present=True
+            self.XML_DIFF_STATE2, "xml", validate_present=True
         )
         self.assertIsInstance(dnode2, DContainer)
 
@@ -761,9 +749,7 @@ class DataTest(unittest.TestCase):
         dnode2.free()
 
     def test_find_one(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             hostname = dnode.find_one("hostname")
@@ -773,9 +759,7 @@ class DataTest(unittest.TestCase):
             dnode.free()
 
     def test_find_all(self):
-        dnode = self.ctx.parse_data_mem(
-            self.JSON_CONFIG, "json", validation_validate_present=True
-        )
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             urls = dnode.find_all("url")

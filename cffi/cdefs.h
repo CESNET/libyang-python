@@ -313,7 +313,6 @@ LY_ERR lyd_print_all(struct ly_out *, const struct lyd_node *, LYD_FORMAT, uint3
 
 LY_ERR lyd_parse_data_mem(const struct ly_ctx *, const char *, LYD_FORMAT, uint32_t, uint32_t, struct lyd_node **);
 LY_ERR lyd_parse_data_fd(const struct ly_ctx *, int, LYD_FORMAT, uint32_t, uint32_t, struct lyd_node **);
-LY_ERR lyd_parse_data_path(const struct ly_ctx *, const char *, LYD_FORMAT, uint32_t, uint32_t, struct lyd_node **);
 
 struct ly_in;
 struct ly_out;

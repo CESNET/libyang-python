@@ -142,14 +142,6 @@ class DataTest(unittest.TestCase):
         self.assertIsInstance(dnode, DContainer)
         dnode.free()
 
-        dnode = self.ctx.parse_data_filepath(
-            fileobj=self.JSON_CONFIG_FILE,
-            fmt="json",
-            validation_no_state=True,
-        )
-        self.assertIsInstance(dnode, DContainer)
-        dnode.free()
-
     JSON_STATE = """{
   "yolo-system:state": {
     "hostname": "foo",

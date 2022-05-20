@@ -104,6 +104,7 @@ module yolo-system {
         "The speed.";
       if-feature turbo-boost;
       type uint32;
+      default 4321;
     }
 
     leaf offline {

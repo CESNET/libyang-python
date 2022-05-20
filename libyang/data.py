@@ -25,6 +25,25 @@ LOG = logging.getLogger(__name__)
 
 
 # -------------------------------------------------------------------------------------
+def implicit_flags(
+    no_config: bool = False,
+    no_defaults: bool = False,
+    no_state: bool = False,
+    output: bool = False,
+) -> int:
+    flags = 0
+    if no_config:
+        flags |= lib.LYD_IMPLICIT_NO_CONFIG
+    if no_state:
+        flags |= lib.LYD_IMPLICIT_NO_STATE
+    if no_defaults:
+        flags |= lib.LYD_IMPLICIT_NO_DEFAULTS
+    if output:
+        flags |= lib.LYD_IMPLICIT_OUTPUT
+    return flags
+
+
+# -------------------------------------------------------------------------------------
 def printer_flags(
     with_siblings: bool = False,
     pretty: bool = True,
@@ -236,6 +255,25 @@ class DNode:
             if c2str(item.name) == name:
                 lib.lyd_free_meta_single(item)
                 break
+
+    def add_defaults(
+        self,
+        no_config: bool = False,
+        no_defaults: bool = False,
+        no_state: bool = False,
+        output: bool = False,
+    ):
+        flags = implicit_flags(
+            no_config=no_config,
+            no_defaults=no_defaults,
+            no_state=no_state,
+            output=output,
+        )
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+        ret = lib.lyd_new_implicit_all(node_p, self.context.cdata, flags, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot get module")
 
     def flags(self):
         ret = {"default": False, "when_true": False, "new": False}

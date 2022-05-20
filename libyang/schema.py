@@ -1047,17 +1047,17 @@ class SLeaf(SNode):
         self.cdata_leaf = ffi.cast("struct lysc_node_leaf *", cdata)
         self.cdata_leaf_parsed = ffi.cast("struct lysp_node_leaf *", self.cdata_parsed)
 
-    def default(self) -> Optional[str]:
+    def default(self) -> Union[None, bool, int, str]:
         if not self.cdata_leaf.dflt:
             return None
         val = lib.lyd_value_get_canonical(self.context.cdata, self.cdata_leaf.dflt)
         if not val:
             return None
         val = c2str(val)
-        val_type = self.cdata_leaf.dflt.realtype
-        if val_type == Type.BOOL:
+        val_type = Type(self.context, self.cdata_leaf.dflt.realtype, None)
+        if val_type.base() == Type.BOOL:
             return val == "true"
-        if val_type in Type.NUM_TYPES:
+        if val_type.base() in Type.NUM_TYPES:
             return int(val)
         return val
 

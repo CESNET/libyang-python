@@ -13,6 +13,7 @@ from libyang import (
     DAnyxml,
     DataType,
     DContainer,
+    DLeaf,
     DNode,
     DNotif,
     DRpc,
@@ -210,7 +211,7 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
-            xml = dnode.print_mem("xml", with_siblings=True)
+            xml = dnode.print_mem("xml", with_siblings=True, trim_default_values=True)
             self.assertEqual(xml, self.XML_CONFIG)
         finally:
             dnode.free()
@@ -532,7 +533,7 @@ class DataTest(unittest.TestCase):
             {"hostname": "foo"}, strict=True, validate=True, validate_present=True
         )
         try:
-            j = dnode.print_mem("json", pretty=False)
+            j = dnode.print_mem("json", pretty=False, trim_default_values=True)
         finally:
             dnode.free()
         self.assertEqual(j, '{"yolo-system:state":{"hostname":"foo"}}')
@@ -779,3 +780,15 @@ class DataTest(unittest.TestCase):
             self.assertEqual(urls[0].print_dict(absolute=False), expected_url)
         finally:
             dnode.free()
+
+    def test_add_defaults(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
+        node = dnode.find_path("/yolo-system:conf/speed")
+        self.assertIsInstance(node, DLeaf)
+        node.free(with_siblings=False)
+        node = dnode.find_path("/yolo-system:conf/speed")
+        self.assertIsNone(node)
+        dnode.add_defaults()
+        node = dnode.find_path("/yolo-system:conf/speed")
+        self.assertIsInstance(node, DLeaf)
+        self.assertEqual(node.value(), 4321)

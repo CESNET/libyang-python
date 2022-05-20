@@ -992,5 +992,16 @@ struct lysc_when** lysc_node_when(const struct lysc_node *);
 
 LY_ERR lyd_eval_xpath(const struct lyd_node *, const char *, ly_bool *);
 
+typedef LY_ERR(* lyd_merge_cb)(struct lyd_node *, const struct lyd_node *, void *);
+LY_ERR lyd_merge_module(struct lyd_node **, const struct lyd_node *, const struct lys_module *, lyd_merge_cb, void *, uint16_t);
+
+#define LYD_IMPLICIT_NO_STATE ...
+#define LYD_IMPLICIT_NO_CONFIG ...
+#define LYD_IMPLICIT_OUTPUT ...
+#define LYD_IMPLICIT_NO_DEFAULTS ...
+
+LY_ERR lyd_new_implicit_all(struct lyd_node **, const struct ly_ctx *, uint32_t, struct lyd_node **);
+
+
 /* from libc, needed to free allocated strings */
 void free(void *);

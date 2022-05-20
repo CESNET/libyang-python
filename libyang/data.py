@@ -485,6 +485,22 @@ class DNode:
 
         return DNode.new(self.context, node[0])
 
+    def merge_module(
+        self,
+        source: "DNode",
+        defaults: bool = False,
+        destruct: bool = False,
+        with_flags: bool = False,
+    ) -> None:
+        flags = merge_flags(defaults=defaults, destruct=destruct, with_flags=with_flags)
+        node_p = ffi.new("struct lyd_node **")
+        node_p[0] = self.cdata
+        ret = lib.lyd_merge_module(
+            node_p, source.cdata, ffi.NULL, ffi.NULL, ffi.NULL, flags
+        )
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("merge failed")
+
     def merge(
         self,
         source: "DNode",

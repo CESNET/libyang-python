@@ -788,9 +788,9 @@ class DNode:
             elif node.schema.nodetype == SNode.LEAFLIST:
                 if name not in parent_dic:
                     parent_dic[name] = _init_yang_list(node.schema)
-                parent_dic[name].append(DLeaf.cdata_leaf_value(node))
+                parent_dic[name].append(DLeaf.cdata_leaf_value(node, self.context))
             elif node.schema.nodetype == SNode.LEAF:
-                parent_dic[name] = DLeaf.cdata_leaf_value(node)
+                parent_dic[name] = DLeaf.cdata_leaf_value(node, self.context)
 
         dic = {}
         dnode = self
@@ -928,10 +928,10 @@ class DList(DContainer):
 @DNode.register(SNode.LEAF)
 class DLeaf(DNode):
     def value(self) -> Any:
-        return DLeaf.cdata_leaf_value(self.cdata)
+        return DLeaf.cdata_leaf_value(self.cdata, self.context)
 
     @staticmethod
-    def cdata_leaf_value(cdata) -> Any:
+    def cdata_leaf_value(cdata, context: "libyang.Context" = None) -> Any:
 
         val = lib.lyd_get_value(cdata)
         if val == ffi.NULL:
@@ -942,8 +942,9 @@ class DLeaf(DNode):
         val_type = ffi.new("const struct lysc_type **", ffi.NULL)
 
         # get real value type
+        ctx = context.cdata if context else ffi.NULL
         ret = lib.lyd_value_validate(
-            ffi.NULL,
+            ctx,
             term_node.schema,
             str2c(val),
             len(val),
@@ -954,10 +955,18 @@ class DLeaf(DNode):
 
         if ret in (lib.LY_SUCCESS, lib.LY_EINCOMPLETE):
             val_type = val_type[0].basetype
-            if val_type == Type.BOOL:
-                return val == "true"
+            if val_type in Type.STR_TYPES:
+                return val
             if val_type in Type.NUM_TYPES:
                 return int(val)
+            if val_type == Type.BOOL:
+                return val == "true"
+            if val_type == Type.DEC64:
+                return float(val)
+            if val_type == Type.LEAFREF:
+                return DLeaf.cdata_leaf_value(cdata.value.leafref, context)
+            if val_type == Type.EMPTY:
+                return None
             return val
 
         raise TypeError("value type validation error")

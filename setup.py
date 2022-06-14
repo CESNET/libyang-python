@@ -74,7 +74,7 @@ def get_version_from_archive_id(git_archive_id="$Format:%ct %d$"):
     See man gitattributes(5) and git-log(1) (PRETTY FORMATS) for more details.
     """
     # mangle the magic string to make sure it is not replaced by git archive
-    if git_archive_id.startswith("$For" "mat:"):
+    if git_archive_id.startswith("$For" "mat:"):  # pylint: disable=implicit-str-concat
         raise ValueError("source was not modified by git archive")
 
     # source was modified by git archive, try to parse the version from

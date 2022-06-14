@@ -30,6 +30,7 @@ def schema_diff(
         An iterator that yield `SNodeDiff` objects.
     """
     if exclude_node_cb is None:
+        # pylint: disable=unnecessary-lambda-assignment
         exclude_node_cb = lambda n: False
 
     def flatten(node, dic):

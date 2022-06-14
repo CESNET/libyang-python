@@ -115,7 +115,7 @@ class KeyedList(list):
         return str(list(self._map.values()))
 
     def count(self, element: Any):
-        if self.__contains__(element):
+        if element in self:
             return 1
         return 0
 

@@ -1094,7 +1094,7 @@ def dict_to_dnode(
             str2c(name),
             in_rpc_output,
             n,
-            *[str2c(i) for i in key_values],
+            *[str2c(str(i)) for i in key_values],
         )
         if ret != lib.LY_SUCCESS:
             if _parent:

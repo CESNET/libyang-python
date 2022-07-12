@@ -1097,7 +1097,7 @@ class SLeafList(SNode):
         )
 
     def ordered(self) -> bool:
-        return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
+        return bool(self.cdata_parsed.flags & lib.LYS_ORDBY_USER)
 
     def units(self) -> Optional[str]:
         return c2str(self.cdata_leaflist.units)
@@ -1181,7 +1181,7 @@ class SList(SNode):
         self.cdata_list_parsed = ffi.cast("struct lysp_node_list *", self.cdata_parsed)
 
     def ordered(self) -> bool:
-        return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
+        return bool(self.cdata_parsed.flags & lib.LYS_ORDBY_USER)
 
     def __iter__(self) -> Iterator[SNode]:
         return self.children()

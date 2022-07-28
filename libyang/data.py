@@ -256,6 +256,19 @@ class DNode:
                 lib.lyd_free_meta_single(item)
                 break
 
+    def new_meta(self, name: str, value: str, clear_dflt: bool = False):
+        ret = lib.lyd_new_meta(
+            ffi.NULL,
+            self.cdata,
+            ffi.NULL,
+            str2c(name),
+            str2c(value),
+            clear_dflt,
+            ffi.NULL,
+        )
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot create meta")
+
     def add_defaults(
         self,
         no_config: bool = False,

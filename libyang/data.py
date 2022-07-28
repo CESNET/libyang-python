@@ -255,6 +255,7 @@ class DNode:
             if c2str(item.name) == name:
                 lib.lyd_free_meta_single(item)
                 break
+            item = item.next
 
     def new_meta(self, name: str, value: str, clear_dflt: bool = False):
         ret = lib.lyd_new_meta(

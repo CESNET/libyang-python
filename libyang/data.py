@@ -249,6 +249,18 @@ class DNode:
             item = item.next
         return ret
 
+    def get_meta(self, name):
+        item = self.cdata.meta
+        while item != ffi.NULL:
+            if c2str(item.name) == name:
+                return c2str(
+                    lib.lyd_value_get_canonical(
+                        self.context.cdata, ffi.addressof(item.value)
+                    )
+                )
+            item = item.next
+        return None
+
     def meta_free(self, name):
         item = self.cdata.meta
         while item != ffi.NULL:

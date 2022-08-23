@@ -553,6 +553,23 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("merge failed")
 
+    def iter_tree(self) -> Iterator["DNode"]:
+        n = next_n = self.cdata
+        while n != ffi.NULL:
+            yield self.new(self.context, n)
+
+            next_n = lib.lyd_child(n)
+            if next_n == ffi.NULL:
+                if n == self.cdata:
+                    break
+                next_n = n.next
+            while next_n == ffi.NULL:
+                n = n.parent
+                if n.parent == self.cdata.parent:
+                    break
+                next_n = n.next
+            n = next_n
+
     def print(
         self,
         fmt: str,

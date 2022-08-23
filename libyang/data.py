@@ -188,37 +188,6 @@ def diff_flags(with_defaults: bool = False) -> int:
 
 
 # -------------------------------------------------------------------------------------
-class DDiff:
-    """
-    Data tree diff
-    """
-
-    __slots__ = ("dtype", "first", "second")
-
-    def __init__(self, dtype, first: Optional["DNode"], second: Optional["DNode"]):
-        """
-        :arg dtype:
-            The type of the diff
-        :arg first:
-            The first DNode
-        :arg second:
-            The second DNode
-        """
-        self.dtype = dtype
-        self.first = first
-        self.second = second
-
-    def diff_type(self) -> str:
-        """Get diff type as string"""
-        return hex(self.dtype)
-
-    def __repr__(self) -> str:
-        return "<libyang.data.DDiff {} first={} second={}>".format(
-            self.diff_type(), self.first, self.second
-        )
-
-
-# -------------------------------------------------------------------------------------
 class DNode:
     """
     Data tree node.
@@ -496,7 +465,7 @@ class DNode:
         other: "DNode",
         no_siblings: bool = False,
         with_defaults: bool = False,
-    ) -> Iterator[DDiff]:
+    ) -> "DNode":
         flags = diff_flags(with_defaults=with_defaults)
         node_p = ffi.new("struct lyd_node **")
         if no_siblings:

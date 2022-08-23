@@ -749,6 +749,34 @@ class DataTest(unittest.TestCase):
         dnode1.free()
         dnode2.free()
 
+    TREE = [
+        "/yolo-system:conf",
+        "/yolo-system:conf/hostname",
+        "/yolo-system:conf/url[proto='https'][host='github.com']",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/proto",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/host",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/path",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/enabled",
+        "/yolo-system:conf/url[proto='http'][host='foobar.com']",
+        "/yolo-system:conf/url[proto='http'][host='foobar.com']/proto",
+        "/yolo-system:conf/url[proto='http'][host='foobar.com']/host",
+        "/yolo-system:conf/url[proto='http'][host='foobar.com']/port",
+        "/yolo-system:conf/url[proto='http'][host='foobar.com']/path",
+        "/yolo-system:conf/url[proto='http'][host='foobar.com']/enabled",
+        "/yolo-system:conf/number[.='1000']",
+        "/yolo-system:conf/number[.='2000']",
+        "/yolo-system:conf/number[.='3000']",
+        "/yolo-system:conf/speed",
+    ]
+
+    def test_iter_tree(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
+        try:
+            paths = [d.path() for d in dnode.iter_tree()]
+            self.assertEqual(paths, self.TREE)
+        finally:
+            dnode.free()
+
     def test_find_one(self):
         dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
         self.assertIsInstance(dnode, DContainer)

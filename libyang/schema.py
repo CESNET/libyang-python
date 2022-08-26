@@ -515,6 +515,8 @@ class Type:
     NUM_TYPES = frozenset((INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64))
 
     def range(self) -> Optional[str]:
+        if not self.cdata_parsed:
+            return None
         if (
             self.cdata.basetype in self.NUM_TYPES or self.cdata.basetype == self.DEC64
         ) and self.cdata_parsed.range != ffi.NULL:

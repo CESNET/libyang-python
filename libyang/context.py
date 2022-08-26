@@ -28,6 +28,7 @@ class Context:
         self,
         search_path: Optional[str] = None,
         disable_searchdir_cwd: bool = True,
+        explicit_compile: Optional[bool] = False,
         yanglib_path: Optional[str] = None,
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
@@ -39,6 +40,8 @@ class Context:
         options = 0
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
+        if explicit_compile:
+            options |= lib.LY_CTX_EXPLICIT_COMPILE
         # force priv parsed
         options |= lib.LY_CTX_SET_PRIV_PARSED
 
@@ -78,6 +81,11 @@ class Context:
         )
         if not self.cdata:
             raise self.error("cannot create context")
+
+    def compile_schema(self):
+        ret = lib.ly_ctx_compile(self.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.error("could not compile schema")
 
     def get_yanglib_data(self, content_id_format=""):
         dnode = ffi.new("struct lyd_node **")

@@ -687,6 +687,8 @@ struct lysc_ext {
 
 const struct lysc_node* lys_find_child(const struct lysc_node *, const struct lys_module *, const char *, size_t, uint16_t, uint32_t);
 const struct lysc_node* lysc_node_child(const struct lysc_node *);
+const struct lysc_node_action* lysc_node_actions(const struct lysc_node *);
+const struct lysc_node_notif* lysc_node_notifs(const struct lysc_node *);
 
 typedef enum {
     LYD_PATH_STD,

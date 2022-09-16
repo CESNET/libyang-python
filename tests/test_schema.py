@@ -267,6 +267,12 @@ class ContainerTest(unittest.TestCase):
     def test_cont_parent(self):
         self.assertIsNone(self.container.parent())
 
+    def test_iter_tree(self):
+        tree = list(self.container.iter_tree())
+        self.assertEqual(len(tree), 15)
+        tree = list(self.container.iter_tree(full=True))
+        self.assertEqual(len(tree), 20)
+
 
 # -------------------------------------------------------------------------------------
 class ListTest(unittest.TestCase):

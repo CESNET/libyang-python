@@ -1012,6 +1012,37 @@ class SNode:
         for cond in ly_array_iter(wh):
             yield c2str(lib.lyxp_get_expr(cond.cond))
 
+    def iter_tree(self, full: bool = False) -> Iterator["SNode"]:
+        """
+        Do a DFS walk of the schema node.
+
+        :arg full:
+            Also walk in actions and notifications.
+        """
+        n = next_n = self.cdata
+        while n != ffi.NULL:
+            yield self.new(self.context, n)
+
+            if full:
+                act = lib.lysc_node_actions(n)
+                if act != ffi.NULL:
+                    yield from self.new(self.context, act).iter_tree()
+                notif = lib.lysc_node_notifs(n)
+                if notif != ffi.NULL:
+                    yield from self.new(self.context, notif).iter_tree()
+
+            next_n = lib.lysc_node_child(n)
+            if next_n == ffi.NULL:
+                if n == self.cdata:
+                    break
+                next_n = n.next
+            while next_n == ffi.NULL:
+                n = n.parent
+                if n.parent == self.cdata.parent:
+                    break
+                next_n = n.next
+            n = next_n
+
     def __repr__(self):
         cls = self.__class__
         return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))

@@ -65,7 +65,9 @@ module yolo-system {
         "An URL.";
       key "proto host";
       leaf proto {
-        type types:protocol;
+        type types:protocol {
+          ext:type-desc "<protocol>";
+        }
       }
       leaf host {
         type string;

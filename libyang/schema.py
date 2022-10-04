@@ -576,11 +576,8 @@ class Type:
         return Module(self.context, self.cdata.der.module)
 
     def extensions(self) -> Iterator[ExtensionCompiled]:
-        for i in range(self.cdata.ext_size):
-            yield ExtensionCompiled(self.context, self.cdata.ext[i])
-        if self.cdata.parent:
-            for i in range(self.cdata.parent.ext_size):
-                yield ExtensionCompiled(self.context, self.cdata.parent.ext[i])
+        for extension in ly_array_iter(self.cdata.exts):
+            yield ExtensionCompiled(self.context, extension)
 
     def get_extension(
         self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None

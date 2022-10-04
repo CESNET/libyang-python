@@ -12,4 +12,10 @@ module omg-extensions {
       "Extend a node to provide a human readable name.";
     argument name;
   }
+
+  extension type-desc {
+    description
+      "Extend a type to add a desc.";
+    argument name;
+  }
 }

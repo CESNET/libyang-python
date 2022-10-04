@@ -401,6 +401,16 @@ class LeafTypeTest(unittest.TestCase):
         bases = set(t.basenames())
         self.assertEqual(bases, set(["int16", "int32", "uint16", "uint32"]))
 
+    def test_leaf_type_extensions(self):
+        leaf = next(
+            self.ctx.find_path("/yolo-system:conf/yolo-system:url/yolo-system:proto")
+        )
+        t = leaf.type()
+        ext = t.get_extension(
+            "type-desc", prefix="omg-extensions", arg_value="<protocol>"
+        )
+        self.assertIsInstance(ext, Extension)
+
     def test_leaf_type_enum(self):
         leaf = next(
             self.ctx.find_path("/yolo-system:conf/yolo-system:url/yolo-system:proto")

@@ -557,9 +557,16 @@ class Type:
             return
         if self.cdata_parsed.patterns == ffi.NULL:
             return
-        arr_length = ffi.cast("uint64_t *", self.cdata_parsed.patterns)[-1]
-        for i in range(arr_length):
-            yield c2str(self.cdata_parsed.patterns[i].arg.str)
+        for p in ly_array_iter(self.cdata_parsed.patterns):
+            if not p:
+                continue
+            # in case of pattern restriction, the first byte has a special meaning:
+            # 0x06 (ACK) for regular match and 0x15 (NACK) for invert-match
+            invert_match = p.arg.str[0] == b"\x15"
+            # yield tuples like:
+            #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
+            #     ('[xX][mM][lL].*', True)
+            yield c2str(p.arg.str + 1), invert_match
 
     def all_patterns(self) -> Iterator[Tuple[str, bool]]:
         if self.cdata.basetype == lib.LY_TYPE_UNION:

@@ -70,7 +70,12 @@ module yolo-system {
         }
       }
       leaf host {
-        type string;
+        type string {
+          pattern "[a-z.]+";
+          pattern "1" {
+            modifier "invert-match";
+          }
+        }
       }
       leaf port {
         type uint16;

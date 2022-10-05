@@ -389,6 +389,15 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(leaf.deprecated(), False)
         self.assertEqual(leaf.obsolete(), True)
 
+    def test_leaf_type_pattern(self):
+        leaf = next(
+            self.ctx.find_path("/yolo-system:conf/yolo-system:url/yolo-system:host")
+        )
+        self.assertIsInstance(leaf, SLeaf)
+        t = leaf.type()
+        self.assertIsInstance(t, Type)
+        self.assertEqual(list(t.patterns()), [("[a-z.]+", False), ("1", True)])
+
     def test_leaf_type_union(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf/yolo-system:number"))
         self.assertIsInstance(leaf, SLeafList)

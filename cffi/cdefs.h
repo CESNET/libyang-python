@@ -420,13 +420,16 @@ struct lysp_ext_instance {
     const char *name;
     const char *argument;
     LY_VALUE_FORMAT format;
-    struct lysp_node *parsed;
     void *prefix_data;
-    struct lysp_stmt *child;
+    struct lysp_ext *def;
     void *parent;
     enum ly_stmt parent_stmt;
     uint64_t parent_stmt_index;
     uint16_t flags;
+    const struct lyplg_ext_record *record;
+    struct lysp_ext_substmt *substmts;
+    void *parsed;
+    struct lysp_stmt *child;
 };
 
  struct lysp_import {
@@ -662,11 +665,11 @@ struct lysc_ext_instance {
     const char *argument;
     struct lys_module *module;
     struct lysc_ext_instance *exts;
-    struct lysc_ext_substmt *substmts;
-    void *data;
     void *parent;
     enum ly_stmt parent_stmt;
-    ...;
+    uint64_t parent_stmt_index;
+    struct lysc_ext_substmt *substmts;
+    void *compiled;
 };
 
 struct lysc_ext {

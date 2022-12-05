@@ -43,11 +43,11 @@ On a Debian/Ubuntu system::
 Compatibility
 -------------
 
-The current version requires at least C `libyang 2.19`__.
+The current version requires at least C `libyang 2.25`__.
 
 The last version of the bindings that works with C `libyang 1.x`__ is v1.7.0__.
 
-__ https://github.com/CESNET/libyang/commit/94c581ae59ee79feecb8b560827e0760a4d4da53
+__ https://github.com/CESNET/libyang/commit/d2f1608b348f
 __ https://github.com/CESNET/libyang/tree/libyang1
 __ https://pypi.org/project/libyang/1.7.0/
 

@@ -6,7 +6,7 @@ from contextlib import suppress
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import IOType, c2str, init_output, ly_array_iter, str2c
+from .util import IOType, LibyangError, c2str, init_output, ly_array_iter, str2c
 
 
 # -------------------------------------------------------------------------------------
@@ -44,7 +44,6 @@ def printer_flags(
 
 # -------------------------------------------------------------------------------------
 class Module:
-
     __slots__ = ("context", "cdata")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -228,7 +227,6 @@ class Module:
 
 # -------------------------------------------------------------------------------------
 class Revision:
-
     __slots__ = ("context", "cdata", "module")
 
     def __init__(self, context: "libyang.Context", cdata, module):
@@ -272,7 +270,6 @@ class Revision:
 
 # -------------------------------------------------------------------------------------
 class Extension:
-
     __slots__ = ("context", "cdata")
 
     def __init__(self, context: "libyang.Context", cdata, module_parent: Module = None):
@@ -295,7 +292,6 @@ class Extension:
 
 # -------------------------------------------------------------------------------------
 class ExtensionParsed(Extension):
-
     __slots__ = ("module_parent",)
 
     def __init__(self, context: "libyang.Context", cdata, module_parent: Module = None):
@@ -318,7 +314,6 @@ class ExtensionParsed(Extension):
 
 # -------------------------------------------------------------------------------------
 class ExtensionCompiled(Extension):
-
     __slots__ = ("cdata_def",)
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -336,7 +331,6 @@ class ExtensionCompiled(Extension):
 
 # -------------------------------------------------------------------------------------
 class _EnumBit:
-
     __slots__ = ("context", "cdata")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -388,7 +382,6 @@ class Bit(_EnumBit):
 
 # -------------------------------------------------------------------------------------
 class Type:
-
     __slots__ = ("context", "cdata", "cdata_parsed")
 
     UNKNOWN = lib.LY_TYPE_UNKNOWN
@@ -609,7 +602,6 @@ class Type:
 
 # -------------------------------------------------------------------------------------
 class Feature:
-
     __slots__ = ("context", "cdata")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -653,7 +645,6 @@ class Feature:
 
 # -------------------------------------------------------------------------------------
 class IfFeatureExpr:
-
     __slots__ = ("context", "cdata", "module_features", "compiled")
 
     def __init__(self, context: "libyang.Context", cdata, module_features=None):
@@ -692,7 +683,7 @@ class IfFeatureExpr:
             for feature in self.module_features:
                 if feature.name() == name:
                     return feature.cdata
-            raise Exception("No feature %s in module" % name)
+            raise LibyangError("No feature %s in module" % name)
 
         def parse_iffeature(tokens):
             def oper2(op):
@@ -789,7 +780,6 @@ class IfFeatureExprTree:
 
 # -------------------------------------------------------------------------------------
 class IfFeature(IfFeatureExprTree):
-
     __slots__ = ("context", "cdata")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -812,7 +802,6 @@ class IfFeature(IfFeatureExprTree):
 
 # -------------------------------------------------------------------------------------
 class IfNotFeature(IfFeatureExprTree):
-
     __slots__ = ("context", "child")
 
     def __init__(self, context: "libyang.Context", child: IfFeatureExprTree):
@@ -831,7 +820,6 @@ class IfNotFeature(IfFeatureExprTree):
 
 # -------------------------------------------------------------------------------------
 class IfAndFeatures(IfFeatureExprTree):
-
     __slots__ = ("context", "a", "b")
 
     def __init__(
@@ -856,7 +844,6 @@ class IfAndFeatures(IfFeatureExprTree):
 
 # -------------------------------------------------------------------------------------
 class IfOrFeatures(IfFeatureExprTree):
-
     __slots__ = ("context", "a", "b")
 
     def __init__(
@@ -881,7 +868,6 @@ class IfOrFeatures(IfFeatureExprTree):
 
 # -------------------------------------------------------------------------------------
 class SNode:
-
     __slots__ = ("context", "cdata", "cdata_parsed")
 
     CONTAINER = lib.LYS_CONTAINER
@@ -1076,7 +1062,6 @@ class SNode:
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.LEAF)
 class SLeaf(SNode):
-
     __slots__ = ("cdata_leaf", "cdata_leaf_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -1123,7 +1108,6 @@ class SLeaf(SNode):
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.LEAFLIST)
 class SLeafList(SNode):
-
     __slots__ = ("cdata_leaflist", "cdata_leaflist_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -1176,7 +1160,6 @@ class SLeafList(SNode):
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.CONTAINER)
 class SContainer(SNode):
-
     __slots__ = ("cdata_container", "cdata_container_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):
@@ -1209,7 +1192,6 @@ class SContainer(SNode):
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.LIST)
 class SList(SNode):
-
     __slots__ = ("cdata_list", "cdata_list_parsed")
 
     def __init__(self, context: "libyang.Context", cdata):

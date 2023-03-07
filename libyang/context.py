@@ -21,7 +21,6 @@ from .util import DataType, IOType, LibyangError, c2str, data_load, str2c
 
 # -------------------------------------------------------------------------------------
 class Context:
-
     __slots__ = ("cdata",)
 
     def __init__(

@@ -78,7 +78,6 @@ class SNodeDiff:
 
 # -------------------------------------------------------------------------------------
 class SNodeRemoved(SNodeDiff):
-
     __slots__ = ("node",)
 
     def __init__(self, node: SNode):
@@ -94,7 +93,6 @@ class SNodeRemoved(SNodeDiff):
 
 # -------------------------------------------------------------------------------------
 class SNodeAdded(SNodeDiff):
-
     __slots__ = ("node",)
 
     def __init__(self, node: SNode):
@@ -106,7 +104,6 @@ class SNodeAdded(SNodeDiff):
 
 # -------------------------------------------------------------------------------------
 class SNodeAttributeChanged(SNodeDiff):
-
     __slots__ = ("old", "new", "value")
 
     def __init__(self, old: SNode, new: SNode, value: Any = None):
@@ -289,7 +286,6 @@ class UnitsAdded(SNodeAttributeChanged):
 
 # -------------------------------------------------------------------------------------
 def snode_changes(old: SNode, new: SNode) -> Iterator[SNodeDiff]:
-
     if old.nodetype() != new.nodetype():
         yield NodeTypeRemoved(old, new, old.keyword())
         yield NodeTypeAdded(old, new, new.keyword())

@@ -28,7 +28,6 @@ NEW_YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 
 # -------------------------------------------------------------------------------------
 class DiffTest(unittest.TestCase):
-
     expected_diffs = frozenset(
         (
             (BaseTypeAdded, "/yolo-system:conf/speed"),

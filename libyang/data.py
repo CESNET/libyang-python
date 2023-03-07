@@ -296,7 +296,6 @@ class DNode:
         opt_bin_value: bool = False,
         opt_canon_value: bool = False,
     ):
-
         opt = 0
         if opt_update:
             opt |= lib.LYD_NEW_PATH_UPDATE
@@ -944,7 +943,6 @@ class DLeaf(DNode):
 
     @staticmethod
     def cdata_leaf_value(cdata, context: "libyang.Context" = None) -> Any:
-
         val = lib.lyd_get_value(cdata)
         if val == ffi.NULL:
             return None

@@ -710,6 +710,17 @@ class DNode:
         """
         Convert a DNode object to a python dictionary.
 
+        The format is inspired by the YANG JSON format described in :rfc:`7951` but has
+        some differences:
+
+        * ``int64`` and ``uint64`` values are represented by python ``int`` values
+          instead of string values.
+        * ``decimal64`` values are represented by python ``float`` values instead of
+          string values.
+        * ``empty`` values are represented by python ``None`` values instead of
+          ``[None]`` list instances. To check if an ``empty`` leaf is set in a
+          container, you should use the idiomatic ``if "foo" in container:`` construct.
+
         :arg bool strip_prefixes:
             If True (the default), module prefixes are stripped from dictionary keys. If
             False, dictionary keys are in the form ``<module>:<name>``.

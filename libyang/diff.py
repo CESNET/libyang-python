@@ -12,6 +12,7 @@ def schema_diff(
     ctx_old: Context,
     ctx_new: Context,
     exclude_node_cb: Optional[Callable[[SNode], bool]] = None,
+    use_data_path: bool = False,
 ) -> Iterator["SNodeDiff"]:
     """
     Compare two libyang Context objects, for a given set of paths and return all
@@ -25,6 +26,9 @@ def schema_diff(
         Optionnal user callback that will be called with each node that is found in each
         context. If the callback returns a "trueish" value, the node will be excluded
         from the diff (as well as all its children).
+    :arg use_data_path:
+        Use data path instead of schema path to compare the nodes. Using data path
+        ignores choices and cases.
 
     :return:
         An iterator that yield `SNodeDiff` objects.
@@ -40,7 +44,11 @@ def schema_diff(
         """
         if exclude_node_cb(node):
             return
-        dic[node.schema_path()] = node
+        if use_data_path:
+            path = node.data_path()
+        else:
+            path = node.schema_path()
+        dic[path] = node
         if isinstance(node, (SContainer, SList, SNotif, SRpc, SRpcInOut)):
             for child in node:
                 flatten(child, dic)

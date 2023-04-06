@@ -185,7 +185,7 @@ Data Tree
    ...             {'name': 'lo', 'address': '127.0.0.1'},
    ...         ],
    ...     },
-   ... }, config=True)
+   ... })
    >>> print(node.print_mem('xml', pretty=True))
    <data xmlns="urn:example">
      <interface>

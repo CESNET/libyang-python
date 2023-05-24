@@ -719,7 +719,6 @@ struct lyd_node_inner {
         };
     };
     struct lyd_node *child;
-    struct hash_table *children_ht;
     ...;
 };
 

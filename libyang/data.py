@@ -193,7 +193,7 @@ class DNode:
     Data tree node.
     """
 
-    __slots__ = ("context", "cdata", "free_func")
+    __slots__ = ("context", "cdata", "free_func", "__dict__")
 
     def __init__(self, context: "libyang.Context", cdata):
         """

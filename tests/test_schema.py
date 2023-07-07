@@ -406,6 +406,12 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(t.base(), Type.UNION)
         types = set(u.name() for u in t.union_types())
         self.assertEqual(types, set(["int16", "int32", "uint16", "uint32"]))
+        for u in t.union_types():
+            ext = u.get_extension(
+                "type-desc", prefix="omg-extensions", arg_value=f"<{u.name()}>"
+            )
+            self.assertIsInstance(ext, Extension)
+            self.assertEqual(len(list(u.extensions())), 2)
         bases = set(t.basenames())
         self.assertEqual(bases, set(["int16", "int32", "uint16", "uint32"]))
 

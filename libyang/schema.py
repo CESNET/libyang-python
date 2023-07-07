@@ -479,9 +479,16 @@ class Type:
     def union_types(self) -> Iterator["Type"]:
         if self.cdata.basetype != self.UNION:
             return
+
         t = ffi.cast("struct lysc_type_union *", self.cdata)
-        for union_type in ly_array_iter(t.types):
-            yield Type(self.context, union_type, None)
+        if self.cdata_parsed and self.cdata_parsed.types != ffi.NULL:
+            for union_type, union_type_parsed in zip(
+                ly_array_iter(t.types), ly_array_iter(self.cdata_parsed.types)
+            ):
+                yield Type(self.context, union_type, union_type_parsed)
+        else:
+            for union_type in ly_array_iter(t.types):
+                yield Type(self.context, union_type, None)
 
     def enums(self) -> Iterator[Enum]:
         if self.cdata.basetype != self.ENUM:

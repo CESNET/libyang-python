@@ -2,6 +2,8 @@ module wtf-types {
   namespace "urn:yang:wtf:types";
   prefix t;
 
+  import omg-extensions { prefix ext; }
+
   typedef str {
     type string;
   }
@@ -12,17 +14,32 @@ module wtf-types {
     }
   }
 
+  extension signed;
+  extension unsigned;
+
   typedef unsigned {
     type union {
-      type uint16;
-      type uint32;
+      type uint16 {
+        t:unsigned;
+        ext:type-desc "<uint16>";
+      }
+      type uint32 {
+        ext:type-desc "<uint32>";
+        t:unsigned;
+      }
     }
   }
 
   typedef signed {
     type union {
-      type int16;
-      type int32;
+      type int16 {
+        ext:type-desc "<int16>";
+        t:signed;
+      }
+      type int32 {
+        ext:type-desc "<int32>";
+        t:signed;
+      }
     }
   }
 

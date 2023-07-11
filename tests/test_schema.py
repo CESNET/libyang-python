@@ -73,6 +73,12 @@ class ModuleTest(unittest.TestCase):
         self.assertTrue(self.module.feature_state("turbo-boost"))
         self.module.feature_disable_all()
 
+    def test_mod_imports(self):
+        imports = list(self.module.imports())
+        self.assertEqual(imports[0].name(), "omg-extensions")
+        self.assertEqual(imports[1].name(), "wtf-types")
+        self.assertEqual(len(imports), 2)
+
     def test_mod_features(self):
         features = list(self.module.features())
         self.assertEqual(len(features), 2)

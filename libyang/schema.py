@@ -112,6 +112,10 @@ class Module:
         for revision in ly_array_iter(self.cdata.parsed.revs):
             yield Revision(self.context, revision, self)
 
+    def imports(self) -> Iterator["Import"]:
+        for i in ly_array_iter(self.cdata.parsed.imports):
+            yield Import(self.context, i, self)
+
     def __iter__(self) -> Iterator["SNode"]:
         return self.children()
 
@@ -266,6 +270,52 @@ class Revision:
 
     def __str__(self):
         return self.date()
+
+
+# -------------------------------------------------------------------------------------
+class Import:
+    __slots__ = ("context", "cdata", "module", "__dict__")
+
+    def __init__(self, context: "libyang.Context", cdata, module):
+        self.context = context
+        self.cdata = cdata  # C type: "struct lysp_revision *"
+        self.module = module
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def prefix(self) -> Optional[str]:
+        return c2str(self.cdata.prefix)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional["ExtensionParsed"]:
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
+        return None
+
+    def __repr__(self):
+        cls = self.__class__
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
 
 
 # -------------------------------------------------------------------------------------

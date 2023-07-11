@@ -626,11 +626,9 @@ class Type:
             yield from self.patterns()
 
     def module(self) -> Module:
-        # TODO: pointer to the parsed module wehere is the type defined is in self.cdata_parsed.pmod
-        # however there is no way how to get name of the module from lysp_module
-        if not self.cdata.der.module:
+        if not self.cdata_parsed:
             return None
-        return Module(self.context, self.cdata.der.module)
+        return Module(self.context, self.cdata_parsed.pmod.mod)
 
     def extensions(self) -> Iterator[ExtensionCompiled]:
         for extension in ly_array_iter(self.cdata.exts):

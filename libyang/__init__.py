@@ -83,6 +83,7 @@ from .schema import (
     SRpc,
     SRpcInOut,
     Type,
+    Typedef,
 )
 from .util import DataType, IOType, LibyangError
 from .xpath import (

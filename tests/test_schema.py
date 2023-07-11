@@ -380,6 +380,8 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsNot(mod, None)
         self.assertEqual(mod.name(), "yolo-system")
         self.assertEqual(mod.get_module_from_prefix("types").name(), "wtf-types")
+        self.assertEqual(t.typedef().name(), "host")
+        self.assertEqual(t.typedef().description(), "my host type.")
 
     def test_leaf_type_status(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf/yolo-system:hostname"))

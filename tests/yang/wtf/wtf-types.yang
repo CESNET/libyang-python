@@ -12,6 +12,8 @@ module wtf-types {
     type str {
       pattern "[a-z]+";
     }
+    description
+      "my host type.";
   }
 
   extension signed;

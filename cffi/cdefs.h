@@ -978,6 +978,17 @@ LY_ERR lyd_dup_siblings(const struct lyd_node *, struct lyd_node_inner *, uint32
 LY_ERR lyd_dup_single(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
 void lyd_free_meta_single(struct lyd_meta *);
 
+struct lysp_tpdf {
+    const char *name;
+    const char *units;
+    struct lysp_qname dflt;
+    const char *dsc;
+    const char *ref;
+    struct lysp_ext_instance *exts;
+    struct lysp_type type;
+    uint16_t flags;
+};
+
 struct lysc_when {
     struct lyxp_expr *cond;
     struct lysc_node *context;

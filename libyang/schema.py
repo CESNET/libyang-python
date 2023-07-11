@@ -112,6 +112,17 @@ class Module:
         for revision in ly_array_iter(self.cdata.parsed.revs):
             yield Revision(self.context, revision, self)
 
+    def typedefs(self) -> Iterator["Typedef"]:
+        for typedef in ly_array_iter(self.cdata.parsed.typedefs):
+            yield Typedef(self.context, typedef)
+
+    def get_typedef(self, name: str) -> Optional["Typedef"]:
+        for typedef in self.typedefs():
+            if typedef.name() != name:
+                continue
+            return typedef
+        return None
+
     def imports(self) -> Iterator["Import"]:
         for i in ly_array_iter(self.cdata.parsed.imports):
             yield Import(self.context, i, self)
@@ -533,6 +544,14 @@ class Type:
         lr = ffi.cast("struct lysc_type_leafref *", self.cdata)
         return c2str(lib.lyxp_get_expr(lr.path))
 
+    def typedef(self) -> "Typedef":
+        if ":" in self.name():
+            module_prefix, type_name = self.name().split(":")
+            import_module = self.module().get_module_from_prefix(module_prefix)
+            if import_module:
+                return import_module.get_typedef(type_name)
+        return None
+
     def union_types(self) -> Iterator["Type"]:
         if self.cdata.basetype != self.UNION:
             return
@@ -657,6 +676,59 @@ class Type:
     def __repr__(self):
         cls = self.__class__
         return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
+
+
+# -------------------------------------------------------------------------------------
+class Typedef:
+    __slots__ = ("context", "cdata", "__dict__")
+
+    def __init__(self, context: "libyang.Context", cdata):
+        self.context = context
+        self.cdata = cdata  # C type: "struct lysp_tpdf *"
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def units(self) -> Optional[str]:
+        return c2str(self.cdata.units)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def extensions(self) -> Iterator[ExtensionCompiled]:
+        ext = ffi.cast("struct lysc_ext_instance *", self.cdata.exts)
+        if ext == ffi.NULL:
+            return
+        for extension in ly_array_iter(ext):
+            yield ExtensionCompiled(self.context, extension)
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional[ExtensionCompiled]:
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
+        return None
+
+    def deprecated(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
+
+    def obsolete(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
+
+    def module(self) -> Module:
+        return Module(self.context, self.cdata.module)
 
     def __str__(self):
         return self.name()

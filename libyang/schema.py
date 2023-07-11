@@ -878,6 +878,8 @@ class SNode:
     __slots__ = ("context", "cdata", "cdata_parsed", "__dict__")
 
     CONTAINER = lib.LYS_CONTAINER
+    CHOICE = lib.LYS_CHOICE
+    CASE = lib.LYS_CASE
     LEAF = lib.LYS_LEAF
     LEAFLIST = lib.LYS_LEAFLIST
     LIST = lib.LYS_LIST
@@ -1189,6 +1191,26 @@ class SContainer(SNode):
         for must in ly_array_iter(pdata.musts):
             yield c2str(must.arg.str)
 
+    def __iter__(self) -> Iterator[SNode]:
+        return self.children()
+
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
+        return iter_children(self.context, self.cdata, types=types)
+
+
+# -------------------------------------------------------------------------------------
+@SNode.register(SNode.CHOICE)
+class SChoice(SNode):
+    def __iter__(self) -> Iterator[SNode]:
+        return self.children()
+
+    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
+        return iter_children(self.context, self.cdata, types=types)
+
+
+# -------------------------------------------------------------------------------------
+@SNode.register(SNode.CASE)
+class SCase(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 

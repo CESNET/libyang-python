@@ -60,6 +60,19 @@ module yolo-system {
       type string;
     }
 
+    choice pill {
+      case red {
+        leaf out {
+	  type boolean;
+	}
+      }
+      case blue {
+        leaf in {
+	  type boolean;
+	}
+      }
+    }
+
     list url {
       description
         "An URL.";

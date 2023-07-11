@@ -81,6 +81,12 @@ class DiffTest(unittest.TestCase):
             (EnumStatusAdded, "/yolo-system:state/url/proto"),
             (EnumStatusRemoved, "/yolo-system:conf/url/proto"),
             (EnumStatusRemoved, "/yolo-system:state/url/proto"),
+            (SNodeAdded, "/yolo-system:conf/pill/red/out"),
+            (SNodeAdded, "/yolo-system:state/pill/red/out"),
+            (SNodeAdded, "/yolo-system:conf/pill/blue/in"),
+            (SNodeAdded, "/yolo-system:state/pill/blue/in"),
+            (SNodeAdded, "/yolo-system:alarm-triggered/severity"),
+            (SNodeAdded, "/yolo-system:alarm-triggered/description"),
         )
     )
 

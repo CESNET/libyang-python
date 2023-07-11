@@ -116,6 +116,13 @@ class Module:
         for i in ly_array_iter(self.cdata.parsed.imports):
             yield Import(self.context, i, self)
 
+    def get_module_from_prefix(self, prefix: str) -> Optional["Module"]:
+        for i in self.imports():
+            if i.prefix() != prefix:
+                continue
+            return self.context.get_module(i.name())
+        return None
+
     def __iter__(self) -> Iterator["SNode"]:
         return self.children()
 

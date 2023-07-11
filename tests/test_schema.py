@@ -258,20 +258,20 @@ class ContainerTest(unittest.TestCase):
 
     def test_cont_iter(self):
         children = list(iter(self.container))
-        self.assertEqual(len(children), 9)
+        self.assertEqual(len(children), 11)
 
     def test_cont_children_leafs(self):
         leafs = list(self.container.children(types=(SNode.LEAF,)))
-        self.assertEqual(len(leafs), 7)
+        self.assertEqual(len(leafs), 9)
 
     def test_cont_parent(self):
         self.assertIsNone(self.container.parent())
 
     def test_iter_tree(self):
         tree = list(self.container.iter_tree())
-        self.assertEqual(len(tree), 15)
-        tree = list(self.container.iter_tree(full=True))
         self.assertEqual(len(tree), 20)
+        tree = list(self.container.iter_tree(full=True))
+        self.assertEqual(len(tree), 25)
 
 
 # -------------------------------------------------------------------------------------
@@ -455,3 +455,7 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsNotNone(parent)
         self.assertIsInstance(parent, SList)
         self.assertEqual(parent.name(), "url")
+
+    def test_iter_tree(self):
+        leaf = next(self.ctx.find_path("/yolo-system:conf"))
+        self.assertEqual(len(list(leaf.iter_tree(full=True))), 23)

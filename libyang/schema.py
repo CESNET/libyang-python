@@ -516,6 +516,9 @@ class Type:
         return self.basename()
 
     def description(self) -> Optional[str]:
+        typedef = self.typedef()
+        if typedef:
+            return typedef.description()
         return None
 
     def base(self) -> int:

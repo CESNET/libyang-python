@@ -552,6 +552,8 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("merge failed")
 
+        self.cdata = node_p[0]
+
     def iter_tree(self) -> Iterator["DNode"]:
         n = next_n = self.cdata
         while n != ffi.NULL:

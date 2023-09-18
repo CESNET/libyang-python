@@ -78,6 +78,46 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
+    JSON_CONFIG_WITH_STATE = """{
+  "yolo-system:state": {
+    "speed": 4321
+  },
+  "yolo-system:conf": {
+    "hostname": "foo",
+    "url": [
+      {
+        "proto": "https",
+        "host": "github.com",
+        "path": "/CESNET/libyang-python",
+        "enabled": false
+      },
+      {
+        "proto": "http",
+        "host": "foobar.com",
+        "port": 8080,
+        "path": "/index.html",
+        "enabled": true
+      }
+    ],
+    "number": [
+      1000,
+      2000,
+      3000
+    ],
+    "speed": 1234
+  }
+}
+"""
+
+    def test_data_parse_config_json_without_yang_lib(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json")
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            j = dnode.print_mem("json", with_siblings=True)
+            self.assertEqual(j, self.JSON_CONFIG_WITH_STATE)
+        finally:
+            dnode.free()
+
     JSON_CONFIG_ADD_LIST_ITEM = """{
   "yolo-system:conf": {
     "hostname": "foo",

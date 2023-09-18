@@ -61,6 +61,7 @@ class Context:
         search_path = ":".join(search_paths) if search_paths else None
 
         if yanglib_path is None:
+            options |= lib.LY_CTX_NO_YANGLIBRARY
             if lib.ly_ctx_new(str2c(search_path), options, ctx) != lib.LY_SUCCESS:
                 raise self.error("cannot create context")
         else:

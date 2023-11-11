@@ -1120,7 +1120,24 @@ class SNode:
             yield ExtensionCompiled(self.context, extension)
 
     def must_conditions(self) -> Iterator[str]:
-        return iter(())
+        mc = ffi.new("struct lysc_must *")
+        mc = lib.lysc_node_musts(self.cdata)
+        if mc == ffi.NULL:
+            return
+        for cond in ly_array_iter(mc):
+            yield c2str(lib.lyxp_get_expr(cond.cond))
+
+    def must_conditions_details(self) -> Iterator[Tuple[str, Optional[str]]]:
+        mc = ffi.new("struct lysc_must *")
+        mc = lib.lysc_node_musts(self.cdata)
+        if mc == ffi.NULL:
+            return
+        for m in ly_array_iter(mc):
+            if not m:
+                continue
+            cond = c2str(lib.lyxp_get_expr(m.cond))
+            err_msg = c2str(m.emsg) if m.emsg != ffi.NULL else None
+            yield cond, err_msg
 
     def get_extension(
         self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
@@ -1249,13 +1266,6 @@ class SLeaf(SNode):
             return True
         return False
 
-    def must_conditions(self) -> Iterator[str]:
-        pdata = self.cdata_leaf_parsed
-        if pdata.musts == ffi.NULL:
-            return
-        for must in ly_array_iter(pdata.musts):
-            yield c2str(must.arg.str)
-
     def __str__(self):
         return "%s %s" % (self.name(), self.type().name())
 
@@ -1301,13 +1311,6 @@ class SLeafList(SNode):
                 ret = int(val)
             yield ret
 
-    def must_conditions(self) -> Iterator[str]:
-        pdata = self.cdata_leaflist_parsed
-        if pdata.musts == ffi.NULL:
-            return
-        for must in ly_array_iter(pdata.musts):
-            yield c2str(must.arg.str)
-
     def max_elements(self) -> int:
         return self.cdata_leaflist.max if self.cdata_leaflist.max != 0 else None
 
@@ -1335,13 +1338,6 @@ class SContainer(SNode):
             return None
 
         return c2str(self.cdata_container_parsed.presence)
-
-    def must_conditions(self) -> Iterator[str]:
-        pdata = self.cdata_container_parsed
-        if pdata.musts == ffi.NULL:
-            return
-        for must in ly_array_iter(pdata.musts):
-            yield c2str(must.arg.str)
 
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
@@ -1397,13 +1393,6 @@ class SList(SNode):
             if node.flags & lib.LYS_KEY:
                 yield SLeaf(self.context, node)
             node = node.next
-
-    def must_conditions(self) -> Iterator[str]:
-        pdata = self.cdata_list_parsed
-        if pdata.musts == ffi.NULL:
-            return
-        for must in ly_array_iter(pdata.musts):
-            yield c2str(must.arg.str)
 
     def max_elements(self) -> int:
         return self.cdata_list.max if self.cdata_list.max != 0 else None

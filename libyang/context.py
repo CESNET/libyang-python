@@ -175,9 +175,19 @@ class Context:
 
         return Module(self, mod)
 
-    def find_path(self, path: str, output: bool = False) -> Iterator[SNode]:
+    def find_path(
+        self,
+        path: str,
+        output: bool = False,
+        root_node: Optional["libyang.SNode"] = None,
+    ) -> Iterator[SNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
+
+        if root_node is not None:
+            ctx_node = root_node.cdata
+        else:
+            ctx_node = ffi.NULL
 
         flags = 0
         if output:
@@ -185,7 +195,7 @@ class Context:
 
         node_set = ffi.new("struct ly_set **")
         if (
-            lib.lys_find_xpath(self.cdata, ffi.NULL, str2c(path), 0, node_set)
+            lib.lys_find_xpath(self.cdata, ctx_node, str2c(path), 0, node_set)
             != lib.LY_SUCCESS
         ):
             raise self.error("cannot find path")

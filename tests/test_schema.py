@@ -12,6 +12,7 @@ from libyang import (
     IOType,
     LibyangError,
     Module,
+    Must,
     Revision,
     SContainer,
     SLeaf,
@@ -529,6 +530,15 @@ class LeafTest(unittest.TestCase):
     def tearDown(self):
         self.ctx.destroy()
         self.ctx = None
+
+    def test_must(self):
+        leaf = next(self.ctx.find_path("/yolo-nodetypes:conf/percentage"))
+        self.assertIsInstance(leaf, SLeaf)
+        must = next(leaf.musts(), None)
+        self.assertIsInstance(must, Must)
+        self.assertEqual(must.error_message(), "ERROR1")
+        must = next(leaf.must_conditions(), None)
+        self.assertIsInstance(must, str)
 
     def test_leaf_default(self):
         leaf = next(self.ctx.find_path("/yolo-nodetypes:conf/percentage"))

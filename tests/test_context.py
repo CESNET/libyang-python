@@ -4,7 +4,7 @@
 import os
 import unittest
 
-from libyang import Context, LibyangError, Module, SRpc
+from libyang import Context, LibyangError, Module, SLeaf, SLeafList
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -82,8 +82,10 @@ class ContextTest(unittest.TestCase):
     def test_ctx_find_path(self):
         with Context(YANG_DIR) as ctx:
             ctx.load_module("yolo-system")
-            node = next(ctx.find_path("/yolo-system:format-disk"))
-            self.assertIsInstance(node, SRpc)
+            node = next(ctx.find_path("/yolo-system:conf/offline"))
+            self.assertIsInstance(node, SLeaf)
+            node2 = next(ctx.find_path("../number", root_node=node))
+            self.assertIsInstance(node2, SLeafList)
 
     def test_ctx_iter_modules(self):
         with Context(YANG_DIR) as ctx:

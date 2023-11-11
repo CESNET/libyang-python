@@ -555,14 +555,25 @@ class Type:
                 return import_module.get_typedef(type_name)
         return None
 
-    def union_types(self) -> Iterator["Type"]:
+    def union_types(self, with_typedefs: bool = False) -> Iterator["Type"]:
         if self.cdata.basetype != self.UNION:
             return
 
+        typedef = self.typedef()
         t = ffi.cast("struct lysc_type_union *", self.cdata)
         if self.cdata_parsed and self.cdata_parsed.types != ffi.NULL:
             for union_type, union_type_parsed in zip(
                 ly_array_iter(t.types), ly_array_iter(self.cdata_parsed.types)
+            ):
+                yield Type(self.context, union_type, union_type_parsed)
+        elif (
+            with_typedefs
+            and typedef
+            and typedef.cdata
+            and typedef.cdata.type.types != ffi.NULL
+        ):
+            for union_type, union_type_parsed in zip(
+                ly_array_iter(t.types), ly_array_iter(typedef.cdata.type.types)
             ):
                 yield Type(self.context, union_type, union_type_parsed)
         else:

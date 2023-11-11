@@ -792,6 +792,21 @@ struct lysc_must {
     struct lysc_ext_instance *exts;
 };
 
+struct pcre2_real_code;
+typedef struct pcre2_real_code pcre2_code;
+
+struct lysc_pattern {
+    const char *expr;
+    pcre2_code *code;
+    const char *dsc;
+    const char *ref;
+    const char *emsg;
+    const char *eapptag;
+    struct lysc_ext_instance *exts;
+    uint32_t inverted : 1;
+    uint32_t refcount : 31;
+};
+
 #define LYSP_RESTR_PATTERN_ACK ...
 #define LYSP_RESTR_PATTERN_NACK ...
 

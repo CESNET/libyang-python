@@ -12,6 +12,7 @@ from libyang import (
     IOType,
     LibyangError,
     Module,
+    Pattern,
     Revision,
     SContainer,
     SLeaf,
@@ -438,6 +439,15 @@ class LeafTypeTest(unittest.TestCase):
         t = leaf.type()
         self.assertIsInstance(t, Type)
         self.assertEqual(list(t.patterns()), [("[a-z.]+", False), ("1", True)])
+        patterns = list(t.all_pattern_details())
+        self.assertEqual(len(patterns), 2)
+        self.assertIsInstance(patterns[0], Pattern)
+        self.assertEqual(patterns[0].expression(), "[a-z.]+")
+        self.assertFalse(patterns[0].inverted())
+        self.assertEqual(patterns[0].error_message(), "ERROR1")
+        self.assertEqual(patterns[1].expression(), "1")
+        self.assertTrue(patterns[1].inverted())
+        self.assertIsNone(patterns[1].error_message())
 
     def test_leaf_type_union(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf/yolo-system:number"))

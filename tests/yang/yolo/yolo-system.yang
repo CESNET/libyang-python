@@ -85,7 +85,9 @@ module yolo-system {
       }
       leaf host {
         type string {
-          pattern "[a-z.]+";
+          pattern "[a-z.]+" {
+            error-message "ERROR1";
+          }
           pattern "1" {
             modifier "invert-match";
           }

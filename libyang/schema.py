@@ -449,6 +449,24 @@ class Bit(_EnumBit):
 
 
 # -------------------------------------------------------------------------------------
+class Pattern:
+    __slots__ = ("context", "cdata")
+
+    def __init__(self, context: "libyang.Context", cdata):
+        self.context = context
+        self.cdata = cdata  # C type: "struct lysc_pattern *"
+
+    def expression(self) -> str:
+        return c2str(self.cdata.expr)
+
+    def inverted(self) -> bool:
+        return self.cdata.inverted
+
+    def error_message(self) -> Optional[str]:
+        return c2str(self.cdata.emsg) if self.cdata.emsg != ffi.NULL else None
+
+
+# -------------------------------------------------------------------------------------
 class Type:
     __slots__ = ("context", "cdata", "cdata_parsed", "__dict__")
 
@@ -680,6 +698,24 @@ class Type:
                 yield from t.all_patterns()
         else:
             yield from self.patterns()
+
+    def pattern_details(self) -> Iterator[Pattern]:
+        if self.cdata.basetype != self.STRING:
+            return
+        t = ffi.cast("struct lysc_type_str *", self.cdata)
+        if t.patterns == ffi.NULL:
+            return
+        for p in ly_array_iter(t.patterns):
+            if not p:
+                continue
+            yield Pattern(self.context, p)
+
+    def all_pattern_details(self) -> Iterator[Pattern]:
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
+            for t in self.union_types():
+                yield from t.all_pattern_details()
+        else:
+            yield from self.pattern_details()
 
     def require_instance(self) -> Optional[bool]:
         if self.cdata.basetype != self.LEAFREF:

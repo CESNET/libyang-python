@@ -328,6 +328,24 @@ class ListTest(unittest.TestCase):
         self.assertIsInstance(parent, SContainer)
         self.assertEqual(parent.name(), "conf")
 
+    def test_list_min_max(self):
+        self.ctx.load_module("yolo-nodetypes")
+        self.list = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
+        self.assertIsInstance(self.list, SList)
+        self.assertEqual(self.list.min_elements(), 2)
+        self.assertEqual(self.list.max_elements(), 10)
+
+    def test_list_uniques(self):
+        self.ctx.load_module("yolo-nodetypes")
+        self.list = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
+        self.assertIsInstance(self.list, SList)
+        uniques = list(self.list.uniques())
+        self.assertEqual(len(uniques), 1)
+        elements = [u.name() for u in uniques[0]]
+        self.assertEqual(len(elements), 2)
+        self.assertTrue("leaf2" in elements)
+        self.assertTrue("leaf3" in elements)
+
 
 # -------------------------------------------------------------------------------------
 class RpcTest(unittest.TestCase):
@@ -474,3 +492,21 @@ class LeafTypeTest(unittest.TestCase):
     def test_iter_tree(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf"))
         self.assertEqual(len(list(leaf.iter_tree(full=True))), 23)
+
+
+# -------------------------------------------------------------------------------------
+class LeafListTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("yolo-system")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_leaf_list_min_max(self):
+        self.ctx.load_module("yolo-nodetypes")
+        node = next(self.ctx.find_path("/yolo-nodetypes:conf/leaf-list1"))
+        self.assertIsInstance(node, SLeafList)
+        self.assertEqual(node.min_elements(), 3)
+        self.assertEqual(node.max_elements(), 11)

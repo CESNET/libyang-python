@@ -860,3 +860,24 @@ class DataTest(unittest.TestCase):
         node = dnode.find_path("/yolo-system:conf/speed")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), 4321)
+
+    def test_dnode_double_free(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
+        dnode.free()
+        dnode.free()
+
+    def test_dnode_unlink(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
+        self.assertIsInstance(dnode, DContainer)
+        try:
+            child = dnode.find_one("hostname")
+            self.assertIsInstance(child, DNode)
+            child.unlink(with_siblings=False)
+            self.assertIsNone(dnode.find_one("hostname"))
+            child = next(dnode.children(), None)
+            self.assertIsNot(child, None)
+            child.unlink(with_siblings=True)
+            child = next(dnode.children(), None)
+            self.assertIsNone(child, None)
+        finally:
+            dnode.free()

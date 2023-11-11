@@ -673,6 +673,25 @@ class Type:
         else:
             yield from self.patterns()
 
+    def patterns_details(self) -> Iterator[Tuple[str, bool, Optional[str]]]:
+        if not self.cdata or self.cdata.basetype != self.STRING:
+            return
+        t = ffi.cast("struct lysc_type_str *", self.cdata)
+        if t.patterns == ffi.NULL:
+            return
+        for p in ly_array_iter(t.patterns):
+            if not p:
+                continue
+            err_msg = c2str(p.emsg) if p.emsg != ffi.NULL else None
+            yield c2str(p.expr), p.inverted, err_msg
+
+    def all_patterns_details(self) -> Iterator[Tuple[str, bool, Optional[str]]]:
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
+            for t in self.union_types():
+                yield from t.all_patterns_details()
+        else:
+            yield from self.patterns_details()
+
     def module(self) -> Module:
         if not self.cdata_parsed:
             return None

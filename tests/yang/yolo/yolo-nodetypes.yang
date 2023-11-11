@@ -31,6 +31,9 @@ module yolo-nodetypes {
         fraction-digits 2;
       }
       default 10.2;
+      must ". = 10.6" {
+        error-message "ERROR1";
+      }
     }
 
     leaf-list ratios {

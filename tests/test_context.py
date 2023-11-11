@@ -106,3 +106,8 @@ class ContextTest(unittest.TestCase):
             with Context(YANG_DIR) as ctx:
                 mod = ctx.parse_module_file(f, features=["turbo-boost", "networking"])
                 self.assertIsInstance(mod, Module)
+
+    def test_ctx_leafref_extended(self):
+        with Context(YANG_DIR, leafref_extended=True) as ctx:
+            mod = ctx.load_module("yolo-leafref-extended")
+            self.assertIsInstance(mod, Module)

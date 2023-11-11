@@ -1,0 +1,31 @@
+module yolo-leafref-extended {
+  yang-version 1.1;
+  namespace "urn:yang:yolo:leafref-extended";
+  prefix leafref-ext;
+
+  revision 2025-01-25 {
+    description
+      "Initial version.";
+  }
+
+  list list1 {
+    key leaf1;
+    leaf leaf1 {
+      type string;
+    }
+    leaf-list leaflist2 {
+      type string;
+    }
+  }
+
+  leaf ref1 {
+    type leafref {
+      path "../list1/leaf1";
+    }
+  }
+  leaf ref2 {
+    type leafref {
+      path "deref(../ref1)/../leaflist2";
+    }
+  }
+}

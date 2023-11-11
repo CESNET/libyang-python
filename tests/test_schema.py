@@ -420,7 +420,9 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(t.name(), "types:number")
         self.assertEqual(t.base(), Type.UNION)
         types = set(u.name() for u in t.union_types())
+        types2 = set(u.name() for u in t.union_types(with_typedefs=True))
         self.assertEqual(types, set(["int16", "int32", "uint16", "uint32"]))
+        self.assertEqual(types2, set(["signed", "unsigned"]))
         for u in t.union_types():
             ext = u.get_extension(
                 "type-desc", prefix="omg-extensions", arg_value=f"<{u.name()}>"

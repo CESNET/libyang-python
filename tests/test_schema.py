@@ -328,6 +328,13 @@ class ListTest(unittest.TestCase):
         self.assertIsInstance(parent, SContainer)
         self.assertEqual(parent.name(), "conf")
 
+    def test_list_min_max(self):
+        self.ctx.load_module("yolo-nodetypes")
+        self.list = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
+        self.assertIsInstance(self.list, SList)
+        self.assertEqual(self.list.min_elements(), 2)
+        self.assertEqual(self.list.max_elements(), 10)
+
 
 # -------------------------------------------------------------------------------------
 class RpcTest(unittest.TestCase):
@@ -515,3 +522,10 @@ class LeafListTest(unittest.TestCase):
         leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/ratios"))
         for d in leaflist.defaults():
             self.assertIsInstance(d, float)
+
+    def test_leaf_list_min_max(self):
+        self.ctx.load_module("yolo-nodetypes")
+        node = next(self.ctx.find_path("/yolo-nodetypes:conf/leaf-list1"))
+        self.assertIsInstance(node, SLeafList)
+        self.assertEqual(node.min_elements(), 3)
+        self.assertEqual(node.max_elements(), 11)

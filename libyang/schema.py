@@ -1325,6 +1325,12 @@ class SLeafList(SNode):
         for must in ly_array_iter(pdata.musts):
             yield c2str(must.arg.str)
 
+    def max_elements(self) -> int:
+        return self.cdata_leaflist.max if self.cdata_leaflist.max != 0 else None
+
+    def min_elements(self) -> int:
+        return self.cdata_leaflist.min
+
     def __str__(self):
         return "%s %s" % (self.name(), self.type().name())
 
@@ -1415,6 +1421,12 @@ class SList(SNode):
             return
         for must in ly_array_iter(pdata.musts):
             yield c2str(must.arg.str)
+
+    def max_elements(self) -> int:
+        return self.cdata_list.max if self.cdata_list.max != 0 else None
+
+    def min_elements(self) -> int:
+        return self.cdata_list.min
 
     def __str__(self):
         return "%s [%s]" % (self.name(), ", ".join(k.name() for k in self.keys()))

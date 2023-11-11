@@ -267,6 +267,8 @@ LY_ERR lys_set_implemented(struct lys_module *,	const char **);
 #define LYD_NEW_PATH_CANON_VALUE ...
 LY_ERR lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, const char *, uint32_t, struct lyd_node **);
 LY_ERR lyd_find_xpath(const struct lyd_node *, const char *, struct ly_set **);
+void lyd_unlink_siblings(struct lyd_node *node);
+void lyd_unlink_tree(struct lyd_node *node);
 void lyd_free_all(struct lyd_node *node);
 void lyd_free_tree(struct lyd_node *node);
 

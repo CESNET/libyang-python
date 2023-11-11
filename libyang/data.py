@@ -868,6 +868,12 @@ class DNode:
             rpcreply=rpcreply,
         )
 
+    def unlink(self, with_siblings: bool = False) -> None:
+        if with_siblings:
+            lib.lyd_unlink_siblings(self.cdata)
+        else:
+            lib.lyd_unlink_tree(self.cdata)
+
     def free_internal(self, with_siblings: bool = True) -> None:
         if with_siblings:
             lib.lyd_free_all(self.cdata)

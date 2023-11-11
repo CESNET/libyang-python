@@ -31,6 +31,7 @@ class Context:
         yanglib_path: Optional[str] = None,
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
+        leafref_extended: bool = False,
     ):
         if cdata is not None:
             self.cdata = ffi.cast("struct ly_ctx *", cdata)
@@ -41,6 +42,8 @@ class Context:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
         if explicit_compile:
             options |= lib.LY_CTX_EXPLICIT_COMPILE
+        if leafref_extended:
+            options |= lib.LY_CTX_LEAFREF_EXTENDED
         # force priv parsed
         options |= lib.LY_CTX_SET_PRIV_PARSED
 

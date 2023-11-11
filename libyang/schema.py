@@ -611,6 +611,22 @@ class Type:
             if rng is not None:
                 yield rng
 
+    def fraction_digits(self) -> Optional[int]:
+        if not self.cdata_parsed:
+            return None
+        if self.cdata.basetype != self.DEC64:
+            return None
+        return self.cdata_parsed.fraction_digits
+
+    def all_fraction_digits(self) -> Iterator[int]:
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
+            for t in self.union_types():
+                yield from t.all_fraction_digits()
+        else:
+            fd = self.fraction_digits()
+            if fd is not None:
+                yield fd
+
     STR_TYPES = frozenset((STRING, BINARY, ENUM, IDENT, BITS))
 
     def length(self) -> Optional[str]:

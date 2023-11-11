@@ -474,3 +474,11 @@ class LeafTypeTest(unittest.TestCase):
     def test_iter_tree(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf"))
         self.assertEqual(len(list(leaf.iter_tree(full=True))), 23)
+
+    def test_leaf_type_fraction_digits(self):
+        self.ctx.load_module("yolo-nodetypes")
+        leaf = next(self.ctx.find_path("/yolo-nodetypes:conf/percentage"))
+        self.assertIsInstance(leaf, SLeaf)
+        t = leaf.type()
+        self.assertIsInstance(t, Type)
+        self.assertEqual(next(t.all_fraction_digits(), None), 2)

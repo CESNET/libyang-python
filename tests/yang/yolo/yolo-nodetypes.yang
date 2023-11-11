@@ -32,6 +32,8 @@ module yolo-nodetypes {
     list list1 {
       key leaf1;
       unique "leaf2 leaf3";
+      min-elements 2;
+      max-elements 10;
       leaf leaf1 {
         type string;
       }
@@ -48,6 +50,16 @@ module yolo-nodetypes {
       leaf leaf1 {
         type string;
       }
+    }
+
+    leaf-list leaf-list1 {
+      type string;
+      min-elements 3;
+      max-elements 11;
+    }
+
+    leaf-list leaf-list2 {
+      type string;
     }
   }
 }

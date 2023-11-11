@@ -291,6 +291,7 @@ class ListTest(unittest.TestCase):
     def setUp(self):
         self.ctx = Context(YANG_DIR)
         self.ctx.load_module("yolo-system")
+        self.ctx.load_module("yolo-nodetypes")
         self.list = next(self.ctx.find_path(self.PATH["LOG"]))
 
     def tearDown(self):
@@ -329,7 +330,6 @@ class ListTest(unittest.TestCase):
         self.assertEqual(parent.name(), "conf")
 
     def test_list_uniques(self):
-        self.ctx.load_module("yolo-nodetypes")
         list1 = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
         self.assertIsInstance(list1, SList)
         uniques = list(list1.uniques())
@@ -343,6 +343,17 @@ class ListTest(unittest.TestCase):
         self.assertIsInstance(list2, SList)
         uniques = list(list2.uniques())
         self.assertEqual(len(uniques), 0)
+
+    def test_list_min_max(self):
+        list1 = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
+        self.assertIsInstance(list1, SList)
+        self.assertEqual(list1.min_elements(), 2)
+        self.assertEqual(list1.max_elements(), 10)
+
+        list2 = next(self.ctx.find_path("/yolo-nodetypes:conf/list2"))
+        self.assertIsInstance(list2, SList)
+        self.assertEqual(list2.min_elements(), 0)
+        self.assertEqual(list2.max_elements(), None)
 
 
 # -------------------------------------------------------------------------------------
@@ -531,3 +542,14 @@ class LeafListTest(unittest.TestCase):
         leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/ratios"))
         for d in leaflist.defaults():
             self.assertIsInstance(d, float)
+
+    def test_leaf_list_min_max(self):
+        leaflist1 = next(self.ctx.find_path("/yolo-nodetypes:conf/leaf-list1"))
+        self.assertIsInstance(leaflist1, SLeafList)
+        self.assertEqual(leaflist1.min_elements(), 3)
+        self.assertEqual(leaflist1.max_elements(), 11)
+
+        leaflist2 = next(self.ctx.find_path("/yolo-nodetypes:conf/leaf-list2"))
+        self.assertIsInstance(leaflist2, SLeafList)
+        self.assertEqual(leaflist2.min_elements(), 0)
+        self.assertEqual(leaflist2.max_elements(), None)

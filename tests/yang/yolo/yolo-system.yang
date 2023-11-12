@@ -43,6 +43,7 @@ module yolo-system {
     leaf hostname-ref {
       type leafref {
         path "../hostname";
+        require-instance false;
       }
     }
 

@@ -703,6 +703,33 @@ class Type:
             return ext
         return None
 
+    def derived_cdata(self) -> Any:
+        if self.cdata is None:
+            return None
+        if self.cdata.basetype == lib.LY_TYPE_BINARY:
+            return ffi.cast("struct lysc_type_bin *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_STRING:
+            return ffi.cast("struct lysc_type_str *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_BITS:
+            return ffi.cast("struct lysc_type_bits *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_DEC64:
+            return ffi.cast("struct lysc_type_dec *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_ENUM:
+            return ffi.cast("struct lysc_type_enum *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_IDENT:
+            return ffi.cast("struct lysc_type_identityref *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_INST:
+            return ffi.cast("struct lysc_type_instanceid *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_LEAFREF:
+            return ffi.cast("struct lysc_type_leafref *", self.cdata)
+        if self.cdata.basetype == lib.LY_TYPE_UNION:
+            return ffi.cast("struct lysc_type_union *", self.cdata)
+        if self.cdata.basetype in (lib.LY_TYPE_BOOL, lib.LY_TYPE_EMPTY):
+            return self.cdata
+        if self.cdata.basetype in self.NUM_TYPES:
+            return ffi.cast("struct lysc_type_num *", self.cdata)
+        return None
+
     def __repr__(self):
         cls = self.__class__
         return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))

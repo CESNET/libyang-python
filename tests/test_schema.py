@@ -485,6 +485,13 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(t, Type)
         self.assertEqual(next(t.all_fraction_digits(), None), 2)
 
+    def test_leaf_type_derived_cdata(self):
+        leaf = next(self.ctx.find_path("/yolo-system:conf/yolo-system:number"))
+        self.assertIsInstance(leaf, SLeafList)
+        t = leaf.type()
+        self.assertIsInstance(t, Type)
+        self.assertIsNotNone(t.derived_cdata().types)
+
 
 # -------------------------------------------------------------------------------------
 class LeafTest(unittest.TestCase):

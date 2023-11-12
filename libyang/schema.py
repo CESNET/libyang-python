@@ -692,6 +692,12 @@ class Type:
         else:
             yield from self.patterns_details()
 
+    def require_instance(self) -> Optional[bool]:
+        if not self.cdata or self.cdata.basetype != self.LEAFREF:
+            return None
+        t = ffi.cast("struct lysc_type_leafref *", self.cdata)
+        return bool(t.require_instance)
+
     def module(self) -> Module:
         if not self.cdata_parsed:
             return None

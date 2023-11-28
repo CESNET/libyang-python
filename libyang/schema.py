@@ -1219,7 +1219,7 @@ class SLeaf(SNode):
         self.cdata_leaf = ffi.cast("struct lysc_node_leaf *", cdata)
         self.cdata_leaf_parsed = ffi.cast("struct lysp_node_leaf *", self.cdata_parsed)
 
-    def default(self) -> Union[None, bool, int, str]:
+    def default(self) -> Union[None, bool, int, str, float]:
         if not self.cdata_leaf.dflt:
             return None
         val = lib.lyd_value_get_canonical(self.context.cdata, self.cdata_leaf.dflt)
@@ -1231,6 +1231,8 @@ class SLeaf(SNode):
             return val == "true"
         if val_type.base() in Type.NUM_TYPES:
             return int(val)
+        if val_type.base() == Type.DEC64:
+            return float(val)
         return val
 
     def units(self) -> Optional[str]:
@@ -1278,7 +1280,7 @@ class SLeafList(SNode):
             self.context, self.cdata_leaflist.type, self.cdata_leaflist_parsed.type
         )
 
-    def defaults(self) -> Iterator[str]:
+    def defaults(self) -> Iterator[Union[None, bool, int, str, float]]:
         if self.cdata_leaflist.dflts == ffi.NULL:
             return
         arr_length = ffi.cast("uint64_t *", self.cdata_leaflist.dflts)[-1]
@@ -1294,6 +1296,8 @@ class SLeafList(SNode):
                 ret = val == "true"
             elif val_type in Type.NUM_TYPES:
                 ret = int(val)
+            elif val_type == Type.DEC64:
+                ret = float(val)
             yield ret
 
     def must_conditions(self) -> Iterator[str]:

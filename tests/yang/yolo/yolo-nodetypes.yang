@@ -12,6 +12,7 @@ module yolo-nodetypes {
   }
 
   container conf {
+    presence "enable conf";
     description
       "Configuration.";
     leaf percentage {
@@ -61,5 +62,9 @@ module yolo-nodetypes {
     leaf-list leaf-list2 {
       type string;
     }
+  }
+
+  leaf test1 {
+    type uint8;
   }
 }

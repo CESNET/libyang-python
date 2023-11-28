@@ -20,6 +20,7 @@ from libyang import (
     IOType,
     LibyangError,
 )
+from libyang.data import dict_to_dnode
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -32,6 +33,7 @@ class DataTest(unittest.TestCase):
         modules = [
             self.ctx.load_module("ietf-netconf"),
             self.ctx.load_module("yolo-system"),
+            self.ctx.load_module("yolo-nodetypes"),
         ]
 
         for mod in modules:
@@ -922,3 +924,18 @@ class DataTest(unittest.TestCase):
             self.assertIsNone(child, None)
         finally:
             dnode.free()
+
+    def test_dnode_insert_sibling(self):
+        MAIN = {"yolo-nodetypes:conf": {"percentage": "20.2"}}
+        SIBLING = {"yolo-nodetypes:test1": 10}
+        module = self.ctx.get_module("yolo-nodetypes")
+        dnode1 = dict_to_dnode(MAIN, module, None, validate=False)
+        dnode2 = dict_to_dnode(SIBLING, module, None, validate=False)
+        self.assertEqual(len(list(dnode1.siblings(include_self=False))), 0)
+        self.assertEqual(len(list(dnode2.siblings(include_self=False))), 0)
+        dnode2.insert_sibling(dnode1)
+        self.assertEqual(len(list(dnode1.siblings(include_self=False))), 1)
+        self.assertEqual(len(list(dnode2.siblings(include_self=False))), 1)
+        sibling = next(dnode1.siblings(include_self=False), None)
+        self.assertIsInstance(sibling, DLeaf)
+        self.assertEqual(sibling.cdata, dnode2.cdata)

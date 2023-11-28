@@ -29,4 +29,8 @@ module yolo-nodetypes {
       default 2.6;
     }
   }
+
+  leaf test1 {
+    type uint8;
+  }
 }

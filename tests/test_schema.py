@@ -474,3 +474,34 @@ class LeafTypeTest(unittest.TestCase):
     def test_iter_tree(self):
         leaf = next(self.ctx.find_path("/yolo-system:conf"))
         self.assertEqual(len(list(leaf.iter_tree(full=True))), 23)
+
+
+# -------------------------------------------------------------------------------------
+class LeafTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("yolo-nodetypes")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_leaf_default(self):
+        leaf = next(self.ctx.find_path("/yolo-nodetypes:conf/percentage"))
+        self.assertIsInstance(leaf.default(), float)
+
+
+# -------------------------------------------------------------------------------------
+class LeafListTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("yolo-nodetypes")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_leaflist_defaults(self):
+        leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/ratios"))
+        for d in leaflist.defaults():
+            self.assertIsInstance(d, float)

@@ -1,0 +1,32 @@
+module yolo-nodetypes {
+  yang-version 1.1;
+  namespace "urn:yang:yolo:nodetypes";
+  prefix sys;
+
+  description
+    "YOLO Nodetypes.";
+
+  revision 2024-01-25 {
+    description
+      "Initial version.";
+  }
+
+  container conf {
+    description
+      "Configuration.";
+    leaf percentage {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      default 10.2;
+    }
+
+    leaf-list ratios {
+      type decimal64 {
+        fraction-digits 2;
+      }
+      default 2.5;
+      default 2.6;
+    }
+  }
+}

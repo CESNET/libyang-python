@@ -319,6 +319,11 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot insert node")
 
+    def insert_sibling(self, node):
+        ret = lib.lyd_insert_sibling(self.cdata, node.cdata, ffi.NULL)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot insert node")
+
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
 

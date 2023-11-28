@@ -257,6 +257,7 @@ class DNode:
         no_defaults: bool = False,
         no_state: bool = False,
         output: bool = False,
+        only_node: bool = False,
     ):
         flags = implicit_flags(
             no_config=no_config,
@@ -264,9 +265,14 @@ class DNode:
             no_state=no_state,
             output=output,
         )
-        node_p = ffi.new("struct lyd_node **")
-        node_p[0] = self.cdata
-        ret = lib.lyd_new_implicit_all(node_p, self.context.cdata, flags, ffi.NULL)
+        ret = lib.LY_SUCCESS
+        if only_node:
+            node_p = ffi.cast("struct lyd_node *", self.cdata)
+            ret = lib.lyd_new_implicit_tree(node_p, flags, ffi.NULL)
+        else:
+            node_p = ffi.new("struct lyd_node **")
+            node_p[0] = self.cdata
+            ret = lib.lyd_new_implicit_all(node_p, self.context.cdata, flags, ffi.NULL)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get module")
 

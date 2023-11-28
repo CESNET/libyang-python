@@ -14,6 +14,7 @@ from libyang import (
     DataType,
     DContainer,
     DLeaf,
+    DList,
     DNode,
     DNotif,
     DRpc,
@@ -32,6 +33,7 @@ class DataTest(unittest.TestCase):
         modules = [
             self.ctx.load_module("ietf-netconf"),
             self.ctx.load_module("yolo-system"),
+            self.ctx.load_module("yolo-nodetypes"),
         ]
 
         for mod in modules:
@@ -891,13 +893,22 @@ class DataTest(unittest.TestCase):
             dnode.free()
 
     def test_add_defaults(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
-        node = dnode.find_path("/yolo-system:conf/speed")
+        JSON = '{"yolo-nodetypes:records": [{"id": "rec1"}]}'
+        dnode = self.ctx.parse_data_mem(
+            JSON, "json", validate_present=True, parse_only=True
+        )
+        self.assertIsInstance(dnode, DList)
+        node = dnode.find_one("id")
         self.assertIsInstance(node, DLeaf)
-        node.free(with_siblings=False)
-        node = dnode.find_path("/yolo-system:conf/speed")
+        node = dnode.find_one("name")
         self.assertIsNone(node)
-        dnode.add_defaults()
+        dnode.add_defaults(only_node=True)
+        node = dnode.find_one("name")
+        self.assertIsInstance(node, DLeaf)
+        self.assertEqual(node.value(), "ASD")
+        node = dnode.find_path("/yolo-nodetypes:conf/speed")
+        self.assertIsNone(node)
+        dnode.add_defaults(only_node=False)
         node = dnode.find_path("/yolo-system:conf/speed")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), 4321)

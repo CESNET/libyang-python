@@ -11,6 +11,17 @@ module yolo-nodetypes {
       "Initial version.";
   }
 
+  list records {
+    key id;
+    leaf id {
+      type string;
+    }
+    leaf name {
+      type string;
+      default "ASD";
+    }
+  }
+
   container conf {
     description
       "Configuration.";

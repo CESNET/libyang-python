@@ -137,8 +137,11 @@ class Module:
     def __iter__(self) -> Iterator["SNode"]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator["SNode"]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choices: bool = False
+    ) -> Iterator["SNode"]:
+        options = lib.LYS_GETNEXT_WITHCHOICE if with_choices else 0
+        return iter_children(self.context, self.cdata, types=types, options=options)
 
     def __str__(self) -> str:
         return self.name()
@@ -1342,18 +1345,35 @@ class SContainer(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choices: bool = False
+    ) -> Iterator[SNode]:
+        options = lib.LYS_GETNEXT_WITHCHOICE if with_choices else 0
+        return iter_children(self.context, self.cdata, types=types, options=options)
 
 
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.CHOICE)
 class SChoice(SNode):
+    __slots__ = ("cdata_choice",)
+
+    def __init__(self, context: "libyang.Context", cdata):
+        super().__init__(context, cdata)
+        self.cdata_choice = ffi.cast("struct lysc_node_choice *", cdata)
+
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_cases: bool = False
+    ) -> Iterator[SNode]:
+        options = lib.LYS_GETNEXT_WITHCASE if with_cases else 0
+        return iter_children(self.context, self.cdata, types=types, options=options)
+
+    def default(self) -> Optional[SNode]:
+        if self.cdata_choice.dflt == ffi.NULL:
+            return None
+        return SNode.new(self.context, self.cdata_choice.dflt)
 
 
 # -------------------------------------------------------------------------------------
@@ -1362,8 +1382,11 @@ class SCase(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choices: bool = False
+    ) -> Iterator[SNode]:
+        options = lib.LYS_GETNEXT_WITHCHOICE if with_choices else 0
+        return iter_children(self.context, self.cdata, types=types, options=options)
 
 
 # -------------------------------------------------------------------------------------
@@ -1383,9 +1406,15 @@ class SList(SNode):
         return self.children()
 
     def children(
-        self, skip_keys: bool = False, types: Optional[Tuple[int, ...]] = None
+        self,
+        skip_keys: bool = False,
+        types: Optional[Tuple[int, ...]] = None,
+        with_choices: bool = False,
     ) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
+        options = lib.LYS_GETNEXT_WITHCHOICE if with_choices else 0
+        return iter_children(
+            self.context, self.cdata, skip_keys=skip_keys, types=types, options=options
+        )
 
     def keys(self) -> Iterator[SNode]:
         node = lib.lysc_node_child(self.cdata)
@@ -1493,7 +1522,7 @@ def iter_children(
     options: int = 0,
 ) -> Iterator[SNode]:
     if types is None:
-        types = (
+        types = [
             lib.LYS_ACTION,
             lib.LYS_CONTAINER,
             lib.LYS_LIST,
@@ -1501,7 +1530,11 @@ def iter_children(
             lib.LYS_LEAF,
             lib.LYS_LEAFLIST,
             lib.LYS_NOTIF,
-        )
+        ]
+        if options & lib.LYS_GETNEXT_WITHCHOICE:
+            types.append(lib.LYS_CHOICE)
+        if options & lib.LYS_GETNEXT_WITHCASE:
+            types.append(lib.LYS_CASE)
 
     def _skip(node) -> bool:
         if node.nodetype not in types:

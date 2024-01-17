@@ -1034,6 +1034,10 @@ class SNode:
         ANYDATA: "anydata",
     }
 
+    PATH_LOG = lib.LYSC_PATH_LOG
+    PATH_DATA = lib.LYSC_PATH_DATA
+    PATH_DATA_PATTERN = lib.LYSC_PATH_DATA_PATTERN
+
     def __init__(self, context: "libyang.Context", cdata):
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_node *"
@@ -1079,22 +1083,19 @@ class SNode:
     def module(self) -> Module:
         return Module(self.context, self.cdata.module)
 
-    def schema_path(self) -> str:
+    def schema_path(self, path_type: int = PATH_LOG) -> str:
         try:
-            s = lib.lysc_path(self.cdata, lib.LYSC_PATH_LOG, ffi.NULL, 0)
+            s = lib.lysc_path(self.cdata, path_type, ffi.NULL, 0)
             return c2str(s)
         finally:
             lib.free(s)
 
     def data_path(self, key_placeholder: str = "'%s'") -> str:
-        try:
-            s = lib.lysc_path(self.cdata, lib.LYSC_PATH_DATA_PATTERN, ffi.NULL, 0)
-            val = c2str(s)
-            if key_placeholder != "'%s'":
-                val = val.replace("'%s'", key_placeholder)
-            return val
-        finally:
-            lib.free(s)
+        val = self.schema_path(self.PATH_DATA_PATTERN)
+
+        if key_placeholder != "'%s'":
+            val = val.replace("'%s'", key_placeholder)
+        return val
 
     def extensions(self) -> Iterator[ExtensionCompiled]:
         ext = ffi.cast("struct lysc_ext_instance *", self.cdata.exts)

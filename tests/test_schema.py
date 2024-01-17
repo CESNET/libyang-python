@@ -282,13 +282,16 @@ class ContainerTest(unittest.TestCase):
 
 # -------------------------------------------------------------------------------------
 class ListTest(unittest.TestCase):
-    SCHEMA_PATH = "/yolo-system:conf/url"
-    DATA_PATH = "/yolo-system:conf/url[host='%s'][proto='%s']"
+    PATH = {
+        "LOG": "/yolo-system:conf/url",
+        "DATA": "/yolo-system:conf/url",
+        "DATA_PATTERN": "/yolo-system:conf/url[host='%s'][proto='%s']",
+    }
 
     def setUp(self):
         self.ctx = Context(YANG_DIR)
         self.ctx.load_module("yolo-system")
-        self.list = next(self.ctx.find_path(self.SCHEMA_PATH))
+        self.list = next(self.ctx.find_path(self.PATH["LOG"]))
 
     def tearDown(self):
         self.list = None
@@ -300,9 +303,11 @@ class ListTest(unittest.TestCase):
         self.assertEqual(self.list.nodetype(), SNode.LIST)
         self.assertEqual(self.list.keyword(), "list")
 
-        self.assertEqual(self.list.schema_path(), self.SCHEMA_PATH)
+        self.assertEqual(self.list.schema_path(), self.PATH["LOG"])
 
-        self.assertEqual(self.list.data_path(), self.DATA_PATH)
+        self.assertEqual(self.list.schema_path(SNode.PATH_DATA), self.PATH["DATA"])
+
+        self.assertEqual(self.list.data_path(), self.PATH["DATA_PATTERN"])
         self.assertFalse(self.list.ordered())
 
     def test_list_keys(self):

@@ -949,3 +949,14 @@ class DataTest(unittest.TestCase):
         sibling = next(dnode1.siblings(include_self=False), None)
         self.assertIsInstance(sibling, DLeaf)
         self.assertEqual(sibling.cdata, dnode2.cdata)
+
+    def test_dnode_new_opaq_find_one(self):
+        root = self.ctx.create_data_path(path="/yolo-system:conf")
+        root.new_path(
+            "hostname",
+            None,
+            opt_opaq=True,
+        )
+        dnode = root.find_one("/yolo-system:conf/hostname")
+
+        self.assertIsInstance(dnode, DLeaf)

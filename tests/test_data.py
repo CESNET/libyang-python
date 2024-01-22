@@ -860,3 +860,14 @@ class DataTest(unittest.TestCase):
         node = dnode.find_path("/yolo-system:conf/speed")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), 4321)
+
+    def test_dnode_new_opaq_find_one(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
+
+        hostname = dnode.find_one("hostname")
+        hostname.free(with_siblings=False)
+
+        dnode.new_path("/yolo-system:conf/hostname", value=None, opt_opaq=True)
+        opaq_hostname = dnode.find_one("hostname")
+
+        self.assertIsInstance(opaq_hostname, DLeaf)

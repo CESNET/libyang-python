@@ -404,11 +404,7 @@ class DNode:
         return False
 
     def path(self) -> str:
-        path = lib.lyd_path(self.cdata, lib.LYD_PATH_STD, ffi.NULL, 0)
-        try:
-            return c2str(path)
-        finally:
-            lib.free(path)
+        return self._get_path(self.cdata)
 
     def validate(
         self,
@@ -904,10 +900,24 @@ class DNode:
     @classmethod
     def new(cls, context: "libyang.Context", cdata) -> "DNode":
         cdata = ffi.cast("struct lyd_node *", cdata)
-        nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, None)
+        if not cdata.schema:
+            schemas = list(context.find_path(cls._get_path(cdata)))
+            if len(schemas) != 1:
+                raise LibyangError("Unable to determine schema")
+            nodecls = cls.NODETYPE_CLASS.get(schemas[0].nodetype(), None)
+        else:
+            nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, None)
         if nodecls is None:
             raise TypeError("node type %s not implemented" % cdata.schema.nodetype)
         return nodecls(context, cdata)
+
+    @staticmethod
+    def _get_path(cdata) -> str:
+        path = lib.lyd_path(cdata, lib.LYD_PATH_STD, ffi.NULL, 0)
+        try:
+            return c2str(path)
+        finally:
+            lib.free(path)
 
 
 # -------------------------------------------------------------------------------------

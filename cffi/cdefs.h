@@ -1042,5 +1042,56 @@ LY_ERR lyd_new_implicit_all(struct lyd_node **, const struct ly_ctx *, uint32_t,
 
 LY_ERR lyd_new_meta(const struct ly_ctx *, struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_meta **);
 
+struct ly_opaq_name {
+    const char *name;
+    const char *prefix;
+
+    union {
+        const char *module_ns;
+        const char *module_name;
+    };
+};
+
+struct lyd_node_opaq {
+    union {
+        struct lyd_node node;
+
+        struct {
+            uint32_t hash;
+            uint32_t flags;
+            const struct lysc_node *schema;
+            struct lyd_node_inner *parent;
+            struct lyd_node *next;
+            struct lyd_node *prev;
+            struct lyd_meta *meta;
+            void *priv;
+        };
+    };
+
+    struct lyd_node *child;
+
+    struct ly_opaq_name name;
+    const char *value;
+    uint32_t hints;
+    LY_VALUE_FORMAT format;
+    void *val_prefix_data;
+
+    struct lyd_attr *attr;
+    const struct ly_ctx *ctx;
+};
+
+struct lyd_attr {
+    struct lyd_node_opaq *parent;
+    struct lyd_attr *next;
+    struct ly_opaq_name name;
+    const char *value;
+    uint32_t hints;
+    LY_VALUE_FORMAT format;
+    void *val_prefix_data;
+};
+
+LY_ERR lyd_new_attr(struct lyd_node *, const char *, const char *, const char *, struct lyd_attr **);
+void lyd_free_attr_single(const struct ly_ctx *ctx, struct lyd_attr *attr);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

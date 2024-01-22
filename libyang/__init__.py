@@ -13,6 +13,7 @@ from .data import (
     DLeafList,
     DList,
     DNode,
+    DNodeAttrs,
     DNotif,
     DRpc,
 )

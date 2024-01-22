@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-from typing import IO, Any, Dict, Iterator, Optional, Union
+from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
 from .keyed_list import KeyedList
@@ -191,12 +191,68 @@ def diff_flags(with_defaults: bool = False) -> int:
 
 
 # -------------------------------------------------------------------------------------
+class DNodeAttrs:
+    __slots__ = ("context", "parent", "cdata", "__dict__")
+
+    def __init__(self, context: "libyang.Context", parent: "libyang.DNode"):
+        self.context = context
+        self.parent = parent
+        self.cdata = []  # C type: "struct lyd_attr *"
+
+    def get(self, name: str) -> Optional[str]:
+        for attr_name, attr_value in self:
+            if attr_name == name:
+                return attr_value
+        return None
+
+    def set(self, name: str, value: str):
+        attrs = ffi.new("struct lyd_attr **")
+        ret = lib.lyd_new_attr(
+            self.parent.cdata,
+            ffi.NULL,
+            str2c(name),
+            str2c(value),
+            attrs,
+        )
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot create attr")
+        self.cdata.append(attrs[0])
+
+    def remove(self, name: str):
+        for attr in self.cdata:
+            if self._get_attr_name(attr) == name:
+                lib.lyd_free_attr_single(self.context.cdata, attr)
+                self.cdata.remove(attr)
+                break
+
+    def __contains__(self, name: str) -> bool:
+        for attr_name, _ in self:
+            if attr_name == name:
+                return True
+        return False
+
+    def __iter__(self) -> Iterator[Tuple[str, str]]:
+        for attr in self.cdata:
+            name = self._get_attr_name(attr)
+            yield (name, c2str(attr.value))
+
+    def __len__(self) -> int:
+        return len(self.cdata)
+
+    @staticmethod
+    def _get_attr_name(cdata) -> str:
+        if cdata.name.prefix != ffi.NULL:
+            return f"{c2str(cdata.name.prefix)}:{c2str(cdata.name.name)}"
+        return c2str(cdata.name.name)
+
+
+# -------------------------------------------------------------------------------------
 class DNode:
     """
     Data tree node.
     """
 
-    __slots__ = ("context", "cdata", "free_func", "__dict__")
+    __slots__ = ("context", "cdata", "attributes", "free_func", "__dict__")
 
     def __init__(self, context: "libyang.Context", cdata):
         """
@@ -207,6 +263,7 @@ class DNode:
         """
         self.context = context
         self.cdata = cdata  # C type: "struct lyd_node *"
+        self.attributes = None
         self.free_func = None  # type: Callable[DNode]
 
     def meta(self):
@@ -253,6 +310,11 @@ class DNode:
         )
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot create meta")
+
+    def attrs(self) -> DNodeAttrs:
+        if not self.attributes:
+            self.attributes = DNodeAttrs(self.context, self)
+        return self.attributes
 
     def add_defaults(
         self,

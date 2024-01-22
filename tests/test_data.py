@@ -16,6 +16,7 @@ from libyang import (
     DLeaf,
     DList,
     DNode,
+    DNodeAttrs,
     DNotif,
     DRpc,
     IOType,
@@ -950,13 +951,86 @@ class DataTest(unittest.TestCase):
         self.assertIsInstance(sibling, DLeaf)
         self.assertEqual(sibling.cdata, dnode2.cdata)
 
-    def test_dnode_new_opaq_find_one(self):
+    def _create_opaq_hostname(self):
         root = self.ctx.create_data_path(path="/yolo-system:conf")
         root.new_path(
             "hostname",
             None,
             opt_opaq=True,
         )
-        dnode = root.find_one("/yolo-system:conf/hostname")
+        return root.find_one("/yolo-system:conf/hostname")
+
+    def test_dnode_new_opaq_find_one(self):
+        dnode = self._create_opaq_hostname()
 
         self.assertIsInstance(dnode, DLeaf)
+
+    def test_dnode_attrs(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        self.assertIsInstance(attrs, DNodeAttrs)
+
+    def test_dnode_attrs_set(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        self.assertEqual(len(attrs.cdata), 0)
+        attrs.set("ietf-netconf:operation", "remove")
+
+        self.assertEqual(len(attrs.cdata), 1)
+
+    def test_dnode_attrs_get(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        attrs.set("ietf-netconf:operation", "remove")
+
+        value = attrs.get("ietf-netconf:operation")
+        self.assertEqual(value, "remove")
+
+    def test_dnode_attrs__len(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        self.assertEqual(len(attrs), 0)
+        attrs.set("ietf-netconf:operation", "remove")
+
+        self.assertEqual(len(attrs), 1)
+
+    def test_dnode_attrs__contains(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        attrs.set("ietf-netconf:operation", "remove")
+
+        self.assertTrue("ietf-netconf:operation" in attrs)
+
+    def test_dnode_attrs_remove(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        attrs.set("ietf-netconf:operation", "remove")
+        attrs.remove("ietf-netconf:operation")
+
+        self.assertEqual(len(attrs), 0)
+
+    def test_dnode_attrs_set_and_remove_multiple(self):
+        dnode = self._create_opaq_hostname()
+        attrs = dnode.attrs()
+
+        attrs.set("ietf-netconf:operation", "remove")
+        attrs.set("something:else", "test")
+        attrs.set("no_prefix", "test")
+        self.assertEqual(len(attrs), 3)
+
+        attrs.remove("something:else")
+        self.assertEqual(len(attrs), 2)
+        self.assertIn("no_prefix", attrs)
+        self.assertIn("ietf-netconf:operation", attrs)
+
+        attrs.remove("no_prefix")
+        self.assertEqual(len(attrs), 1)
+
+        attrs.remove("ietf-netconf:operation")
+        self.assertEqual(len(attrs), 0)

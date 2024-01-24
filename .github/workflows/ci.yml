@@ -39,6 +39,8 @@ jobs:
             toxenv: py310
           - python: "3.11"
             toxenv: py311
+          - python: "3.12"
+            toxenv: py312
           - python: pypy3.9
             toxenv: pypy3
     steps:

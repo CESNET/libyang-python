@@ -1,8 +1,9 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+from collections.abc import Hashable
 import copy
-from typing import Any, Hashable, Iterable, Optional, Tuple, Union
+from typing import Any, Iterable, Optional, Tuple, Union
 
 
 # -------------------------------------------------------------------------------------

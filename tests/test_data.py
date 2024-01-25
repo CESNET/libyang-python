@@ -248,7 +248,8 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True)
+        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True,
+                                        validate_multi_error=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print_mem("xml", with_siblings=True, trim_default_values=True)

@@ -171,12 +171,15 @@ def data_type(dtype):
 def validation_flags(
     no_state: bool = False,
     validate_present: bool = False,
+    validate_multi_error: bool = False,
 ) -> int:
     flags = 0
     if no_state:
         flags |= lib.LYD_VALIDATE_NO_STATE
     if validate_present:
         flags |= lib.LYD_VALIDATE_PRESENT
+    if validate_multi_error:
+        flags |= lib.LYD_VALIDATE_MULTI_ERROR
     return flags
 
 

@@ -339,6 +339,7 @@ class Context:
         ordered: bool = False,
         strict: bool = False,
         validate_present: bool = False,
+        validate_multi_error: bool = False,
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -351,7 +352,9 @@ class Context:
             strict=strict,
         )
         validation_flgs = validation_flags(
-            no_state=no_state, validate_present=validate_present
+            no_state=no_state,
+            validate_present=validate_present,
+            validate_multi_error=validate_multi_error,
         )
         fmt = data_format(fmt)
         encode = True
@@ -403,6 +406,7 @@ class Context:
         ordered: bool = False,
         strict: bool = False,
         validate_present: bool = False,
+        validate_multi_error: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -416,6 +420,7 @@ class Context:
             ordered=ordered,
             strict=strict,
             validate_present=validate_present,
+            validate_multi_error=validate_multi_error,
         )
 
     def parse_data_file(
@@ -430,6 +435,7 @@ class Context:
         ordered: bool = False,
         strict: bool = False,
         validate_present: bool = False,
+        validate_multi_error: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -443,6 +449,7 @@ class Context:
             ordered=ordered,
             strict=strict,
             validate_present=validate_present,
+            validate_multi_error=validate_multi_error,
         )
 
     def __iter__(self) -> Iterator[Module]:

@@ -256,6 +256,31 @@ class DataTest(unittest.TestCase):
         finally:
             dnode.free()
 
+    XML_CONFIG_MULTI_ERROR = """<conf xmlns="urn:yang:yolo:system">
+  <hostname>foo</hostname>
+  <url>
+    <proto>https</proto>
+    <path>/CESNET/libyang-python</path>
+    <enabled>abcd</enabled>
+  </url>
+  <number>2000</number>
+</conf>
+"""
+
+    def test_data_parse_config_xml_multi_error(self):
+        with self.assertRaises(Exception) as cm:
+            self.ctx.parse_data_mem(
+                self.XML_CONFIG_MULTI_ERROR,
+                "xml",
+                validate_present=True,
+                validate_multi_error=True,
+            )
+        self.assertEqual(
+            str(cm.exception),
+            'failed to parse data tree: Invalid boolean value "abcd".: '
+            'List instance is missing its key "host".',
+        )
+
     XML_STATE = """<state xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
   <url>

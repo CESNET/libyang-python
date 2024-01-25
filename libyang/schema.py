@@ -1279,7 +1279,7 @@ class SLeafList(SNode):
             if not val:
                 yield None
             ret = c2str(val)
-            val_type = self.cdata_leaflist.dflts[i].realtype
+            val_type = Type(self.context, self.cdata_leaflist.dflts[i].realtype, None)
             if val_type == Type.BOOL:
                 ret = val == "true"
             elif val_type in Type.NUM_TYPES:

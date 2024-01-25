@@ -876,3 +876,8 @@ class DataTest(unittest.TestCase):
         node = dnode.find_path("/yolo-system:conf/speed")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), 4321)
+
+    def test_dnode_double_free(self):
+        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", validate_present=True)
+        dnode.free()
+        dnode.free()

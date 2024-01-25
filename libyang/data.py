@@ -881,7 +881,7 @@ class DNode:
             else:
                 self.free_internal(with_siblings)
         finally:
-            self.cdata = None
+            self.cdata = ffi.NULL
 
     def __repr__(self):
         cls = self.__class__

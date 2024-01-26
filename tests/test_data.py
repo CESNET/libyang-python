@@ -248,8 +248,7 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True,
-                                        validate_multi_error=True)
+        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True)
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print_mem("xml", with_siblings=True, trim_default_values=True)
@@ -861,3 +860,25 @@ class DataTest(unittest.TestCase):
         node = dnode.find_path("/yolo-system:conf/speed")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), 4321)
+
+    XML_CONFIG_MULTI_ERROR = """<conf xmlns="urn:yang:yolo:system">
+  <hostname>foo</hostname>
+  <url>
+    <proto>https</proto>
+    <path>/CESNET/libyang-python</path>
+    <enabled>abcd</enabled>
+  </url>
+  <number>2000</number>
+</conf>
+"""
+
+    def test_data_parse_config_xml_multi_error(self):
+        with self.assertRaises(Exception) as cm:
+            self.ctx.parse_data_mem(self.XML_CONFIG_MULTI_ERROR, "xml",
+                                    validate_present=True,
+                                    validate_multi_error=True)
+        self.assertEqual(
+            str(cm.exception),
+            'failed to parse data tree: Invalid boolean value "abcd".: '
+            'List instance is missing its key "host".'
+        )

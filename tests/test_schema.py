@@ -328,6 +328,22 @@ class ListTest(unittest.TestCase):
         self.assertIsInstance(parent, SContainer)
         self.assertEqual(parent.name(), "conf")
 
+    def test_list_uniques(self):
+        self.ctx.load_module("yolo-nodetypes")
+        list1 = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
+        self.assertIsInstance(list1, SList)
+        uniques = list(list1.uniques())
+        self.assertEqual(len(uniques), 1)
+        elements = [u.name() for u in uniques[0]]
+        self.assertEqual(len(elements), 2)
+        self.assertTrue("leaf2" in elements)
+        self.assertTrue("leaf3" in elements)
+
+        list2 = next(self.ctx.find_path("/yolo-nodetypes:conf/list2"))
+        self.assertIsInstance(list2, SList)
+        uniques = list(list2.uniques())
+        self.assertEqual(len(uniques), 0)
+
 
 # -------------------------------------------------------------------------------------
 class RpcTest(unittest.TestCase):

@@ -15,6 +15,8 @@ from libyang import (
     Must,
     Pattern,
     Revision,
+    SCase,
+    SChoice,
     SContainer,
     SLeaf,
     SLeafList,
@@ -584,3 +586,20 @@ class LeafListTest(unittest.TestCase):
         self.assertIsInstance(leaflist2, SLeafList)
         self.assertEqual(leaflist2.min_elements(), 0)
         self.assertEqual(leaflist2.max_elements(), None)
+
+
+# -------------------------------------------------------------------------------------
+class ChoiceTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("yolo-system")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_choice_default(self):
+        conf = next(self.ctx.find_path("/yolo-system:conf"))
+        choice = next(conf.children((SNode.CHOICE,), with_choice=True))
+        self.assertIsInstance(choice, SChoice)
+        self.assertIsInstance(choice.default(), SCase)

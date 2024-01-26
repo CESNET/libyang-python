@@ -1416,6 +1416,12 @@ class SContainer(SNode):
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.CHOICE)
 class SChoice(SNode):
+    __slots__ = ("cdata_choice",)
+
+    def __init__(self, context: "libyang.Context", cdata):
+        super().__init__(context, cdata)
+        self.cdata_choice = ffi.cast("struct lysc_node_choice *", cdata)
+
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
@@ -1423,6 +1429,11 @@ class SChoice(SNode):
         self, types: Optional[Tuple[int, ...]] = None, with_case: bool = False
     ) -> Iterator[SNode]:
         return iter_children(self.context, self.cdata, types=types, with_case=with_case)
+
+    def default(self) -> Optional[SNode]:
+        if self.cdata_choice.dflt == ffi.NULL:
+            return None
+        return SNode.new(self.context, self.cdata_choice.dflt)
 
 
 # -------------------------------------------------------------------------------------

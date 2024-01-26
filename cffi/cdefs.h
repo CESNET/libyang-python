@@ -1023,6 +1023,19 @@ struct lysc_when {
 
 struct lysc_when** lysc_node_when(const struct lysc_node *);
 
+struct lysc_node_case {
+    struct lysc_node *child;
+    struct lysc_when **when;
+    ...;
+};
+
+struct lysc_node_choice {
+    struct lysc_node_case *cases;
+    struct lysc_when **when;
+    struct lysc_node_case *dflt;
+    ...;
+};
+
 #define LYD_DEFAULT ...
 #define LYD_WHEN_TRUE ...
 #define LYD_NEW ...

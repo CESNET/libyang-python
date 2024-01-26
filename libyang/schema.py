@@ -137,8 +137,12 @@ class Module:
     def __iter__(self) -> Iterator["SNode"]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator["SNode"]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choice: bool = False
+    ) -> Iterator["SNode"]:
+        return iter_children(
+            self.context, self.cdata, types=types, with_choice=with_choice
+        )
 
     def __str__(self) -> str:
         return self.name()
@@ -1401,8 +1405,12 @@ class SContainer(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choice: bool = False
+    ) -> Iterator[SNode]:
+        return iter_children(
+            self.context, self.cdata, types=types, with_choice=with_choice
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -1411,8 +1419,10 @@ class SChoice(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_case: bool = False
+    ) -> Iterator[SNode]:
+        return iter_children(self.context, self.cdata, types=types, with_case=with_case)
 
 
 # -------------------------------------------------------------------------------------
@@ -1421,8 +1431,12 @@ class SCase(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choice: bool = False
+    ) -> Iterator[SNode]:
+        return iter_children(
+            self.context, self.cdata, types=types, with_choice=with_choice
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -1442,9 +1456,18 @@ class SList(SNode):
         return self.children()
 
     def children(
-        self, skip_keys: bool = False, types: Optional[Tuple[int, ...]] = None
+        self,
+        skip_keys: bool = False,
+        types: Optional[Tuple[int, ...]] = None,
+        with_choice: bool = False,
     ) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, skip_keys=skip_keys, types=types)
+        return iter_children(
+            self.context,
+            self.cdata,
+            skip_keys=skip_keys,
+            types=types,
+            with_choice=with_choice,
+        )
 
     def keys(self) -> Iterator[SNode]:
         node = lib.lysc_node_child(self.cdata)
@@ -1512,9 +1535,7 @@ class SRpc(SNode):
         yield from iter_children(self.context, self.cdata, types=types)
         # With libyang2, you can get only input or output
         # To keep behavior, we iter 2 times witt output options
-        yield from iter_children(
-            self.context, self.cdata, types=types, options=lib.LYS_GETNEXT_OUTPUT
-        )
+        yield from iter_children(self.context, self.cdata, types=types, output=True)
 
 
 # -------------------------------------------------------------------------------------
@@ -1540,12 +1561,42 @@ class SAnydata(SNode):
 
 
 # -------------------------------------------------------------------------------------
+def iter_children_options(
+    with_choice: bool = False,
+    no_choice: bool = False,
+    with_case: bool = False,
+    into_non_presence_container: bool = False,
+    output: bool = False,
+    with_schema_mount: bool = False,
+) -> int:
+    options = 0
+    if with_choice:
+        options |= lib.LYS_GETNEXT_WITHCHOICE
+    if no_choice:
+        options |= lib.LYS_GETNEXT_NOCHOICE
+    if with_case:
+        options |= lib.LYS_GETNEXT_WITHCASE
+    if into_non_presence_container:
+        options |= lib.LYS_GETNEXT_INTONPCONT
+    if output:
+        options |= lib.LYS_GETNEXT_OUTPUT
+    if with_schema_mount:
+        options |= lib.LYS_GETNEXT_WITHSCHEMAMOUNT
+    return options
+
+
+# -------------------------------------------------------------------------------------
 def iter_children(
     context: "libyang.Context",
     parent,  # C type: Union["struct lys_module *", "struct lys_node *"]
     skip_keys: bool = False,
     types: Optional[Tuple[int, ...]] = None,
-    options: int = 0,
+    with_choice: bool = False,
+    no_choice: bool = False,
+    with_case: bool = False,
+    into_non_presence_container: bool = False,
+    output: bool = False,
+    with_schema_mount: bool = False,
 ) -> Iterator[SNode]:
     if types is None:
         types = (
@@ -1556,6 +1607,8 @@ def iter_children(
             lib.LYS_LEAF,
             lib.LYS_LEAFLIST,
             lib.LYS_NOTIF,
+            lib.LYS_CHOICE,
+            lib.LYS_CASE,
         )
 
     def _skip(node) -> bool:
@@ -1576,6 +1629,14 @@ def iter_children(
     else:
         module = ffi.NULL
 
+    options = iter_children_options(
+        with_choice=with_choice,
+        no_choice=no_choice,
+        with_case=with_case,
+        into_non_presence_container=into_non_presence_container,
+        output=output,
+        with_schema_mount=with_schema_mount,
+    )
     child = lib.lys_getnext(ffi.NULL, parent, module, options)
     while child:
         if not _skip(child):

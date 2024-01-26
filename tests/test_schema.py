@@ -271,6 +271,10 @@ class ContainerTest(unittest.TestCase):
     def test_cont_children_leafs(self):
         leafs = list(self.container.children(types=(SNode.LEAF,)))
         self.assertEqual(len(leafs), 9)
+        without_choice = [c.name() for c in self.container.children(with_choice=False)]
+        with_choice = [c.name() for c in self.container.children(with_choice=True)]
+        self.assertTrue("pill" not in without_choice)
+        self.assertTrue("pill" in with_choice)
 
     def test_cont_parent(self):
         self.assertIsNone(self.container.parent())

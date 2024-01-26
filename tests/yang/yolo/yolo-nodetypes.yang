@@ -28,5 +28,19 @@ module yolo-nodetypes {
       default 2.5;
       default 2.6;
     }
+
+    list list1 {
+      key leaf1;
+      unique "leaf2 leaf3";
+      leaf leaf1 {
+        type string;
+      }
+      leaf leaf2 {
+        type string;
+      }
+      leaf leaf3 {
+        type string;
+      }
+    }
   }
 }

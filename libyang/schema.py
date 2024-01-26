@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 from contextlib import suppress
-from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
+from typing import IO, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from _libyang import ffi, lib
 from .util import IOType, LibyangError, c2str, init_output, ly_array_iter, str2c
@@ -1415,6 +1415,17 @@ class SList(SNode):
             return
         for must in ly_array_iter(pdata.musts):
             yield c2str(must.arg.str)
+
+    def uniques(self) -> Iterator[List[SNode]]:
+        if self.cdata_list == ffi.NULL:
+            return
+        if self.cdata_list.uniques == ffi.NULL:
+            return
+        for unique in ly_array_iter(self.cdata_list.uniques):
+            nodes = []
+            for node in ly_array_iter(unique):
+                nodes.append(SNode.new(self.context, node))
+            yield nodes
 
     def __str__(self):
         return "%s [%s]" % (self.name(), ", ".join(k.name() for k in self.keys()))

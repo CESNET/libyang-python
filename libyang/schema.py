@@ -677,20 +677,8 @@ class Type:
                 yield length
 
     def patterns(self) -> Iterator[Tuple[str, bool]]:
-        if not self.cdata_parsed or self.cdata.basetype != self.STRING:
-            return
-        if self.cdata_parsed.patterns == ffi.NULL:
-            return
-        for p in ly_array_iter(self.cdata_parsed.patterns):
-            if not p:
-                continue
-            # in case of pattern restriction, the first byte has a special meaning:
-            # 0x06 (ACK) for regular match and 0x15 (NACK) for invert-match
-            invert_match = p.arg.str[0] == b"\x15"
-            # yield tuples like:
-            #     ('[a-zA-Z_][a-zA-Z0-9\-_.]*', False)
-            #     ('[xX][mM][lL].*', True)
-            yield c2str(p.arg.str + 1), invert_match
+        for pattern in self.pattern_details():
+            yield pattern.expression(), pattern.inverted()
 
     def all_patterns(self) -> Iterator[Tuple[str, bool]]:
         if self.cdata.basetype == lib.LY_TYPE_UNION:

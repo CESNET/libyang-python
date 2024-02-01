@@ -23,7 +23,7 @@ def schema_diff(
     :arg ctx_new:
         The second context.
     :arg exclude_node_cb:
-        Optionnal user callback that will be called with each node that is found in each
+        Optional user callback that will be called with each node that is found in each
         context. If the callback returns a "trueish" value, the node will be excluded
         from the diff (as well as all its children).
     :arg use_data_path:

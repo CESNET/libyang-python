@@ -15,6 +15,7 @@ from .data import (
     DNode,
     DNodeAttrs,
     DNotif,
+    DOpaq,
     DRpc,
 )
 from .diff import (

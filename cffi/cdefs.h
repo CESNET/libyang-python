@@ -708,6 +708,7 @@ char* lyd_path(const struct lyd_node *, LYD_PATH_TYPE, char *, size_t);
 LY_ERR lyd_new_inner(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **);
 LY_ERR lyd_new_list(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **, ...);
 LY_ERR lyd_new_list2(struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_node **);
+LY_ERR lyd_new_opaq(struct lyd_node *, const struct ly_ctx *, const char *, const char *, const char *, const char *, struct lyd_node **);
 
 struct lyd_node_inner {
     union {

@@ -18,9 +18,13 @@ from libyang import (
     DNode,
     DNodeAttrs,
     DNotif,
+    DOpaq,
     DRpc,
     IOType,
     LibyangError,
+    Module,
+    SContainer,
+    SNode,
 )
 from libyang.data import dict_to_dnode
 
@@ -1034,3 +1038,93 @@ class DataTest(unittest.TestCase):
 
         attrs.remove("ietf-netconf:operation")
         self.assertEqual(len(attrs), 0)
+
+    def test_dnode_opaq(self):
+        module = self.ctx.get_module("yolo-nodetypes")
+        # basic node operations
+        dnode = DOpaq.create_opaq(None, self.ctx, "test1", "yolo-nodetypes", "val")
+        self.assertIsInstance(dnode, DOpaq)
+        self.assertEqual(dnode.name(), "test1")
+        with self.assertRaises(Exception) as cm:
+            dnode.schema()
+            self.assertEqual(
+                str(cm.exception), "Opaque data node doesn't have any schema"
+            )
+
+        # valid module check
+        module2 = dnode.module()
+        self.assertIsInstance(module2, Module)
+        self.assertEqual(module.cdata, module2.cdata)
+
+        # invalid module check
+        dnode = DOpaq.create_opaq(None, self.ctx, "test1", "invalid-module", "val")
+        with self.assertRaises(Exception) as cm:
+            dnode.module()
+            self.assertEqual(str(cm.exception), "Unable to get module 'invalid-module'")
+        dnode.free()
+
+    def test_dnode_opaq_dict_to_dnode(self):
+        dnodes = []
+
+        def _on_dnode_created(dnode: DNode, snode: SNode) -> None:
+            if dnode.parent() is None:
+                self.assertIsInstance(dnode, DOpaq)
+                self.assertIsInstance(snode, SContainer)
+            dnodes.append(dnode)
+
+        MAIN = {
+            "yolo-nodetypes:conf": {
+                "percentage": "20.2",
+                "list1": [
+                    {"leaf1": "k1", "leaf2": "val1"},
+                    {"leaf1": "k2", "leaf2": "val2"},
+                ],
+            }
+        }
+        module = self.ctx.get_module("yolo-nodetypes")
+        dnode = dict_to_dnode(MAIN, module, None, validate=False)
+        self.assertIsInstance(dnode, DContainer)
+        dnode = dict_to_dnode(
+            MAIN,
+            module,
+            None,
+            validate=False,
+            as_opaq=True,
+            on_dnode_created=_on_dnode_created,
+        )
+        self.assertEqual(len(dnodes), 8)
+        self.assertIsInstance(dnode, DOpaq)
+        for child in dnode:
+            self.assertIsInstance(child, DOpaq)
+            if child.name() == "list1":
+                for child2 in child:
+                    self.assertIsInstance(child2, DOpaq)
+                self.assertEqual(len(tuple(child.children())), 2)
+        self.assertEqual(len(tuple(dnode.children())), 3)
+        dnode.free()
+
+    def test_dnode_opaq_within_print_dict(self):
+        dnode = DOpaq.create_opaq(None, self.ctx, "test1", "invalid-module", "val")
+        dic = dnode.print_dict()
+        self.assertEqual(dic, {"test1": "val"})
+        dnode2 = DOpaq.create_opaq(
+            dnode, self.ctx, "test1-child", "invalid-module", "val2"
+        )
+        self.assertIsInstance(dnode2, DOpaq)
+        dic = dnode.print_dict(strip_prefixes=False)
+        self.assertEqual(
+            dic, {"invalid-module:test1": {"invalid-module:test1-child": "val2"}}
+        )
+        parent = dnode2.parent()
+        self.assertIsInstance(parent, DOpaq)
+        self.assertEqual(parent.cdata, dnode.cdata)
+        dnode.free()
+
+    def test_dnode_opaq_within_container(self):
+        MAIN = {"yolo-nodetypes:conf": {"percentage": "20.2"}}
+        module = self.ctx.get_module("yolo-nodetypes")
+        dnode1 = dict_to_dnode(MAIN, module, None, validate=False)
+        dnode2 = DOpaq.create_opaq(dnode1, self.ctx, "ratios", "yolo-nodetypes", "val")
+        children = [c.cdata for c in dnode1.children()]
+        self.assertTrue(dnode2.cdata in children)
+        dnode1.free()

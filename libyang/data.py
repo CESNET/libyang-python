@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 import logging
-from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
+from typing import IO, Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
 from .keyed_list import KeyedList
@@ -22,6 +22,7 @@ from .util import DataType, IOType, LibyangError, c2str, str2c
 
 
 LOG = logging.getLogger(__name__)
+opaque_dnodes = []
 
 
 # -------------------------------------------------------------------------------------
@@ -818,13 +819,22 @@ class DNode:
         name_cache = {}
 
         def _node_name(node):
-            name = name_cache.get(node.schema)
+            if node.schema == ffi.NULL:
+                # opaq node
+                opaq_cdata = ffi.cast("struct lyd_node_opaq *", node)
+                if strip_prefixes:
+                    name = c2str(opaq_cdata.name.name)
+                else:
+                    mod_name = c2str(opaq_cdata.name.module_name)
+                    name = "%s:%s" % (mod_name, c2str(opaq_cdata.name.name))
+            else:
+                name = name_cache.get(node.schema)
             if name is None:
                 if strip_prefixes:
                     name = c2str(node.schema.name)
                 else:
-                    mod = node.schema.module
-                    name = "%s:%s" % (c2str(mod.name), c2str(node.schema.name))
+                    mod_name = node.module().name()
+                    name = "%s:%s" % (mod_name, c2str(node.schema.name))
                 name_cache[node.schema] = name
             return name
 
@@ -861,7 +871,19 @@ class DNode:
             if not lib.lyd_node_should_print(node, flags):
                 return
             name = _node_name(node)
-            if node.schema.nodetype == SNode.LIST:
+            if node.schema == ffi.NULL:
+                # opaq node
+                child = lib.lyd_child(node)
+                if child == ffi.NULL:
+                    opaq_cdata = ffi.cast("struct lyd_node_opaq *", node)
+                    parent_dic[name] = c2str(opaq_cdata.value)
+                else:
+                    container = {}
+                    while child:
+                        _to_dict(child, container)
+                        child = child.next
+                    parent_dic[name] = container
+            elif node.schema.nodetype == SNode.LIST:
                 list_element = {}
 
                 child = lib.lyd_child(node)
@@ -952,6 +974,8 @@ class DNode:
             lib.lyd_free_tree(self.cdata)
 
     def free(self, with_siblings: bool = True) -> None:
+        if self.cdata in opaque_dnodes:
+            opaque_dnodes.remove(self.cdata)
         try:
             if self.free_func:
                 self.free_func(self)  # pylint: disable=not-callable
@@ -981,11 +1005,14 @@ class DNode:
     @classmethod
     def new(cls, context: "libyang.Context", cdata) -> "DNode":
         cdata = ffi.cast("struct lyd_node *", cdata)
-        if not cdata.schema:
-            schemas = list(context.find_path(cls._get_path(cdata)))
-            if len(schemas) != 1:
-                raise LibyangError("Unable to determine schema")
-            nodecls = cls.NODETYPE_CLASS.get(schemas[0].nodetype(), None)
+        if cdata.schema == ffi.NULL:
+            if cdata in opaque_dnodes:
+                nodecls = DOpaq
+            else:
+                schemas = list(context.find_path(cls._get_path(cdata)))
+                if len(schemas) != 1:
+                    raise LibyangError("Unable to determine schema")
+                nodecls = cls.NODETYPE_CLASS.get(schemas[0].nodetype(), None)
         else:
             nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, None)
         if nodecls is None:
@@ -1020,6 +1047,9 @@ class DContainer(DNode):
         while child:
             if child.schema != ffi.NULL:
                 yield DNode.new(self.context, child)
+            elif child in opaque_dnodes:
+                # opaq node
+                yield DOpaq(self.context, child)
             child = child.next
 
     def __iter__(self):
@@ -1132,6 +1162,8 @@ def dict_to_dnode(
     rpc: bool = False,
     rpcreply: bool = False,
     notification: bool = False,
+    as_opaq: bool = False,
+    on_dnode_created: Optional[Callable[[DNode, SNode], None]] = None,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -1158,6 +1190,10 @@ def dict_to_dnode(
         Data represents RPC or action output parameters.
     :arg notification:
         Data represents notification parameters.
+    :arg as_opaq:
+        The returned DNode tree will include just DOpaq nodes
+    :arg on_dnode_created:
+        Callback function which will be called once a new DNode instance will be created
     """
     if not dic:
         return None
@@ -1170,6 +1206,16 @@ def dict_to_dnode(
         raise TypeError("parent argument must be a DNode object or None")
 
     created = []
+
+    def _create_opaq(
+        _parent: Optional[DNode],
+        module: Module,
+        name: str,
+        value: Optional[str] = None,
+    ):
+        dnode = DOpaq.create_opaq(_parent, module.context, name, module.name(), value)
+        created.append(dnode.cdata)
+        return dnode.cdata
 
     def _create_leaf(_parent, module, name, value, in_rpc_output=False):
         if value is not None:
@@ -1192,6 +1238,7 @@ def dict_to_dnode(
                 "failed to create leaf %r as a child of %s", name, parent_path
             )
         created.append(n[0])
+        return n[0]
 
     def _create_container(_parent, module, name, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
@@ -1277,6 +1324,11 @@ def dict_to_dnode(
             return keys
         return _dic.keys()
 
+    def _on_list_keys_dnode_created(dnode: DNode, schema: SNode) -> None:
+        for n in dnode.children():
+            s = module.context.find_path(n.name(), root_node=schema)
+            on_dnode_created(DNode.new(module.context, n), s)
+
     def _to_dnode(_dic, _schema, _parent=ffi.NULL, in_rpc_output=False):
         for key in _dic_keys(_dic, _schema):
             if ":" in key:
@@ -1300,7 +1352,12 @@ def dict_to_dnode(
             value = _dic[key]
 
             if isinstance(s, SLeaf):
-                _create_leaf(_parent, module, name, value, in_rpc_output)
+                if as_opaq:
+                    n = _create_opaq(_parent, module, name, value)
+                else:
+                    n = _create_leaf(_parent, module, name, value, in_rpc_output)
+                if on_dnode_created is not None:
+                    on_dnode_created(DNode.new(module.context, n), s)
 
             elif isinstance(s, SLeafList):
                 if not isinstance(value, (list, tuple)):
@@ -1309,15 +1366,30 @@ def dict_to_dnode(
                         % (s.schema_path(), value)
                     )
                 for v in value:
-                    _create_leaf(_parent, module, name, v, in_rpc_output)
+                    if as_opaq:
+                        n = _create_opaq(_parent, module, name, v)
+                    else:
+                        n = _create_leaf(_parent, module, name, v, in_rpc_output)
+                    if on_dnode_created is not None:
+                        on_dnode_created(DNode.new(module.context, n), s)
 
             elif isinstance(s, SRpc):
-                n = _create_container(_parent, module, name, in_rpc_output)
+                if as_opaq:
+                    n = _create_opaq(_parent, module, name)
+                else:
+                    n = _create_container(_parent, module, name, in_rpc_output)
                 _to_dnode(value, s, n, rpcreply)
+                if on_dnode_created is not None:
+                    on_dnode_created(DNode.new(module.context, n), s)
 
             elif isinstance(s, SContainer):
-                n = _create_container(_parent, module, name, in_rpc_output)
+                if as_opaq:
+                    n = _create_opaq(_parent, module, name)
+                else:
+                    n = _create_container(_parent, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
+                if on_dnode_created is not None:
+                    on_dnode_created(DNode.new(module.context, n), s)
 
             elif isinstance(s, SList):
                 if not isinstance(value, (list, tuple)):
@@ -1341,12 +1413,29 @@ def dict_to_dnode(
                         except KeyError as e:
                             raise ValueError("Missing key %s in the list" % (k)) from e
 
-                    n = _create_list(_parent, module, name, key_values, in_rpc_output)
+                    if as_opaq:
+                        val = v.copy()
+                        n = _create_opaq(_parent, module, name)
+                        if on_dnode_created is not None:
+                            on_dnode_created(DNode.new(module.context, n), s)
+                    else:
+                        n = _create_list(
+                            _parent, module, name, key_values, in_rpc_output
+                        )
+                        if on_dnode_created is not None:
+                            dnode = DNode.new(module.context, n)
+                            _on_list_keys_dnode_created(dnode, s)
+                            on_dnode_created(dnode, s)
                     _to_dnode(val, s, n, in_rpc_output)
 
             elif isinstance(s, SNotif):
-                n = _create_container(_parent, module, name, in_rpc_output)
+                if as_opaq:
+                    n = _create_opaq(_parent, module, name)
+                else:
+                    n = _create_container(_parent, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
+                if on_dnode_created is not None:
+                    on_dnode_created(DNode.new(module.context, n), s)
 
     result = None
 
@@ -1381,3 +1470,60 @@ def dict_to_dnode(
         raise
 
     return result
+
+
+# -------------------------------------------------------------------------------------
+class DOpaq(DContainer):
+    __slots__ = ("cdata_opaq",)
+
+    def __init__(self, context: "libyang.Context", cdata) -> None:
+        super().__init__(context, cdata)
+        if cdata not in opaque_dnodes:
+            opaque_dnodes.append(cdata)
+        self.cdata_opaq = ffi.cast("struct lyd_node_opaq *", cdata)
+
+    @staticmethod
+    def create_opaq(
+        parent: Union[Optional[DNode], Any],
+        context: "libyang.Context",
+        name: str,
+        module_name: str,
+        value: Optional[str] = None,
+        prefix: Optional[str] = None,
+    ) -> "DOpaq":
+        n = ffi.new("struct lyd_node **")
+        if parent is None:
+            parent = ffi.NULL
+        elif isinstance(parent, DNode):
+            parent = parent.cdata
+        ret = lib.lyd_new_opaq(
+            parent,
+            context.cdata,
+            str2c(name),
+            str2c(value),
+            str2c(prefix),
+            str2c(module_name),
+            n,
+        )
+        if ret != lib.LY_SUCCESS:
+            raise context.error("Cannot create opaque data node")
+        dnode = DOpaq(context, n[0])
+        return dnode
+
+    def name(self) -> str:
+        return c2str(self.cdata_opaq.name.name)
+
+    def module(self) -> Module:
+        module = self.context.get_module(c2str(self.cdata_opaq.name.module_name))
+        if module is None:
+            raise self.context.error(
+                f"Unable to get module '{c2str(self.cdata_opaq.name.module_name)}'"
+            )
+        return module
+
+    def schema(self) -> SNode:
+        if self.cdata.schema == ffi.NULL:
+            raise self.context.error(
+                "Opaque data node doesn't have any schema assigned"
+            )
+        return super().schema()

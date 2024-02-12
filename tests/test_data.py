@@ -1036,3 +1036,11 @@ class DataTest(unittest.TestCase):
 
         attrs.remove("ietf-netconf:operation")
         self.assertEqual(len(attrs), 0)
+
+    def test_dnode_store_only(self):
+        MAIN = {"yolo-nodetypes:test1": 50}
+        module = self.ctx.load_module("yolo-nodetypes")
+        dnode = dict_to_dnode(MAIN, module, None, validate=False, store_only=True)
+        self.assertIsInstance(dnode, DLeaf)
+        self.assertEqual(dnode.value(), 50)
+        dnode.free()

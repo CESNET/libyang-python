@@ -77,12 +77,30 @@ def data_format(fmt_string: str) -> int:
 
 
 # -------------------------------------------------------------------------------------
-def path_flags(update: bool = False, rpc_output: bool = False) -> int:
+def newval_flags(
+    rpc_output: bool = False,
+    bin_value: bool = False,
+    canon_value: bool = False,
+    meta_clear_default: bool = False,
+    update: bool = False,
+    opaq: bool = False,
+) -> int:
+    """
+    Translate from booleans to newvaloptions flags.
+    """
     flags = 0
+    if rpc_output:
+        flags |= lib.LYD_NEW_VAL_OUTPUT
+    if bin_value:
+        flags |= lib.LYD_NEW_VAL_BIN
+    if canon_value:
+        flags |= lib.LYD_NEW_VAL_CANON
+    if meta_clear_default:
+        flags |= lib.LYD_NEW_META_CLEAR_DFLT
     if update:
         flags |= lib.LYD_NEW_PATH_UPDATE
-    if rpc_output:
-        flags |= lib.LYD_NEW_PATH_OUTPUT
+    if opaq:
+        flags |= lib.LYD_NEW_PATH_OPAQ
     return flags
 
 
@@ -297,13 +315,14 @@ class DNode:
             item = item.next
 
     def new_meta(self, name: str, value: str, clear_dflt: bool = False):
+        flags = newval_flags(meta_clear_default=clear_dflt)
         ret = lib.lyd_new_meta(
             ffi.NULL,
             self.cdata,
             ffi.NULL,
             str2c(name),
             str2c(value),
-            clear_dflt,
+            flags,
             ffi.NULL,
         )
         if ret != lib.LY_SUCCESS:
@@ -364,20 +383,15 @@ class DNode:
         opt_bin_value: bool = False,
         opt_canon_value: bool = False,
     ):
-        opt = 0
-        if opt_update:
-            opt |= lib.LYD_NEW_PATH_UPDATE
-        if opt_output:
-            opt |= lib.LYD_NEW_PATH_OUTPUT
-        if opt_opaq:
-            opt |= lib.LYD_NEW_PATH_OPAQ
-        if opt_bin_value:
-            opt |= lib.LYD_NEW_PATH_BIN_VALUE
-        if opt_canon_value:
-            opt |= lib.LYD_NEW_PATH_CANON_VALUE
-
+        flags = newval_flags(
+            update=opt_update,
+            rpc_output=opt_output,
+            opaq=opt_opaq,
+            bin_value=opt_bin_value,
+            canon_value=opt_canon_value,
+        )
         ret = lib.lyd_new_path(
-            self.cdata, ffi.NULL, str2c(path), str2c(value), opt, ffi.NULL
+            self.cdata, ffi.NULL, str2c(path), str2c(value), flags, ffi.NULL
         )
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get module")
@@ -1003,7 +1017,10 @@ class DNode:
 @DNode.register(SNode.CONTAINER)
 class DContainer(DNode):
     def create_path(
-        self, path: str, value: Any = None, rpc_output: bool = False
+        self,
+        path: str,
+        value: Any = None,
+        rpc_output: bool = False,
     ) -> Optional[DNode]:
         return self.context.create_data_path(
             path, parent=self, value=value, rpc_output=rpc_output
@@ -1177,8 +1194,14 @@ def dict_to_dnode(
                 value = str(value)
 
         n = ffi.new("struct lyd_node **")
+        flags = newval_flags(rpc_output=in_rpc_output)
         ret = lib.lyd_new_term(
-            _parent, module.cdata, str2c(name), str2c(value), in_rpc_output, n
+            _parent,
+            module.cdata,
+            str2c(name),
+            str2c(value),
+            flags,
+            n,
         )
 
         if ret != lib.LY_SUCCESS:
@@ -1209,11 +1232,12 @@ def dict_to_dnode(
 
     def _create_list(_parent, module, name, key_values, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
+        flags = newval_flags(rpc_output=in_rpc_output)
         ret = lib.lyd_new_list(
             _parent,
             module.cdata,
             str2c(name),
-            in_rpc_output,
+            flags,
             n,
             *[str2c(str(i)) for i in key_values],
         )

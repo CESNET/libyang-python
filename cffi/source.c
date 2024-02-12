@@ -6,9 +6,6 @@
 #include <libyang/libyang.h>
 #include <libyang/version.h>
 
-#if (LY_VERSION_MAJOR != 2)
-#error "This version of libyang bindings only works with libyang 2.x"
-#endif
-#if (LY_VERSION_MINOR < 37)
-#error "Need at least libyang 2.37"
+#if (LY_VERSION_MAJOR != 3)
+#error "This version of libyang bindings only works with libyang 3.x"
 #endif

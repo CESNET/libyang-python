@@ -32,7 +32,7 @@ download()
 # build and install libyang into the virtualenv
 src="${LIBYANG_SRC:-$venv/.src}"
 if ! [ -d "$src" ]; then
-	libyang_branch="${LIBYANG_BRANCH:-master}"
+	libyang_branch="${LIBYANG_BRANCH:-devel}"
 	download "https://github.com/CESNET/libyang" "$libyang_branch" "$src"
 fi
 

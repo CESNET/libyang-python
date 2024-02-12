@@ -11,8 +11,8 @@ from .data import (
     DNode,
     data_format,
     data_type,
+    new_path_flags,
     parser_flags,
-    path_flags,
     validation_flags,
 )
 from .schema import Module, SNode, schema_in_format
@@ -117,8 +117,12 @@ class Context:
             while err:
                 if err.msg:
                     msg += ": %s" % c2str(err.msg)
-                if err.path:
-                    msg += ": %s" % c2str(err.path)
+                if err.data_path:
+                    msg += ": Data path: %s" % c2str(err.data_path)
+                if err.schema_path:
+                    msg += ": Schema path: %s" % c2str(err.schema_path)
+                if err.line != 0:
+                    msg += " (line %u)" % err.line
                 err = err.next
             lib.ly_err_clean(self.cdata, ffi.NULL)
 
@@ -234,7 +238,6 @@ class Context:
         parent: Optional[DNode] = None,
         value: Any = None,
         update: bool = True,
-        no_parent_ret: bool = True,
         rpc_output: bool = False,
         force_return_value: bool = True,
     ) -> Optional[DNode]:
@@ -245,9 +248,7 @@ class Context:
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        flags = path_flags(
-            update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output
-        )
+        flags = new_path_flags(update=update, output=rpc_output)
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_path(
             parent.cdata if parent else ffi.NULL,
@@ -259,7 +260,8 @@ class Context:
         )
         dnode = dnode[0]
         if ret != lib.LY_SUCCESS:
-            if lib.ly_vecode(self.cdata) != lib.LYVE_SUCCESS:
+            err = lib.ly_err_last(self.cdata)
+            if err != ffi.NULL and err.vecode != lib.LYVE_SUCCESS:
                 raise self.error("cannot create data path: %s", path)
             lib.ly_err_clean(self.cdata, ffi.NULL)
         if not dnode and not force_return_value:

@@ -77,14 +77,55 @@ def data_format(fmt_string: str) -> int:
 
 
 # -------------------------------------------------------------------------------------
-def path_flags(
-    update: bool = False, rpc_output: bool = False, no_parent_ret: bool = False
+def new_val_flags(
+    output: bool = False,
+    bin_value: bool = False,
+    canon_value: bool = False,
 ) -> int:
     flags = 0
+    if output:
+        flags |= lib.LYD_NEW_VAL_OUTPUT
+    if bin_value:
+        flags |= lib.LYD_NEW_VAL_BIN
+    if canon_value:
+        flags |= lib.LYD_NEW_VAL_CANON
+    return flags
+
+
+# -------------------------------------------------------------------------------------
+def new_meta_flags(
+    output: bool = False,
+    bin_value: bool = False,
+    canon_value: bool = False,
+    clear_dflt: bool = False,
+) -> int:
+    flags = new_val_flags(
+        output=output,
+        bin_value=bin_value,
+        canon_value=canon_value,
+    )
+    if clear_dflt:
+        flags |= lib.LYD_NEW_META_CLEAR_DFLT
+    return flags
+
+
+# -------------------------------------------------------------------------------------
+def new_path_flags(
+    output: bool = False,
+    bin_value: bool = False,
+    canon_value: bool = False,
+    update: bool = False,
+    opaq: bool = False,
+) -> int:
+    flags = new_val_flags(
+        output=output,
+        bin_value=bin_value,
+        canon_value=canon_value,
+    )
     if update:
         flags |= lib.LYD_NEW_PATH_UPDATE
-    if rpc_output:
-        flags |= lib.LYD_NEW_PATH_OUTPUT
+    if opaq:
+        flags |= lib.LYD_NEW_PATH_OPAQ
     return flags
 
 
@@ -299,13 +340,14 @@ class DNode:
             item = item.next
 
     def new_meta(self, name: str, value: str, clear_dflt: bool = False):
+        flags = new_meta_flags(clear_dflt=clear_dflt)
         ret = lib.lyd_new_meta(
             ffi.NULL,
             self.cdata,
             ffi.NULL,
             str2c(name),
             str2c(value),
-            clear_dflt,
+            flags,
             ffi.NULL,
         )
         if ret != lib.LY_SUCCESS:
@@ -366,17 +408,13 @@ class DNode:
         opt_bin_value: bool = False,
         opt_canon_value: bool = False,
     ):
-        opt = 0
-        if opt_update:
-            opt |= lib.LYD_NEW_PATH_UPDATE
-        if opt_output:
-            opt |= lib.LYD_NEW_PATH_OUTPUT
-        if opt_opaq:
-            opt |= lib.LYD_NEW_PATH_OPAQ
-        if opt_bin_value:
-            opt |= lib.LYD_NEW_PATH_BIN_VALUE
-        if opt_canon_value:
-            opt |= lib.LYD_NEW_PATH_CANON_VALUE
+        opt = new_path_flags(
+            update=opt_update,
+            bin_value=opt_bin_value,
+            canon_value=opt_canon_value,
+            output=opt_output,
+            opaq=opt_opaq,
+        )
 
         ret = lib.lyd_new_path(
             self.cdata, ffi.NULL, str2c(path), str2c(value), opt, ffi.NULL
@@ -1005,7 +1043,10 @@ class DNode:
 @DNode.register(SNode.CONTAINER)
 class DContainer(DNode):
     def create_path(
-        self, path: str, value: Any = None, rpc_output: bool = False
+        self,
+        path: str,
+        value: Any = None,
+        rpc_output: bool = False,
     ) -> Optional[DNode]:
         return self.context.create_data_path(
             path, parent=self, value=value, rpc_output=rpc_output
@@ -1179,10 +1220,15 @@ def dict_to_dnode(
                 value = str(value)
 
         n = ffi.new("struct lyd_node **")
+        flags = new_val_flags(output=in_rpc_output)
         ret = lib.lyd_new_term(
-            _parent, module.cdata, str2c(name), str2c(value), in_rpc_output, n
+            _parent,
+            module.cdata,
+            str2c(name),
+            str2c(value),
+            flags,
+            n,
         )
-
         if ret != lib.LY_SUCCESS:
             if _parent:
                 parent_path = repr(DNode.new(module.context, _parent).path())
@@ -1211,11 +1257,12 @@ def dict_to_dnode(
 
     def _create_list(_parent, module, name, key_values, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
+        flags = new_val_flags(output=in_rpc_output)
         ret = lib.lyd_new_list(
             _parent,
             module.cdata,
             str2c(name),
-            in_rpc_output,
+            flags,
             n,
             *[str2c(str(i)) for i in key_values],
         )

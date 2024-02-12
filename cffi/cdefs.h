@@ -179,10 +179,10 @@ int ly_log_options(int);
 
 LY_LOG_LEVEL ly_log_level(LY_LOG_LEVEL);
 extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *);
-void ly_set_log_clb(void (*)(LY_LOG_LEVEL, const char *, const char *), int);
-struct ly_err_item *ly_err_first(const struct ly_ctx *);
+void ly_set_log_clb(void (*)(LY_LOG_LEVEL, const char *, const char *, const char *, uint64_t));
+const struct ly_err_item *ly_err_first(const struct ly_ctx *);
+const struct ly_err_item *ly_err_last(const struct ly_ctx *);
 void ly_err_clean(struct ly_ctx *, struct ly_err_item *);
-LY_VECODE ly_vecode(const struct ly_ctx *);
 
 #define LYS_UNKNOWN ...
 #define LYS_CONTAINER ...
@@ -238,14 +238,15 @@ struct lysc_node {
 
 struct ly_err_item {
     LY_LOG_LEVEL level;
-    LY_ERR no;
+    LY_ERR err;
     LY_VECODE vecode;
     char *msg;
-    char *path;
+    char *data_path;
+    char *schema_path;
+    uint64_t line;
     char *apptag;
     struct ly_err_item *next;
     struct ly_err_item *prev;
-    ...;
 };
 
 struct lyd_node {
@@ -261,11 +262,12 @@ struct lyd_node {
 
 LY_ERR lys_set_implemented(struct lys_module *,	const char **);
 
+#define LYD_NEW_VAL_OUTPUT ...
+#define LYD_NEW_VAL_BIN ...
+#define LYD_NEW_VAL_CANON ...
 #define LYD_NEW_PATH_UPDATE ...
-#define LYD_NEW_PATH_OUTPUT ...
-#define LYD_NEW_PATH_OPAQ   ...
-#define LYD_NEW_PATH_BIN_VALUE ...
-#define LYD_NEW_PATH_CANON_VALUE ...
+#define LYD_NEW_PATH_OPAQ ...
+#define LYD_NEW_META_CLEAR_DFLT ...
 LY_ERR lyd_new_path(struct lyd_node *, const struct ly_ctx *, const char *, const char *, uint32_t, struct lyd_node **);
 LY_ERR lyd_find_xpath(const struct lyd_node *, const char *, struct ly_set **);
 void lyd_unlink_siblings(struct lyd_node *node);
@@ -310,6 +312,7 @@ LY_ERR lyd_print_all(struct ly_out *, const struct lyd_node *, LYD_FORMAT, uint3
 #define LYD_PARSE_OPTS_MASK ...
 #define LYD_PARSE_ORDERED ...
 #define LYD_PARSE_STRICT ...
+#define LYD_PARSE_STORE_ONLY ...
 
 #define LYD_VALIDATE_NO_STATE ...
 #define LYD_VALIDATE_PRESENT ...
@@ -614,6 +617,7 @@ struct lysp_node_list {
 };
 
 struct lysc_type {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -641,6 +645,7 @@ struct lysp_type {
 struct lysp_qname {
     const char *str;
     const struct lysp_module *mod;
+    ...;
 };
 
 struct lysp_node {
@@ -682,7 +687,6 @@ struct lysc_ext {
     struct lysc_ext_instance *exts;
     struct lyplg_ext *plugin;
     struct lys_module *module;
-    uint32_t refcount;
     uint16_t flags;
 };
 
@@ -703,11 +707,10 @@ typedef enum {
     LYD_PATH_STD_NO_LAST_PRED
 } LYD_PATH_TYPE;
 
-LY_ERR lyd_new_term(struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_node **);
+LY_ERR lyd_new_term(struct lyd_node *, const struct lys_module *, const char *, const char *, uint32_t, struct lyd_node **);
 char* lyd_path(const struct lyd_node *, LYD_PATH_TYPE, char *, size_t);
 LY_ERR lyd_new_inner(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **);
-LY_ERR lyd_new_list(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **, ...);
-LY_ERR lyd_new_list2(struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_node **);
+LY_ERR lyd_new_list(struct lyd_node *, const struct lys_module *, const char *, uint32_t, struct lyd_node **node, ...);
 
 struct lyd_node_inner {
     union {
@@ -821,6 +824,7 @@ struct lysp_restr {
 };
 
 struct lysc_type_num {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -829,6 +833,7 @@ struct lysc_type_num {
 };
 
 struct lysc_type_dec {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -838,6 +843,7 @@ struct lysc_type_dec {
 };
 
 struct lysc_type_str {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -859,6 +865,7 @@ struct lysc_type_bitenum_item {
 };
 
 struct lysc_type_enum {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -867,6 +874,7 @@ struct lysc_type_enum {
 };
 
 struct lysc_type_bits {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -875,18 +883,19 @@ struct lysc_type_bits {
 };
 
 struct lysc_type_leafref {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
     uint32_t refcount;
     struct lyxp_expr *path;
     struct lysc_prefix *prefixes;
-    const struct lys_module *cur_mod;
     struct lysc_type *realtype;
     uint8_t require_instance;
 };
 
 struct lysc_type_identityref {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -895,6 +904,7 @@ struct lysc_type_identityref {
 };
 
 struct lysc_type_instanceid {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -903,6 +913,7 @@ struct lysc_type_instanceid {
 };
 
 struct lysc_type_union {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -911,6 +922,7 @@ struct lysc_type_union {
 };
 
 struct lysc_type_bin {
+    const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
@@ -1053,7 +1065,7 @@ LY_ERR lyd_merge_module(struct lyd_node **, const struct lyd_node *, const struc
 LY_ERR lyd_new_implicit_tree(struct lyd_node *, uint32_t, struct lyd_node **);
 LY_ERR lyd_new_implicit_all(struct lyd_node **, const struct ly_ctx *, uint32_t, struct lyd_node **);
 
-LY_ERR lyd_new_meta(const struct ly_ctx *, struct lyd_node *, const struct lys_module *, const char *, const char *, ly_bool, struct lyd_meta **);
+LY_ERR lyd_new_meta(const struct ly_ctx *, struct lyd_node *, const struct lys_module *, const char *, const char *, uint32_t, struct lyd_meta **);
 
 struct ly_opaq_name {
     const char *name;

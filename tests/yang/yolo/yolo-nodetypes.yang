@@ -91,7 +91,9 @@ module yolo-nodetypes {
   }
 
   leaf test1 {
-    type uint8;
+    type uint8 {
+      range "2..20";
+    }
   }
 
   grouping grp1 {

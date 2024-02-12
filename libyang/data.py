@@ -79,6 +79,7 @@ def data_format(fmt_string: str) -> int:
 # -------------------------------------------------------------------------------------
 def newval_flags(
     rpc_output: bool = False,
+    store_only: bool = False,
     bin_value: bool = False,
     canon_value: bool = False,
     meta_clear_default: bool = False,
@@ -91,6 +92,8 @@ def newval_flags(
     flags = 0
     if rpc_output:
         flags |= lib.LYD_NEW_VAL_OUTPUT
+    if store_only:
+        flags |= lib.LYD_NEW_VAL_STORE_ONLY
     if bin_value:
         flags |= lib.LYD_NEW_VAL_BIN
     if canon_value:
@@ -112,6 +115,7 @@ def parser_flags(
     opaq: bool = False,
     ordered: bool = False,
     strict: bool = False,
+    store_only: bool = False,
 ) -> int:
     flags = 0
     if lyb_mod_update:
@@ -126,6 +130,8 @@ def parser_flags(
         flags |= lib.LYD_PARSE_ORDERED
     if strict:
         flags |= lib.LYD_PARSE_STRICT
+    if store_only:
+        flags |= lib.LYD_PARSE_STORE_ONLY
     return flags
 
 
@@ -314,8 +320,10 @@ class DNode:
                 break
             item = item.next
 
-    def new_meta(self, name: str, value: str, clear_dflt: bool = False):
-        flags = newval_flags(meta_clear_default=clear_dflt)
+    def new_meta(
+        self, name: str, value: str, clear_dflt: bool = False, store_only: bool = False
+    ):
+        flags = newval_flags(meta_clear_default=clear_dflt, store_only=store_only)
         ret = lib.lyd_new_meta(
             ffi.NULL,
             self.cdata,
@@ -391,6 +399,7 @@ class DNode:
         opt_opaq: bool = False,
         opt_bin_value: bool = False,
         opt_canon_value: bool = False,
+        opt_store_only: bool = False,
     ):
         flags = newval_flags(
             update=opt_update,
@@ -398,6 +407,7 @@ class DNode:
             opaq=opt_opaq,
             bin_value=opt_bin_value,
             canon_value=opt_canon_value,
+            store_only=opt_store_only,
         )
         ret = lib.lyd_new_path(
             self.cdata, ffi.NULL, str2c(path), str2c(value), flags, ffi.NULL
@@ -1062,9 +1072,10 @@ class DContainer(DNode):
         path: str,
         value: Any = None,
         rpc_output: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.context.create_data_path(
-            path, parent=self, value=value, rpc_output=rpc_output
+            path, parent=self, value=value, rpc_output=rpc_output, store_only=store_only
         )
 
     def children(self, no_keys=False) -> Iterator[DNode]:
@@ -1188,6 +1199,7 @@ def dict_to_dnode(
     rpc: bool = False,
     rpcreply: bool = False,
     notification: bool = False,
+    store_only: bool = False,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -1214,6 +1226,8 @@ def dict_to_dnode(
         Data represents RPC or action output parameters.
     :arg notification:
         Data represents notification parameters.
+    :arg store_only:
+        Data are being stored regardless of type validation (length, range, pattern, etc.)
     """
     if not dic:
         return None
@@ -1235,7 +1249,7 @@ def dict_to_dnode(
                 value = str(value)
 
         n = ffi.new("struct lyd_node **")
-        flags = newval_flags(rpc_output=in_rpc_output)
+        flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
         ret = lib.lyd_new_term(
             _parent,
             module.cdata,
@@ -1273,7 +1287,7 @@ def dict_to_dnode(
 
     def _create_list(_parent, module, name, key_values, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
-        flags = newval_flags(rpc_output=in_rpc_output)
+        flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
         ret = lib.lyd_new_list(
             _parent,
             module.cdata,

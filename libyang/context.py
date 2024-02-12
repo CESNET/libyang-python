@@ -409,6 +409,7 @@ class Context:
         parent: Optional[DNode] = None,
         value: Any = None,
         update: bool = True,
+        store_only: bool = False,
         rpc_output: bool = False,
         force_return_value: bool = True,
     ) -> Optional[DNode]:
@@ -419,7 +420,9 @@ class Context:
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        flags = newval_flags(update=update, rpc_output=rpc_output)
+        flags = newval_flags(
+            update=update, store_only=store_only, rpc_output=rpc_output
+        )
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_path(
             parent.cdata if parent else ffi.NULL,
@@ -513,6 +516,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -523,6 +527,7 @@ class Context:
             opaq=opaq,
             ordered=ordered,
             strict=strict,
+            store_only=store_only,
         )
         validation_flgs = validation_flags(
             no_state=no_state,
@@ -580,6 +585,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -594,6 +600,7 @@ class Context:
             strict=strict,
             validate_present=validate_present,
             validate_multi_error=validate_multi_error,
+            store_only=store_only,
         )
 
     def parse_data_file(
@@ -609,6 +616,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -623,6 +631,7 @@ class Context:
             strict=strict,
             validate_present=validate_present,
             validate_multi_error=validate_multi_error,
+            store_only=store_only,
         )
 
     def __iter__(self) -> Iterator[Module]:

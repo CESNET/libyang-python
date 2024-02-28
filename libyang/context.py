@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
-from typing import IO, Any, Iterator, Optional, Union
+from typing import IO, Any, Callable, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
 from .data import (
@@ -20,8 +20,172 @@ from .util import DataType, IOType, LibyangError, c2str, data_load, str2c
 
 
 # -------------------------------------------------------------------------------------
+@ffi.def_extern(name="lypy_module_imp_data_free_clb")
+def libyang_c_module_imp_data_free_clb(cdata, user_data):
+    instance = ffi.from_handle(user_data)
+    instance.free_module_data(cdata)
+
+
+# -------------------------------------------------------------------------------------
+@ffi.def_extern(name="lypy_module_imp_clb")
+def libyang_c_module_imp_clb(
+    mod_name,
+    mod_rev,
+    submod_name,
+    submod_rev,
+    user_data,
+    fmt,
+    module_data,
+    free_module_data,
+):
+    """
+    Implement the C callback function for loading modules from any location.
+
+    :arg c_str mod_name:
+        The YANG module name
+    :arg c_str mod_rev:
+        The YANG module revision
+    :arg c_str submod_name:
+        The YANG submodule name
+    :arg c_str submod_rev:
+        The YANG submodule revision
+    :arg user_data:
+        The user data provided by user during registration. In this implementation
+        it is always considered to be handle of Python object
+    :arg fmt:
+        The output pointer where to set the format of schema
+    :arg module_data:
+        The output pointer where to set the schema data itself
+    :arg free_module_data:
+        The output pointer of callback function which will be called when the schema
+        data are no longer needed
+
+    :returns:
+        The LY_SUCCESS in case the needed YANG (sub)module schema was found
+        The LY_ENOT in case the needed YANG (sub)module schema was not found
+    """
+    fmt[0] = lib.LYS_IN_UNKNOWN
+    module_data[0] = ffi.NULL
+    free_module_data[0] = lib.lypy_module_imp_data_free_clb
+    instance = ffi.from_handle(user_data)
+    ret = instance.get_module_data(
+        c2str(mod_name), c2str(mod_rev), c2str(submod_name), c2str(submod_rev)
+    )
+    if ret is None:
+        return lib.LY_ENOT
+    in_fmt, content = ret
+    fmt[0] = schema_in_format(in_fmt)
+    module_data[0] = content
+    return lib.LY_SUCCESS
+
+
+# -------------------------------------------------------------------------------------
+class ContextExternalModuleLoader:
+    __slots__ = (
+        "_cdata",
+        "_module_data_clb",
+        "_cffi_handle",
+        "_cdata_modules",
+    )
+
+    def __init__(self, cdata) -> None:
+        self._cdata = cdata  # C type: "struct ly_ctx *"
+        self._module_data_clb = None
+        self._cffi_handle = ffi.new_handle(self)
+        self._cdata_modules = []
+
+    def free_module_data(self, cdata) -> None:
+        """
+        Free previously stored data, obtained after a get_module_data.
+
+        :arg cdata:
+            The pointer to YANG modelu schema (c_str), which shall be released from memory
+        """
+        self._cdata_modules.remove(cdata)
+
+    def get_module_data(
+        self,
+        mod_name: Optional[str],
+        mod_rev: Optional[str],
+        submod_name: Optional[str],
+        submod_rev: Optional[str],
+    ) -> Optional[Tuple[str, str]]:
+        """
+        Get the YANG module schema data based requirements from libyang_c_module_imp_clb
+        function and forward that request to user Python based callback function.
+
+        The returned data from callback function are stored within the context to make sure
+        of no memory access issues. These data a stored until the free_module_data function
+        is called directly by libyang.
+
+        :arg self
+            This instance on context
+        :arg mod_name:
+            The optional YANG module name
+        :arg mod_rev:
+            The optional YANG module revision
+        :arg submod_name:
+            The optional YANG submodule name
+        :arg submod_rev:
+            The optional YANG submodule revision
+
+        :returns:
+            Tuple of format string and YANG (sub)module schema
+        """
+        if self._module_data_clb is None:
+            return "", None
+        fmt_str, module_data = self._module_data_clb(
+            mod_name, mod_rev, submod_name, submod_rev
+        )
+        if module_data is None:
+            return fmt_str, None
+        module_data_c = str2c(module_data)
+        self._cdata_modules.append(module_data_c)
+        return fmt_str, module_data_c
+
+    def set_module_data_clb(
+        self,
+        clb: Optional[
+            Callable[
+                [Optional[str], Optional[str], Optional[str], Optional[str]],
+                Optional[Tuple[str, str]],
+            ]
+        ] = None,
+    ) -> None:
+        """
+        Set the callback function, which will be called if libyang context would like to
+        load module or submodule, which is not locally available in context path(s).
+
+        :arg self
+            This instance on context
+        :arg clb:
+            The callback function. The expected arguments are:
+                mod_name: Module name
+                mod_rev: Module revision
+                submod_name: Submodule name
+                submod_rev: Submodule revision
+            The expeted return value is either:
+                tuple of:
+                    format: The string format of the loaded data
+                    data: The YANG (sub)module data as string
+                or None in case of error
+        """
+        self._module_data_clb = clb
+        if clb is None:
+            lib.ly_ctx_set_module_imp_clb(self._cdata, ffi.NULL, ffi.NULL)
+        else:
+            lib.ly_ctx_set_module_imp_clb(
+                self._cdata, lib.lypy_module_imp_clb, self._cffi_handle
+            )
+
+
+# -------------------------------------------------------------------------------------
 class Context:
-    __slots__ = ("cdata", "__dict__")
+    __slots__ = (
+        "cdata",
+        "external_module_loader",
+        "__dict__",
+    )
 
     def __init__(
         self,
@@ -37,6 +201,7 @@ class Context:
     ):
         if cdata is not None:
             self.cdata = ffi.cast("struct ly_ctx *", cdata)
+            self.external_module_loader = ContextExternalModuleLoader(self.cdata)
             return  # already initialized
 
         options = 0
@@ -90,6 +255,7 @@ class Context:
         )
         if not self.cdata:
             raise self.error("cannot create context")
+        self.external_module_loader = ContextExternalModuleLoader(self.cdata)
 
     def compile_schema(self):
         ret = lib.ly_ctx_compile(self.cdata)

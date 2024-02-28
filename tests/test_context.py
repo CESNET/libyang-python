@@ -124,3 +124,26 @@ class ContextTest(unittest.TestCase):
         with Context(YANG_DIR, disable_searchdirs=True) as ctx:
             with self.assertRaises(LibyangError):
                 ctx.load_module("yolo-nodetypes")
+
+    def test_ctx_using_clb(self):
+        def get_module_valid_clb(mod_name, *_):
+            YOLO_NODETYPES_MOD_PATH = os.path.join(YANG_DIR, "yolo/yolo-nodetypes.yang")
+            self.assertEqual(mod_name, "yolo-nodetypes")
+            with open(YOLO_NODETYPES_MOD_PATH, encoding="utf-8") as f:
+                mod_str = f.read()
+            return "yang", mod_str
+
+        def get_module_invalid_clb(mod_name, *_):
+            return None
+
+        with Context(YANG_DIR, disable_searchdirs=True) as ctx:
+            with self.assertRaises(LibyangError):
+                ctx.load_module("yolo-nodetypes")
+
+            ctx.external_module_loader.set_module_data_clb(get_module_invalid_clb)
+            with self.assertRaises(LibyangError):
+                mod = ctx.load_module("yolo-nodetypes")
+
+            ctx.external_module_loader.set_module_data_clb(get_module_valid_clb)
+            mod = ctx.load_module("yolo-nodetypes")
+            self.assertIsInstance(mod, Module)

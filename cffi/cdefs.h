@@ -1071,6 +1071,11 @@ typedef enum {
 LY_ERR lys_parse(struct ly_ctx *, struct ly_in *, LYS_INFORMAT, const char **, struct lys_module **);
 LY_ERR ly_ctx_new_ylpath(const char *, const char *, LYD_FORMAT, int, struct ly_ctx **);
 LY_ERR ly_ctx_get_yanglib_data(const struct ly_ctx *, struct lyd_node **, const char *, ...);
+typedef void (*ly_module_imp_data_free_clb)(void *, void *);
+typedef LY_ERR (*ly_module_imp_clb)(const char *, const char *, const char *, const char *, void *, LYS_INFORMAT *, const char **, ly_module_imp_data_free_clb *);
+void ly_ctx_set_module_imp_clb(struct ly_ctx *, ly_module_imp_clb, void *);
+extern "Python" void lypy_module_imp_data_free_clb(void *, void *);
+extern "Python" LY_ERR lypy_module_imp_clb(const char *, const char *, const char *, const char *, void *, LYS_INFORMAT *, const char **, ly_module_imp_data_free_clb *);
 
 LY_ERR lydict_insert(const struct ly_ctx *, const char *, size_t, const char **);
 LY_ERR lydict_remove(const struct ly_ctx *, const char *);

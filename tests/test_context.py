@@ -119,3 +119,8 @@ class ContextTest(unittest.TestCase):
             handle = ctx.add_to_dict(orig_str)
             self.assertEqual(orig_str, c2str(handle))
             ctx.remove_from_dict(orig_str)
+
+    def test_ctx_disable_searchdirs(self):
+        with Context(YANG_DIR, disable_searchdirs=True) as ctx:
+            with self.assertRaises(LibyangError):
+                ctx.load_module("yolo-nodetypes")

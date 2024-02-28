@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
-from typing import IO, Any, Iterator, Optional, Union
+from typing import IO, Any, Callable, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
 from .data import (
@@ -20,8 +20,47 @@ from .util import DataType, IOType, LibyangError, c2str, data_load, str2c
 
 
 # -------------------------------------------------------------------------------------
+@ffi.def_extern(name="lypy_module_imp_data_free_clb")
+def libyang_c_module_imp_data_free_clb(cdata, user_data):
+    instance = ffi.from_handle(user_data)
+    instance.free_module_data(cdata)
+
+
+# -------------------------------------------------------------------------------------
+@ffi.def_extern(name="lypy_module_imp_clb")
+def libyang_c_module_imp_clb(
+    mod_name,
+    mod_rev,
+    submod_name,
+    submod_rev,
+    user_data,
+    fmt,
+    module_data,
+    free_module_data,
+):
+    fmt[0] = lib.LYS_IN_UNKNOWN
+    module_data[0] = ffi.NULL
+    free_module_data[0] = lib.lypy_module_imp_data_free_clb
+    instance = ffi.from_handle(user_data)
+    in_fmt, content = instance.get_module_data(
+        c2str(mod_name), c2str(mod_rev), c2str(submod_name), c2str(submod_rev)
+    )
+    if content is None:
+        return lib.LY_ENOT
+    fmt[0] = schema_in_format(in_fmt)
+    module_data[0] = content
+    return lib.LY_SUCCESS
+
+
+# -------------------------------------------------------------------------------------
 class Context:
-    __slots__ = ("cdata", "__dict__")
+    __slots__ = (
+        "cdata",
+        "_module_data_clb",
+        "_cffi_handle",
+        "_cdata_modules",
+        "__dict__",
+    )
 
     def __init__(
         self,
@@ -34,6 +73,10 @@ class Context:
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
     ):
+        self._module_data_clb = None
+        self._cffi_handle = ffi.new_handle(self)
+        self._cdata_modules = []
+
         if cdata is not None:
             self.cdata = ffi.cast("struct ly_ctx *", cdata)
             return  # already initialized
@@ -468,3 +511,41 @@ class Context:
         while mod:
             yield Module(self, mod)
             mod = lib.ly_ctx_get_module_iter(self.cdata, idx)
+
+    def free_module_data(self, cdata) -> None:
+        self._cdata_modules.remove(cdata)
+
+    def get_module_data(
+        self,
+        mod_name: Optional[str],
+        mod_rev: Optional[str],
+        submod_name: Optional[str],
+        submod_rev: Optional[str],
+    ) -> Tuple[str, Optional[str]]:
+        if self._module_data_clb is None:
+            return None
+        fmt_str, module_data = self._module_data_clb(
+            mod_name, mod_rev, submod_name, submod_rev
+        )
+        if module_data is None:
+            return fmt_str, None
+        module_data_c = str2c(module_data)
+        self._cdata_modules.append(module_data_c)
+        return fmt_str, module_data_c
+
+    def set_module_data_clb(
+        self,
+        clb: Optional[
+            Callable[
+                [Optional[str], Optional[str], Optional[str], Optional[str]],
+                Tuple[str, Optional[str]],
+            ]
+        ] = None,
+    ) -> None:
+        self._module_data_clb = clb
+        if clb is None:
+            lib.ly_ctx_set_module_imp_clb(self.cdata, ffi.NULL, ffi.NULL)
+        else:
+            lib.ly_ctx_set_module_imp_clb(
+                self.cdata, lib.lypy_module_imp_clb, self._cffi_handle
+            )

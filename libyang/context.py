@@ -133,12 +133,11 @@ class ContextExternalModuleLoader:
             Tuple of format string and YANG (sub)module schema
         """
         if self._module_data_clb is None:
-            return "", None
-        fmt_str, module_data = self._module_data_clb(
-            mod_name, mod_rev, submod_name, submod_rev
-        )
-        if module_data is None:
-            return fmt_str, None
+            return None
+        ret = self._module_data_clb(mod_name, mod_rev, submod_name, submod_rev)
+        if ret is None:
+            return None
+        fmt_str, module_data = ret
         module_data_c = str2c(module_data)
         self._cdata_modules.append(module_data_c)
         return fmt_str, module_data_c

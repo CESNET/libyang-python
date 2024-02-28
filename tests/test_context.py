@@ -111,3 +111,8 @@ class ContextTest(unittest.TestCase):
         with Context(YANG_DIR, leafref_extended=True) as ctx:
             mod = ctx.load_module("yolo-leafref-extended")
             self.assertIsInstance(mod, Module)
+
+    def test_ctx_disable_searchdirs(self):
+        with Context(YANG_DIR, disable_searchdirs=True) as ctx:
+            with self.assertRaises(LibyangError):
+                ctx.load_module("yolo-nodetypes")

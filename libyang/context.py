@@ -26,6 +26,7 @@ class Context:
     def __init__(
         self,
         search_path: Optional[str] = None,
+        disable_searchdirs: bool = False,
         disable_searchdir_cwd: bool = True,
         explicit_compile: Optional[bool] = False,
         leafref_extended: bool = False,
@@ -38,6 +39,8 @@ class Context:
             return  # already initialized
 
         options = 0
+        if disable_searchdirs:
+            options |= lib.LY_CTX_DISABLE_SEARCHDIRS
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
         if explicit_compile:

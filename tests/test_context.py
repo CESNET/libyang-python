@@ -5,6 +5,7 @@ import os
 import unittest
 
 from libyang import Context, LibyangError, Module, SLeaf, SLeafList
+from libyang.util import c2str
 
 
 YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
@@ -111,3 +112,10 @@ class ContextTest(unittest.TestCase):
         with Context(YANG_DIR, leafref_extended=True) as ctx:
             mod = ctx.load_module("yolo-leafref-extended")
             self.assertIsInstance(mod, Module)
+
+    def test_context_dict(self):
+        with Context(YANG_DIR) as ctx:
+            orig_str = "teststring"
+            handle = ctx.add_to_dict(orig_str)
+            self.assertEqual(orig_str, c2str(handle))
+            ctx.remove_from_dict(orig_str)

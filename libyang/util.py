@@ -60,6 +60,14 @@ def ly_array_iter(cdata):
 
 
 # -------------------------------------------------------------------------------------
+def ly_list_iter(cdata):
+    item = cdata
+    while item != ffi.NULL:
+        yield item
+        item = item.next
+
+
+# -------------------------------------------------------------------------------------
 class IOType(enum.Enum):
     FD = enum.auto()
     FILE = enum.auto()

@@ -6,8 +6,15 @@ from contextlib import suppress
 from typing import IO, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from _libyang import ffi, lib
-from .util import IOType, LibyangError, c2str, init_output, ly_array_iter, str2c
-
+from .util import (
+    IOType,
+    LibyangError,
+    c2str,
+    init_output,
+    ly_array_iter,
+    ly_list_iter,
+    str2c,
+)
 
 # -------------------------------------------------------------------------------------
 def schema_in_format(fmt_string: str) -> int:
@@ -143,6 +150,26 @@ class Module:
         return iter_children(
             self.context, self.cdata, types=types, with_choice=with_choice
         )
+
+    def parsed_children(self) -> Iterator["PNode"]:
+        for c in ly_list_iter(self.cdata.parsed.data):
+            yield PNode.new(self.context, c, self)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata.parsed.groupings):
+            yield PGrouping(self.context, g, self)
+
+    def augments(self) -> Iterator["PAugment"]:
+        for a in ly_array_iter(self.cdata.parsed.augments):
+            yield PAugment(self.context, a, self)
+
+    def actions(self) -> Iterator["PAction"]:
+        for a in ly_list_iter(self.cdata.parsed.rpcs):
+            yield PAction(self.context, a, self)
+
+    def notifications(self) -> Iterator["PNotif"]:
+        for n in ly_list_iter(self.cdata.parsed.notifs):
+            yield PNotif(self.context, n, self)
 
     def __str__(self) -> str:
         return self.name()
@@ -454,19 +481,26 @@ class Bit(_EnumBit):
 
 # -------------------------------------------------------------------------------------
 class Pattern:
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "cdata_parsed")
 
-    def __init__(self, context: "libyang.Context", cdata):
+    def __init__(self, context: "libyang.Context", cdata, cdata_parsed=None):
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_pattern *"
+        self.cdata_parsed = cdata_parsed  # C type: "struct lysp_restr *"
 
     def expression(self) -> str:
+        if self.cdata is None and self.cdata_parsed:
+            return c2str(self.cdata_parsed.arg.str + 1)
         return c2str(self.cdata.expr)
 
     def inverted(self) -> bool:
+        if self.cdata is None and self.cdata_parsed:
+            return self.cdata_parsed.arg.str[0] == b"\x15"
         return self.cdata.inverted
 
     def error_message(self) -> Optional[str]:
+        if self.cdata is None and self.cdata_parsed:
+            return c2str(self.cdata_parsed.emsg)
         return c2str(self.cdata.emsg) if self.cdata.emsg != ffi.NULL else None
 
 
@@ -755,6 +789,11 @@ class Type:
 
     def __str__(self):
         return self.name()
+
+    def parsed(self) -> Optional["PType"]:
+        if self.cdata_parsed is None or self.cdata_parsed == ffi.NULL:
+            return None
+        return PType(self.context, self.cdata_parsed, self.module())
 
 
 # -------------------------------------------------------------------------------------
@@ -1078,16 +1117,21 @@ class IfOrFeatures(IfFeatureExprTree):
 
 # -------------------------------------------------------------------------------------
 class Must:
-    __slots__ = ("context", "cdata")
+    __slots__ = ("context", "cdata", "cdata_parsed")
 
-    def __init__(self, context: "libyang.Context", cdata):
+    def __init__(self, context: "libyang.Context", cdata, cdata_parsed=None):
         self.context = context
         self.cdata = cdata  # C type: "struct lysc_must *"
+        self.cdata_parsed = cdata_parsed  # C type: "struct lysp_must *"
 
     def condition(self) -> str:
+        if self.cdata is None and self.cdata_parsed:
+            return c2str(self.cdata_parsed.arg.str + 1)
         return c2str(lib.lyxp_get_expr(self.cdata.cond))
 
     def error_message(self) -> Optional[str]:
+        if self.cdata is None and self.cdata_parsed:
+            return c2str(self.cdata_parsed.emsg)
         return c2str(self.cdata.emsg) if self.cdata.emsg != ffi.NULL else None
 
 
@@ -1239,6 +1283,11 @@ class SNode:
             return
         for cond in ly_array_iter(wh):
             yield c2str(lib.lyxp_get_expr(cond.cond))
+
+    def parsed(self) -> Optional["PNode"]:
+        if self.cdata_parsed is None or self.cdata_parsed == ffi.NULL:
+            return None
+        return PNode.new(self.context, self.cdata_parsed, self.module())
 
     def iter_tree(self, full: bool = False) -> Iterator["SNode"]:
         """
@@ -1679,3 +1728,688 @@ Node = SNode
 Rpc = SRpc
 RpcInOut = SRpcInOut
 Anyxml = SAnyxml
+
+
+# -------------------------------------------------------------------------------------
+class PEnum:
+    __slots__ = ("context", "cdata", "module")
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        self.context = context
+        self.cdata = cdata  # C type of "struct lysp_type_enum *"
+        self.module = module
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def value(self) -> int:
+        return self.cdata.value
+
+    def if_features(self) -> Iterator[IfFeatureExpr]:
+        for f in ly_array_iter(self.cdata.iffeatures):
+            yield IfFeatureExpr(self.context, f, list(self.module.features()))
+
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
+
+
+# -------------------------------------------------------------------------------------
+class PType:
+    __slots__ = ("context", "cdata", "module")
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        self.context = context
+        self.cdata = cdata  # C type of "struct lysp_type *"
+        self.module = module
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def range(self) -> Optional[str]:
+        if self.cdata.range == ffi.NULL:
+            return None
+        return c2str(self.cdata.range.arg.str)
+
+    def length(self) -> Optional[str]:
+        if self.cdata.length == ffi.NULL:
+            return None
+        return c2str(self.cdata.length.arg.str)
+
+    def patterns(self) -> Iterator[Pattern]:
+        for p in ly_array_iter(self.cdata.patterns):
+            yield Pattern(self.context, None, p)
+
+    def enums(self) -> Iterator[PEnum]:
+        for e in ly_array_iter(self.cdata.enums):
+            yield PEnum(self.context, e, self.module)
+
+    def bits(self) -> Iterator[PEnum]:
+        for b in ly_array_iter(self.cdata.bits):
+            yield PEnum(self.context, b, self.module)
+
+    def path(self) -> Optional[str]:
+        if self.cdata.path == ffi.NULL:
+            return None
+        return c2str(lib.lyxp_get_expr(self.cdata.path))
+
+    def bases(self) -> Iterator[str]:
+        for b in ly_array_iter(self.cdata.bases):
+            yield c2str(b)
+
+    def types(self) -> Iterator["PType"]:
+        for t in ly_array_iter(self.cdata.types):
+            yield PType(self.context, t, self.module)
+
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
+
+    def pmod(self) -> Optional[Module]:
+        if self.cdata.pmod == ffi.NULL:
+            return None
+        return Module(self.context, self.cdata.pmod.mod)
+
+    def compiled(self) -> Optional[Type]:
+        if self.cdata.compiled == ffi.NULL:
+            return None
+        return Type(self.context, self.cdata.compiled, self.cdata)
+
+    def fraction_digits(self) -> int:
+        return self.cdata.fraction_digits
+
+    def require_instance(self) -> bool:
+        return self.cdata.require_instance
+
+
+# -------------------------------------------------------------------------------------
+class PRefine:
+    __slots__ = ("context", "cdata", "module")
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        self.context = context
+        self.cdata = cdata  # C type of "struct lysp_refine *"
+        self.module = module
+
+    def nodeid(self) -> str:
+        return c2str(self.cdata.nodeid)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def if_features(self) -> Iterator[IfFeatureExpr]:
+        for f in ly_array_iter(self.cdata.iffeatures):
+            yield IfFeatureExpr(self.context, f, list(self.module.features()))
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata.musts):
+            yield Must(self.context, None, m)
+
+    def presence(self) -> Optional[str]:
+        return c2str(self.cdata.presence)
+
+    def defaults(self) -> Iterator[str]:
+        for d in ly_array_iter(self.cdata.dflts):
+            yield c2str(d.str)
+
+    def min_elements(self) -> int:
+        return self.cdata.min
+
+    def max_elements(self) -> Optional[int]:
+        return self.cdata.max if self.cdata.max != 0 else None
+
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
+
+
+# -------------------------------------------------------------------------------------
+class PNode:
+    CONTAINER = lib.LYS_CONTAINER
+    CHOICE = lib.LYS_CHOICE
+    CASE = lib.LYS_CASE
+    LEAF = lib.LYS_LEAF
+    LEAFLIST = lib.LYS_LEAFLIST
+    LIST = lib.LYS_LIST
+    RPC = lib.LYS_RPC
+    ACTION = lib.LYS_ACTION
+    INPUT = lib.LYS_INPUT
+    OUTPUT = lib.LYS_OUTPUT
+    NOTIF = lib.LYS_NOTIF
+    ANYXML = lib.LYS_ANYXML
+    ANYDATA = lib.LYS_ANYDATA
+    AUGMENT = lib.LYS_AUGMENT
+    USES = lib.LYS_USES
+    GROUPING = lib.LYS_GROUPING
+    KEYWORDS = {
+        CONTAINER: "container",
+        LEAF: "leaf",
+        LEAFLIST: "leaf-list",
+        LIST: "list",
+        RPC: "rpc",
+        ACTION: "action",
+        INPUT: "input",
+        OUTPUT: "output",
+        NOTIF: "notification",
+        ANYXML: "anyxml",
+        ANYDATA: "anydata",
+        AUGMENT: "augment",
+        USES: "uses",
+        GROUPING: "grouping",
+    }
+
+    __slots__ = ("context", "cdata", "module", "__dict__")
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        self.context = context
+        self.cdata = ffi.cast("struct lysp_node *", cdata)
+        self.module = module
+
+    def parent(self) -> Optional["PNode"]:
+        if self.cdata.parent == ffi.NULL:
+            return None
+        return PNode.new(self.context, self.cdata.parent, self.module)
+
+    def nodetype(self) -> int:
+        return self.cdata.nodetype
+
+    def siblings(self) -> Iterator["PNode"]:
+        for s in ly_list_iter(self.cdata.next):
+            yield PNode.new(self.context, s, self.module)
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def if_features(self) -> Iterator[IfFeatureExpr]:
+        for f in ly_array_iter(self.cdata.iffeatures):
+            yield IfFeatureExpr(self.context, f, list(self.module.features()))
+
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional["ExtensionParsed"]:
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
+        return None
+
+    def config_set(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_SET_CONFIG)
+
+    def config_false(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_CONFIG_R)
+
+    def mandatory(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_MAND_TRUE)
+
+    def deprecated(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
+
+    def obsolete(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
+
+    def status(self) -> str:
+        if self.cdata.flags & lib.LYS_STATUS_OBSLT:
+            return "obsolete"
+        if self.cdata.flags & lib.LYS_STATUS_DEPRC:
+            return "deprecated"
+        return "current"
+
+    def __repr__(self):
+        cls = self.__class__
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
+
+    NODETYPE_CLASS = {}
+
+    @staticmethod
+    def register(nodetype):
+        def _decorator(nodeclass):
+            PNode.NODETYPE_CLASS[nodetype] = nodeclass
+            return nodeclass
+
+        return _decorator
+
+    @staticmethod
+    def new(context: "libyang.Context", cdata, module: Module) -> "PNode":
+        cdata = ffi.cast("struct lysp_node *", cdata)
+        nodecls = PNode.NODETYPE_CLASS.get(cdata.nodetype, None)
+        if nodecls is None:
+            raise TypeError("node type %s not implemented" % cdata.nodetype)
+        return nodecls(context, cdata, module)
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.CONTAINER)
+class PContainer(PNode):
+    __slots__ = ("cdata_container",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_container = ffi.cast("struct lysp_node_container *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_container.musts):
+            yield Must(self.context, None, m)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_container.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_container.when.cond)
+
+    def presence(self) -> Optional[str]:
+        return c2str(self.cdata_container.presence)
+
+    def typedefs(self) -> Iterator[Typedef]:
+        for t in ly_array_iter(self.cdata_container.typedefs):
+            yield Typedef(self.context, t)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata_container.groupings):
+            yield PGrouping(self.context, g, self.module)
+
+    def children(self) -> Iterator[PNode]:
+        for c in ly_list_iter(self.cdata_container.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def actions(self) -> Iterator["PAction"]:
+        for a in ly_list_iter(self.cdata_container.actions):
+            yield PAction(self.context, a, self.module)
+
+    def notifications(self) -> Iterator["PNotif"]:
+        for n in ly_list_iter(self.cdata_container.notifs):
+            yield PNotif(self.context, n, self.module)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.LEAF)
+class PLeaf(PNode):
+    __slots__ = ("cdata_leaf",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_leaf = ffi.cast("struct lysp_node_leaf *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_leaf.musts):
+            yield Must(self.context, None, m)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_leaf.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_leaf.when.cond)
+
+    def type(self) -> PType:
+        return PType(self.context, self.cdata_leaf.type, self.module)
+
+    def units(self) -> Optional[str]:
+        return c2str(self.cdata_leaf.units)
+
+    def default(self) -> Optional[str]:
+        return c2str(self.cdata_leaf.dflt.str)
+
+    def is_key(self) -> bool:
+        if self.cdata.flags & lib.LYS_KEY:
+            return True
+        return False
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.LEAFLIST)
+class PLeafList(PNode):
+    __slots__ = ("cdata_leaflist",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_leaflist = ffi.cast("struct lysp_node_leaflist *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_leaflist.musts):
+            yield Must(self.context, None, m)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_leaflist.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_leaflist.when.cond)
+
+    def type(self) -> PType:
+        return PType(self.context, self.cdata_leaflist.type, self.module)
+
+    def units(self) -> Optional[str]:
+        return c2str(self.cdata_leaflist.units)
+
+    def defaults(self) -> Iterator[str]:
+        for d in ly_array_iter(self.cdata_leaflist.dflts):
+            yield c2str(d.str)
+
+    def min_elements(self) -> int:
+        return self.cdata_leaflist.min
+
+    def max_elements(self) -> Optional[int]:
+        return self.cdata_leaflist.max if self.cdata_leaflist.max != 0 else None
+
+    def ordered(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.LIST)
+class PList(PNode):
+    __slots__ = ("cdata_list",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_list = ffi.cast("struct lysp_node_list *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_list.musts):
+            yield Must(self.context, None, m)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_list.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_list.when.cond)
+
+    def key(self) -> Optional[str]:
+        return c2str(self.cdata_list.key)
+
+    def typedefs(self) -> Iterator[Typedef]:
+        for t in ly_array_iter(self.cdata_list.typedefs):
+            yield Typedef(self.context, t)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata_list.groupings):
+            yield PGrouping(self.context, g, self.module)
+
+    def children(self) -> Iterator[PNode]:
+        for c in ly_list_iter(self.cdata_list.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def actions(self) -> Iterator["PAction"]:
+        for a in ly_list_iter(self.cdata_list.actions):
+            yield PAction(self.context, a, self.module)
+
+    def notifications(self) -> Iterator["PNotif"]:
+        for n in ly_list_iter(self.cdata_list.notifs):
+            yield PNotif(self.context, n, self.module)
+
+    def uniques(self) -> Iterator[str]:
+        for u in ly_array_iter(self.cdata_list.uniques):
+            yield c2str(u.str)
+
+    def min_elements(self) -> int:
+        return self.cdata_list.min
+
+    def max_elements(self) -> Optional[int]:
+        return self.cdata_list.max if self.cdata_list.max != 0 else None
+
+    def ordered(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_ORDBY_USER)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.CASE)
+class PCase(PNode):
+    __slots__ = ("cdata_case",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_case = ffi.cast("struct lysp_node_case *", cdata)
+
+    def children(self) -> Iterator[PNode]:
+        for c in ly_list_iter(self.cdata_case.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_case.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_case.when.cond)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.CHOICE)
+class PChoice(PNode):
+    __slots__ = ("cdata_choice",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_choice = ffi.cast("struct lysp_node_choice *", cdata)
+
+    def children(self) -> Iterator[PCase]:
+        for c in ly_list_iter(self.cdata_choice.child):
+            yield PCase(self.context, c, self.module)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_choice.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_choice.when.cond)
+
+    def default(self) -> Optional[str]:
+        return c2str(self.cdata_choice.dflt.str)
+
+    def __iter__(self) -> Iterator[PCase]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.ANYXML)
+@PNode.register(PNode.ANYDATA)
+class PAnydata(PNode):
+    __slots__ = ("cdata_anydata",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_anydata = ffi.cast("struct lysp_node_anydata *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_anydata.musts):
+            yield Must(self.context, None, m)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_anydata.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_anydata.when.cond)
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.AUGMENT)
+class PAugment(PNode):
+    __slots__ = ("cdata_augment",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_augment = ffi.cast("struct lysp_node_augment *", cdata)
+
+    def children(self) -> Iterator["PNode"]:
+        for c in ly_list_iter(self.cdata_augment.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_augment.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_augment.when.cond)
+
+    def actions(self) -> Iterator["PAction"]:
+        for a in ly_list_iter(self.cdata_augment.actions):
+            yield PAction(self.context, a, self.module)
+
+    def notifications(self) -> Iterator["PNotif"]:
+        for n in ly_list_iter(self.cdata_augment.notifs):
+            yield PNotif(self.context, n, self.module)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.USES)
+class PUses(PNode):
+    __slots__ = ("cdata_uses",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_uses = ffi.cast("struct lysp_node_uses *", cdata)
+
+    def refines(self) -> Iterator[PRefine]:
+        for r in ly_array_iter(self.cdata_uses.refines):
+            yield PRefine(self.context, r, self.module)
+
+    def augments(self) -> Iterator[PAugment]:
+        for a in ly_list_iter(self.cdata_uses.augments):
+            yield PAugment(self.context, a, self.module)
+
+    def when_condition(self) -> Optional[str]:
+        if self.cdata_uses.when == ffi.NULL:
+            return None
+        return c2str(self.cdata_uses.when.cond)
+
+
+# -------------------------------------------------------------------------------------
+class PActionInOut(PNode):
+    __slots__ = ("cdata_action_inout",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_action_inout = ffi.cast("struct lysp_node_action_inout *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_action_inout.musts):
+            yield Must(self.context, None, m)
+
+    def typedefs(self) -> Iterator[Typedef]:
+        for t in ly_array_iter(self.cdata_action_inout.typedefs):
+            yield Typedef(self.context, t)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata_action_inout.groupings):
+            yield PGrouping(self.context, g, self.module)
+
+    def children(self) -> Iterator[PNode]:
+        for c in ly_list_iter(self.cdata_action_inout.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.RPC)
+@PNode.register(PNode.ACTION)
+class PAction(PNode):
+    __slots__ = ("cdata_action",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_action = ffi.cast("struct lysp_node_action *", cdata)
+
+    def typedefs(self) -> Iterator[Typedef]:
+        for t in ly_array_iter(self.cdata_action.typedefs):
+            yield Typedef(self.context, t)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata_action.groupings):
+            yield PGrouping(self.context, g, self.module)
+
+    def input(self) -> PActionInOut:
+        ptr = ffi.addressof(self.cdata_action.input)
+        return PActionInOut(self.context, ptr, self.module)
+
+    def output(self) -> PActionInOut:
+        ptr = ffi.addressof(self.cdata_action.output)
+        return PActionInOut(self.context, ptr, self.module)
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.NOTIF)
+class PNotif(PNode):
+    __slots__ = ("cdata_notif",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_notif = ffi.cast("struct lysp_node_notif *", cdata)
+
+    def musts(self) -> Iterator[Must]:
+        for m in ly_array_iter(self.cdata_notif.musts):
+            yield Must(self.context, None, m)
+
+    def typedefs(self) -> Iterator[Typedef]:
+        for t in ly_array_iter(self.cdata_notif.typedefs):
+            yield Typedef(self.context, t)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata_notif.groupings):
+            yield PGrouping(self.context, g, self.module)
+
+    def children(self) -> Iterator[PNode]:
+        for c in ly_list_iter(self.cdata_notif.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()
+
+
+# -------------------------------------------------------------------------------------
+@PNode.register(PNode.GROUPING)
+class PGrouping(PNode):
+    __slots__ = ("cdata_grouping",)
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        super().__init__(context, cdata, module)
+        self.cdata_grouping = ffi.cast("struct lysp_node_grp *", cdata)
+
+    def typedefs(self) -> Iterator[Typedef]:
+        for t in ly_array_iter(self.cdata_grouping.typedefs):
+            yield Typedef(self.context, t)
+
+    def groupings(self) -> Iterator["PGrouping"]:
+        for g in ly_list_iter(self.cdata_grouping.groupings):
+            yield PGrouping(self.context, g, self.module)
+
+    def children(self) -> Iterator[PNode]:
+        for c in ly_list_iter(self.cdata_grouping.child):
+            yield PNode.new(self.context, c, self.module)
+
+    def actions(self) -> Iterator[PAction]:
+        for a in ly_list_iter(self.cdata_grouping.actions):
+            yield PAction(self.context, a, self.module)
+
+    def notifications(self) -> Iterator[PNotif]:
+        for n in ly_list_iter(self.cdata_grouping.notifs):
+            yield PNotif(self.context, n, self.module)
+
+    def __iter__(self) -> Iterator[PNode]:
+        return self.children()

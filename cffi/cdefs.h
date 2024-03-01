@@ -528,6 +528,25 @@ typedef enum {
 
 char* lysc_path(const struct lysc_node *, LYSC_PATH_TYPE, char *, size_t);
 
+struct lysp_when {
+    const char *cond;
+    ...;
+};
+
+struct lysp_refine {
+    const char *nodeid;
+    const char *dsc;
+    const char *ref;
+    struct lysp_qname *iffeatures;
+    struct lysp_restr *musts;
+    const char *presence;
+    struct lysp_qname *dflts;
+    uint32_t min;
+    uint32_t max;
+    struct lysp_ext_instance *exts;
+    uint16_t flags;
+};
+
 struct lysp_node_container {
     struct lysp_restr *musts;
     struct lysp_when *when;
@@ -615,12 +634,117 @@ struct lysp_node_list {
     ...;
 };
 
+struct lysp_node_choice {
+    struct lysp_node *child;
+    struct lysp_when *when;
+    struct lysp_qname dflt;
+    ...;
+};
+
+struct lysp_node_case {
+    struct lysp_node *child;
+    struct lysp_when *when;
+    ...;
+};
+
+struct lysp_node_anydata {
+    struct lysp_restr *musts;
+    struct lysp_when *when;
+    ...;
+};
+
+struct lysp_node_uses {
+    struct lysp_refine *refines;
+    struct lysp_node_augment *augments;
+    struct lysp_when *when;
+    ...;
+};
+
+struct lysp_node_action_inout {
+    struct lysp_restr *musts;
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node *child;
+    ...;
+};
+
+struct lysp_node_action {
+    union {
+        struct lysp_node node;
+        struct {
+            struct lysp_node_action *next;
+            ...;
+        };
+    };
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node_action_inout input;
+    struct lysp_node_action_inout output;
+    ...;
+};
+
+struct lysp_node_notif {
+    union {
+        struct lysp_node node;
+        struct {
+            struct lysp_node_notif *next;
+            ...;
+        };
+    };
+    struct lysp_restr *musts;
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node *child;
+    ...;
+};
+
+struct lysp_node_grp {
+    union {
+        struct lysp_node node;
+        struct {
+            struct lysp_node_grp *next;
+            ...;
+        };
+    };
+    struct lysp_tpdf *typedefs;
+    struct lysp_node_grp *groupings;
+    struct lysp_node *child;
+    struct lysp_node_action *actions;
+    struct lysp_node_notif *notifs;
+    ...;
+};
+
+struct lysp_node_augment {
+    union {
+        struct lysp_node node;
+        struct {
+            struct lysp_node_augment *next;
+            ...;
+        };
+    };
+    struct lysp_node *child;
+    struct lysp_when *when;
+    struct lysp_node_action *actions;
+    struct lysp_node_notif *notifs;
+    ...;
+};
+
 struct lysc_type {
     const char *name;
     struct lysc_ext_instance *exts;
     struct lyplg_type *plugin;
     LY_DATA_TYPE basetype;
     uint32_t refcount;
+};
+
+struct lysp_type_enum {
+    const char *name;
+    const char *dsc;
+    const char *ref;
+    int64_t value;
+    struct lysp_qname *iffeatures;
+    struct lysp_ext_instance *exts;
+    uint16_t flags;
 };
 
 struct lysp_type {

@@ -1071,6 +1071,9 @@ LY_ERR lys_parse(struct ly_ctx *, struct ly_in *, LYS_INFORMAT, const char **, s
 LY_ERR ly_ctx_new_ylpath(const char *, const char *, LYD_FORMAT, int, struct ly_ctx **);
 LY_ERR ly_ctx_get_yanglib_data(const struct ly_ctx *, struct lyd_node **, const char *, ...);
 
+LY_ERR lydict_insert(const struct ly_ctx *, const char *, size_t, const char **);
+LY_ERR lydict_remove(const struct ly_ctx *, const char *);
+
 struct lyd_meta {
     struct lyd_node *parent;
     struct lyd_meta *next;

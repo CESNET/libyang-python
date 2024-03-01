@@ -13,8 +13,25 @@ from libyang import (
     LibyangError,
     Module,
     Must,
+    PAction,
+    PActionInOut,
+    PAnydata,
     Pattern,
+    PAugment,
+    PCase,
+    PChoice,
+    PContainer,
+    PGrouping,
+    PLeaf,
+    PLeafList,
+    PList,
+    PNode,
+    PNotif,
+    PRefine,
+    PType,
+    PUses,
     Revision,
+    SAnydata,
     SCase,
     SChoice,
     SContainer,
@@ -287,6 +304,79 @@ class ContainerTest(unittest.TestCase):
         tree = list(self.container.iter_tree(full=True))
         self.assertEqual(len(tree), 25)
 
+    def test_container_parsed(self):
+        pnode = self.container.parsed()
+        self.assertIsInstance(pnode, PContainer)
+        self.assertIsNone(next(pnode.musts(), None))
+        self.assertIsNone(pnode.when_condition())
+        self.assertIsNone(pnode.presence())
+        self.assertIsNone(next(pnode.typedefs(), None))
+        self.assertIsNone(next(pnode.groupings(), None))
+        self.assertIsNotNone(next(iter(pnode)))
+        self.assertIsNone(next(pnode.actions(), None))
+        self.assertIsNone(next(pnode.notifications(), None))
+
+
+# -------------------------------------------------------------------------------------
+class UsesTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        mod = self.ctx.load_module("yolo-nodetypes")
+        mod.feature_enable_all()
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_uses_parsed(self):
+        snode = next(self.ctx.find_path("/yolo-nodetypes:cont2"))
+        self.assertIsInstance(snode, SContainer)
+        pnode = snode.parsed()
+        self.assertIsInstance(pnode, PContainer)
+        pnode = next(iter(pnode))
+        self.assertIsInstance(pnode, PUses)
+
+        ref_pnode = next(pnode.refines())
+        self.assertIsInstance(ref_pnode, PRefine)
+        self.assertEqual("cont3/leaf1", ref_pnode.nodeid())
+        self.assertIsNone(ref_pnode.description())
+        self.assertIsNone(ref_pnode.reference())
+        self.assertIsNone(next(ref_pnode.if_features(), None))
+        self.assertIsNone(next(ref_pnode.musts(), None))
+        self.assertIsNone(ref_pnode.presence())
+        self.assertIsNone(next(ref_pnode.defaults(), None))
+        self.assertEqual(0, ref_pnode.min_elements())
+        self.assertIsNone(ref_pnode.max_elements())
+        self.assertIsNone(next(ref_pnode.extensions(), None))
+
+        aug_pnode = next(pnode.augments())
+        self.assertIsInstance(aug_pnode, PAugment)
+        self.assertIsNotNone(next(iter(aug_pnode)))
+        self.assertIsNone(aug_pnode.when_condition())
+        self.assertIsNone(next(aug_pnode.actions(), None))
+        self.assertIsNone(next(aug_pnode.notifications(), None))
+
+
+# -------------------------------------------------------------------------------------
+class GroupingTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_grouping_parsed(self):
+        mod = self.ctx.load_module("yolo-nodetypes")
+        pnode = next(mod.groupings())
+        self.assertIsInstance(pnode, PGrouping)
+        self.assertIsNone(next(pnode.typedefs(), None))
+        self.assertIsNone(next(pnode.groupings(), None))
+        child = next(iter(pnode))
+        self.assertIsNotNone(child)
+        self.assertIsNone(next(pnode.actions(), None))
+        self.assertIsNone(next(pnode.notifications(), None))
+
 
 # -------------------------------------------------------------------------------------
 class ListTest(unittest.TestCase):
@@ -363,6 +453,25 @@ class ListTest(unittest.TestCase):
         self.assertEqual(list2.min_elements(), 0)
         self.assertEqual(list2.max_elements(), None)
 
+    def test_list_parsed(self):
+        list1 = next(self.ctx.find_path("/yolo-nodetypes:conf/list1"))
+        self.assertIsInstance(list1, SList)
+        pnode = list1.parsed()
+        self.assertIsInstance(pnode, PList)
+        self.assertIsNone(next(pnode.musts(), None))
+        self.assertIsNone(pnode.when_condition())
+        self.assertEqual("leaf1", pnode.key())
+        self.assertIsNone(next(pnode.typedefs(), None))
+        self.assertIsNone(next(pnode.groupings(), None))
+        child = next(iter(pnode))
+        self.assertIsInstance(child, PLeaf)
+        self.assertIsNone(next(pnode.actions(), None))
+        self.assertIsNone(next(pnode.notifications(), None))
+        self.assertEqual("leaf2 leaf3", next(pnode.uniques()))
+        self.assertEqual(2, pnode.min_elements())
+        self.assertEqual(10, pnode.max_elements())
+        self.assertFalse(pnode.ordered())
+
 
 # -------------------------------------------------------------------------------------
 class RpcTest(unittest.TestCase):
@@ -397,6 +506,21 @@ class RpcTest(unittest.TestCase):
 
     def test_rpc_no_parent(self):
         self.assertIsNone(self.rpc.parent())
+
+    def test_rpc_parsed(self):
+        self.assertIsInstance(self.rpc, SRpc)
+        pnode = self.rpc.parsed()
+        self.assertIsInstance(pnode, PAction)
+        self.assertIsNone(next(pnode.typedefs(), None))
+        self.assertIsNone(next(pnode.groupings(), None))
+        pnode2 = pnode.input()
+        self.assertIsInstance(pnode2, PActionInOut)
+        self.assertIsInstance(pnode.output(), PActionInOut)
+        self.assertIsNone(next(pnode2.musts(), None))
+        self.assertIsNone(next(pnode2.typedefs(), None))
+        self.assertIsNone(next(pnode2.groupings(), None))
+        pnode3 = next(iter(pnode2))
+        self.assertIsInstance(pnode3, PLeaf)
 
 
 # -------------------------------------------------------------------------------------
@@ -536,6 +660,28 @@ class LeafTypeTest(unittest.TestCase):
         self.assertIsInstance(t, Type)
         self.assertFalse(t.require_instance())
 
+    def test_leaf_type_parsed(self):
+        leaf = next(self.ctx.find_path("/yolo-system:conf/yolo-system:hostname"))
+        self.assertIsInstance(leaf, SLeaf)
+        t = leaf.type()
+        self.assertIsInstance(t, Type)
+        pnode = t.parsed()
+        self.assertIsInstance(pnode, PType)
+        self.assertEqual("types:host", pnode.name())
+        self.assertIsNone(pnode.range())
+        self.assertIsNone(pnode.length())
+        self.assertIsNone(next(pnode.patterns(), None))
+        self.assertIsNone(next(pnode.enums(), None))
+        self.assertIsNone(next(pnode.bits(), None))
+        self.assertIsNone(pnode.path())
+        self.assertIsNone(next(pnode.bases(), None))
+        self.assertIsNone(next(pnode.types(), None))
+        self.assertIsNone(next(pnode.extensions(), None))
+        self.assertIsNotNone(pnode.pmod())
+        self.assertIsNone(pnode.compiled())
+        self.assertEqual(0, pnode.fraction_digits())
+        self.assertFalse(pnode.require_instance())
+
 
 # -------------------------------------------------------------------------------------
 class LeafTest(unittest.TestCase):
@@ -559,6 +705,40 @@ class LeafTest(unittest.TestCase):
     def test_leaf_default(self):
         leaf = next(self.ctx.find_path("/yolo-nodetypes:conf/percentage"))
         self.assertIsInstance(leaf.default(), float)
+
+    def test_leaf_parsed(self):
+        leaf = next(self.ctx.find_path("/yolo-nodetypes:conf/percentage"))
+        self.assertIsInstance(leaf, SLeaf)
+        pnode = leaf.parsed()
+        self.assertIsInstance(pnode, PLeaf)
+        must = next(pnode.musts())
+        self.assertIsInstance(must, Must)
+        self.assertEqual(must.error_message(), "ERROR1")
+        must = next(leaf.must_conditions())
+        self.assertIsInstance(must, str)
+        self.assertIsNone(pnode.when_condition())
+        self.assertIsInstance(pnode.type(), PType)
+        self.assertIsNone(pnode.units())
+        self.assertEqual("10.2", pnode.default())
+        self.assertFalse(pnode.is_key())
+
+        # test basic PNode settings
+        self.assertIsNotNone(pnode.parent())
+        self.assertEqual(PNode.LEAF, pnode.nodetype())
+        self.assertIsNotNone(next(pnode.siblings()))
+        self.assertEqual("<libyang.schema.PLeaf: percentage>", repr(pnode))
+        self.assertIsNone(pnode.description())
+        self.assertIsNone(pnode.reference())
+        self.assertIsNone(next(pnode.if_features(), None))
+        self.assertIsNone(next(pnode.extensions(), None))
+        self.assertFalse(pnode.config_set())
+        self.assertFalse(pnode.config_false())
+        self.assertFalse(pnode.mandatory())
+        self.assertFalse(pnode.deprecated())
+        self.assertFalse(pnode.obsolete())
+        self.assertEqual("current", pnode.status())
+
+    NODETYPE_CLASS = {}
 
 
 # -------------------------------------------------------------------------------------
@@ -587,6 +767,20 @@ class LeafListTest(unittest.TestCase):
         self.assertEqual(leaflist2.min_elements(), 0)
         self.assertEqual(leaflist2.max_elements(), None)
 
+    def test_leaf_list_parsed(self):
+        leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/ratios"))
+        self.assertIsInstance(leaflist, SLeafList)
+        pnode = leaflist.parsed()
+        self.assertIsInstance(pnode, PLeafList)
+        self.assertIsNone(next(pnode.musts(), None))
+        self.assertIsNone(pnode.when_condition())
+        self.assertIsInstance(pnode.type(), PType)
+        self.assertIsNone(pnode.units())
+        self.assertEqual("2.5", next(pnode.defaults()))
+        self.assertEqual(0, pnode.min_elements())
+        self.assertIsNone(pnode.max_elements())
+        self.assertFalse(pnode.ordered())
+
 
 # -------------------------------------------------------------------------------------
 class ChoiceTest(unittest.TestCase):
@@ -603,3 +797,60 @@ class ChoiceTest(unittest.TestCase):
         choice = next(conf.children((SNode.CHOICE,), with_choice=True))
         self.assertIsInstance(choice, SChoice)
         self.assertIsInstance(choice.default(), SCase)
+
+    def test_choice_parsed(self):
+        conf = next(self.ctx.find_path("/yolo-system:conf"))
+        choice = next(conf.children((SNode.CHOICE,), with_choice=True))
+        self.assertIsInstance(choice, SChoice)
+        pnode = choice.parsed()
+        self.assertIsInstance(pnode, PChoice)
+
+        case_pnode = next(iter(pnode))
+        self.assertIsInstance(case_pnode, PCase)
+        self.assertIsNotNone(next(iter(case_pnode)))
+        self.assertIsNone(case_pnode.when_condition())
+
+        self.assertIsNone(pnode.when_condition())
+        self.assertEqual("red", pnode.default())
+
+
+# -------------------------------------------------------------------------------------
+class AnydataTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("yolo-nodetypes")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_anydata_parsed(self):
+        snode = next(self.ctx.find_path("/yolo-nodetypes:any1"))
+        self.assertIsInstance(snode, SAnydata)
+        pnode = snode.parsed()
+        self.assertIsInstance(pnode, PAnydata)
+        self.assertIsNone(next(pnode.musts(), None))
+        self.assertEqual("../cont2", pnode.when_condition())
+
+
+# -------------------------------------------------------------------------------------
+class NotificationTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.ctx.load_module("yolo-nodetypes")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_notification_parsed(self):
+        snode = next(self.ctx.find_path("/yolo-nodetypes:cont2"))
+        self.assertIsInstance(snode, SContainer)
+        pnode = snode.parsed()
+        self.assertIsInstance(pnode, PContainer)
+        pnode = next(pnode.notifications())
+        self.assertIsInstance(pnode, PNotif)
+        self.assertIsNone(next(pnode.musts(), None))
+        self.assertIsNone(next(pnode.typedefs(), None))
+        self.assertIsNone(next(pnode.groupings(), None))
+        self.assertIsNotNone(next(iter(pnode)))

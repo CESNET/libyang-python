@@ -81,4 +81,35 @@ module yolo-nodetypes {
   leaf test1 {
     type uint8;
   }
+
+  grouping grp1 {
+    container cont3 {
+      leaf leaf1 {
+        type string;
+      }
+    }
+  }
+
+  container cont2 {
+    presence "special container enabled";
+    uses grp1 {
+      refine cont3/leaf1 {
+        mandatory true;
+      }
+      augment cont3 {
+        leaf leaf2 {
+          type int8;
+        }
+      }
+    }
+    notification interface-enabled {
+      leaf by-user {
+        type string;
+      }
+    }
+  }
+
+  anydata any1 {
+    when "../cont2";
+  }
 }

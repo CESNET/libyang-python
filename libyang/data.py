@@ -18,7 +18,7 @@ from .schema import (
     SRpc,
     Type,
 )
-from .util import DataType, IOType, LibyangError, c2str, str2c
+from .util import DataType, IOType, LibyangError, c2str, ly_array_iter, str2c
 
 
 LOG = logging.getLogger(__name__)
@@ -990,6 +990,28 @@ class DNode:
                 self.free_internal(with_siblings)
         finally:
             self.cdata = ffi.NULL
+
+    def leafref_link_node_tree(self) -> None:
+        """
+        Traverse through data tree including root node siblings and adds
+        leafrefs links to the given nodes.
+
+        Requires leafref_linking to be set on the libyang context.
+        """
+        lib.lyd_leafref_link_node_tree(self.cdata)
+
+    def leafref_nodes(self) -> Iterator["DNode"]:
+        """
+        Gets the leafref links record for given node.
+
+        Requires leafref_linking to be set on the libyang context.
+        """
+        term_node = ffi.cast("struct lyd_node_term *", self.cdata)
+        out = ffi.new("const struct lyd_leafref_links_rec **")
+        if lib.lyd_leafref_get_links(term_node, out) != lib.LY_SUCCESS:
+            return
+        for n in ly_array_iter(out[0].leafref_nodes):
+            yield DNode.new(self.context, n)
 
     def __repr__(self):
         cls = self.__class__

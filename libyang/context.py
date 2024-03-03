@@ -29,6 +29,7 @@ class Context:
         disable_searchdir_cwd: bool = True,
         explicit_compile: Optional[bool] = False,
         leafref_extended: bool = False,
+        builtin_plugins_only: bool = False,
         yanglib_path: Optional[str] = None,
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
@@ -44,6 +45,8 @@ class Context:
             options |= lib.LY_CTX_EXPLICIT_COMPILE
         if leafref_extended:
             options |= lib.LY_CTX_LEAFREF_EXTENDED
+        if builtin_plugins_only:
+            options |= lib.LY_CTX_BUILTIN_PLUGINS_ONLY
         # force priv parsed
         options |= lib.LY_CTX_SET_PRIV_PARSED
 

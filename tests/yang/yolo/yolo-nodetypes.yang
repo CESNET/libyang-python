@@ -3,6 +3,11 @@ module yolo-nodetypes {
   namespace "urn:yang:yolo:nodetypes";
   prefix sys;
 
+  import ietf-inet-types {
+    prefix inet;
+    revision-date 2013-07-15;
+  }
+
   description
     "YOLO Nodetypes.";
 
@@ -125,5 +130,9 @@ module yolo-nodetypes {
 
   anydata any1 {
     when "../cont2";
+  }
+
+  leaf ip-address {
+    type inet:ipv4-address;
   }
 }

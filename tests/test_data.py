@@ -1,6 +1,7 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+import gc
 import json
 import os
 import unittest
@@ -1099,4 +1100,14 @@ class DataTest(unittest.TestCase):
         dnode = dict_to_dnode(MAIN, module, None, validate=False, store_only=True)
         self.assertIsInstance(dnode, DLeaf)
         self.assertEqual(dnode.value(), 50)
+        dnode.free()
+
+    def test_dnode_builtin_plugins_only(self):
+        MAIN = {"yolo-nodetypes:ip-address": "test"}
+        self.tearDown()
+        gc.collect()
+        self.ctx = Context(YANG_DIR, builtin_plugins_only=True)
+        module = self.ctx.load_module("yolo-nodetypes")
+        dnode = dict_to_dnode(MAIN, module, None, validate=False, store_only=True)
+        self.assertIsInstance(dnode, DLeaf)
         dnode.free()

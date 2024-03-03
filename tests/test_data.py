@@ -21,6 +21,7 @@ from libyang import (
     DRpc,
     IOType,
     LibyangError,
+    Module,
 )
 from libyang.data import dict_to_dnode
 
@@ -134,15 +135,15 @@ class DataTest(unittest.TestCase):
       },
       {
         "proto": "http",
+        "host": "barfoo.com",
+        "path": "/barfoo/index.html"
+      },
+      {
+        "proto": "http",
         "host": "foobar.com",
         "port": 8080,
         "path": "/index.html",
         "enabled": true
-      },
-      {
-        "proto": "http",
-        "host": "barfoo.com",
-        "path": "/barfoo/index.html"
       }
     ],
     "number": [
@@ -282,7 +283,9 @@ class DataTest(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             'failed to parse data tree: Invalid boolean value "abcd".: '
-            'List instance is missing its key "host".',
+            "Data path: /yolo-system:conf/url[proto='https']/enabled (line 6): "
+            'List instance is missing its key "host".: '
+            "Data path: /yolo-system:conf/url[proto='https'] (line 7)",
         )
 
     XML_STATE = """<state xmlns="urn:yang:yolo:system">
@@ -808,7 +811,7 @@ class DataTest(unittest.TestCase):
     <host>foobar.com</host>
     <enabled yang:operation="replace" yang:orig-default="false" yang:orig-value="true">false</enabled>
   </url>
-  <url yang:operation="create">
+  <url yang:operation="create" yang:key="[proto='http'][host='foobar.com']">
     <proto>ftp</proto>
     <host>github.com</host>
     <path>/CESNET/libyang-python</path>
@@ -1034,3 +1037,28 @@ class DataTest(unittest.TestCase):
 
         attrs.remove("ietf-netconf:operation")
         self.assertEqual(len(attrs), 0)
+
+    def test_dnode_leafref_linking(self):
+        MAIN = """{
+            "yolo-leafref-extended:list1": [{
+                "leaf1": "val1",
+                "leaflist2": ["val2", "val3"]
+            }],
+            "yolo-leafref-extended:ref1": "val1"
+            }"""
+        self.ctx.destroy()
+        self.ctx = Context(YANG_DIR, leafref_extended=True, leafref_linking=True)
+        mod = self.ctx.load_module("yolo-leafref-extended")
+        self.assertIsInstance(mod, Module)
+        dnode1 = self.ctx.parse_data_mem(MAIN, "json", parse_only=True, store_only=True)
+        self.assertIsInstance(dnode1, DList)
+        dnode2 = next(dnode1.siblings(include_self=False))
+        self.assertIsInstance(dnode2, DLeaf)
+        dnode3 = next(dnode1.children())
+        self.assertIsInstance(dnode3, DLeaf)
+        self.assertIsNone(next(dnode3.leafref_nodes(), None))
+        dnode2.leafref_link_node_tree()
+        dnode4 = next(dnode3.leafref_nodes())
+        self.assertIsInstance(dnode4, DLeaf)
+        self.assertEqual(dnode4.cdata, dnode2.cdata)
+        dnode1.free()

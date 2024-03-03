@@ -20,13 +20,18 @@ LOG_LEVELS = {
 
 
 @ffi.def_extern(name="lypy_log_cb")
-def libyang_c_logging_callback(level, msg, path):
+def libyang_c_logging_callback(level, msg, data_path, schema_path, line):
     args = [c2str(msg)]
-    if path:
-        fmt = "%s: %s"
-        args.append(c2str(path))
-    else:
-        fmt = "%s"
+    fmt = "%s"
+    if data_path:
+        fmt += ": %s"
+        args.append(c2str(data_path))
+    if schema_path:
+        fmt += ": %s"
+        args.append(c2str(schema_path))
+    if line != 0:
+        fmt += " line %u"
+        args.append(str(line))
     LOG.log(LOG_LEVELS.get(level, logging.NOTSET), fmt, *args)
 
 
@@ -51,10 +56,10 @@ def configure_logging(enable_py_logger: bool, level: int = logging.ERROR) -> Non
             break
     if enable_py_logger:
         lib.ly_log_options(lib.LY_LOLOG | lib.LY_LOSTORE)
-        lib.ly_set_log_clb(lib.lypy_log_cb, True)
+        lib.ly_set_log_clb(lib.lypy_log_cb)
     else:
         lib.ly_log_options(lib.LY_LOSTORE)
-        lib.ly_set_log_clb(ffi.NULL, False)
+        lib.ly_set_log_clb(ffi.NULL)
 
 
 configure_logging(False, logging.ERROR)

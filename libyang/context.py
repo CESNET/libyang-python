@@ -4,15 +4,15 @@
 # SPDX-License-Identifier: MIT
 
 import os
-from typing import IO, Any, Iterator, Optional, Union
+from typing import IO, Any, Callable, Iterator, Optional, Tuple, Union
 
 from _libyang import ffi, lib
 from .data import (
     DNode,
     data_format,
     data_type,
+    new_path_flags,
     parser_flags,
-    path_flags,
     validation_flags,
 )
 from .schema import Module, SNode, schema_in_format
@@ -20,12 +20,52 @@ from .util import DataType, IOType, LibyangError, c2str, data_load, str2c
 
 
 # -------------------------------------------------------------------------------------
+@ffi.def_extern(name="lypy_module_imp_data_free_clb")
+def libyang_c_module_imp_data_free_clb(cdata, user_data):
+    instance = ffi.from_handle(user_data)
+    instance.free_module_data(cdata)
+
+
+# -------------------------------------------------------------------------------------
+@ffi.def_extern(name="lypy_module_imp_clb")
+def libyang_c_module_imp_clb(
+    mod_name,
+    mod_rev,
+    submod_name,
+    submod_rev,
+    user_data,
+    fmt,
+    module_data,
+    free_module_data,
+):
+    fmt[0] = lib.LYS_IN_UNKNOWN
+    module_data[0] = ffi.NULL
+    free_module_data[0] = lib.lypy_module_imp_data_free_clb
+    instance = ffi.from_handle(user_data)
+    in_fmt, content = instance.get_module_data(
+        c2str(mod_name), c2str(mod_rev), c2str(submod_name), c2str(submod_rev)
+    )
+    if content is None:
+        return lib.LY_ENOT
+    fmt[0] = schema_in_format(in_fmt)
+    module_data[0] = content
+    return lib.LY_SUCCESS
+
+
+# -------------------------------------------------------------------------------------
 class Context:
-    __slots__ = ("cdata", "__dict__")
+    __slots__ = (
+        "cdata",
+        "_module_data_clb",
+        "_cffi_handle",
+        "_cdata_modules",
+        "__dict__",
+    )
 
     def __init__(
         self,
         search_path: Optional[str] = None,
+        disable_searchdirs: bool = False,
         disable_searchdir_cwd: bool = True,
         explicit_compile: Optional[bool] = False,
         leafref_extended: bool = False,
@@ -33,11 +73,17 @@ class Context:
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
     ):
+        self._module_data_clb = None
+        self._cffi_handle = ffi.new_handle(self)
+        self._cdata_modules = []
+
         if cdata is not None:
             self.cdata = ffi.cast("struct ly_ctx *", cdata)
             return  # already initialized
 
         options = 0
+        if disable_searchdirs:
+            options |= lib.LY_CTX_DISABLE_SEARCHDIRS
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
         if explicit_compile:
@@ -117,8 +163,12 @@ class Context:
             while err:
                 if err.msg:
                     msg += ": %s" % c2str(err.msg)
-                if err.path:
-                    msg += ": %s" % c2str(err.path)
+                if err.data_path:
+                    msg += ": Data path: %s" % c2str(err.data_path)
+                if err.schema_path:
+                    msg += ": Schema path: %s" % c2str(err.schema_path)
+                if err.line != 0:
+                    msg += " (line %u)" % err.line
                 err = err.next
             lib.ly_err_clean(self.cdata, ffi.NULL)
 
@@ -234,7 +284,7 @@ class Context:
         parent: Optional[DNode] = None,
         value: Any = None,
         update: bool = True,
-        no_parent_ret: bool = True,
+        store_only: bool = False,
         rpc_output: bool = False,
         force_return_value: bool = True,
     ) -> Optional[DNode]:
@@ -245,9 +295,7 @@ class Context:
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        flags = path_flags(
-            update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output
-        )
+        flags = new_path_flags(update=update, store_only=store_only, output=rpc_output)
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_path(
             parent.cdata if parent else ffi.NULL,
@@ -259,7 +307,8 @@ class Context:
         )
         dnode = dnode[0]
         if ret != lib.LY_SUCCESS:
-            if lib.ly_vecode(self.cdata) != lib.LYVE_SUCCESS:
+            err = lib.ly_err_last(self.cdata)
+            if err != ffi.NULL and err.vecode != lib.LYVE_SUCCESS:
                 raise self.error("cannot create data path: %s", path)
             lib.ly_err_clean(self.cdata, ffi.NULL)
         if not dnode and not force_return_value:
@@ -340,6 +389,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -350,6 +400,7 @@ class Context:
             opaq=opaq,
             ordered=ordered,
             strict=strict,
+            store_only=store_only,
         )
         validation_flgs = validation_flags(
             no_state=no_state,
@@ -407,6 +458,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -421,6 +473,7 @@ class Context:
             strict=strict,
             validate_present=validate_present,
             validate_multi_error=validate_multi_error,
+            store_only=store_only,
         )
 
     def parse_data_file(
@@ -436,6 +489,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -450,6 +504,7 @@ class Context:
             strict=strict,
             validate_present=validate_present,
             validate_multi_error=validate_multi_error,
+            store_only=store_only,
         )
 
     def __iter__(self) -> Iterator[Module]:
@@ -463,3 +518,41 @@ class Context:
         while mod:
             yield Module(self, mod)
             mod = lib.ly_ctx_get_module_iter(self.cdata, idx)
+
+    def free_module_data(self, cdata) -> None:
+        self._cdata_modules.remove(cdata)
+
+    def get_module_data(
+        self,
+        mod_name: Optional[str],
+        mod_rev: Optional[str],
+        submod_name: Optional[str],
+        submod_rev: Optional[str],
+    ) -> Tuple[str, Optional[str]]:
+        if self._module_data_clb is None:
+            return None
+        fmt_str, module_data = self._module_data_clb(
+            mod_name, mod_rev, submod_name, submod_rev
+        )
+        if module_data is None:
+            return fmt_str, None
+        module_data_c = str2c(module_data)
+        self._cdata_modules.append(module_data_c)
+        return fmt_str, module_data_c
+
+    def set_module_data_clb(
+        self,
+        clb: Optional[
+            Callable[
+                [Optional[str], Optional[str], Optional[str], Optional[str]],
+                Tuple[str, Optional[str]],
+            ]
+        ] = None,
+    ) -> None:
+        self._module_data_clb = clb
+        if clb is None:
+            lib.ly_ctx_set_module_imp_clb(self.cdata, ffi.NULL, ffi.NULL)
+        else:
+            lib.ly_ctx_set_module_imp_clb(
+                self.cdata, lib.lypy_module_imp_clb, self._cffi_handle
+            )

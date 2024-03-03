@@ -21,6 +21,7 @@ from libyang import (
     DRpc,
     IOType,
     LibyangError,
+    Module,
 )
 from libyang.data import dict_to_dnode
 
@@ -1036,3 +1037,28 @@ class DataTest(unittest.TestCase):
 
         attrs.remove("ietf-netconf:operation")
         self.assertEqual(len(attrs), 0)
+
+    def test_dnode_leafref_linking(self):
+        MAIN = """{
+            "yolo-leafref-extended:list1": [{
+                "leaf1": "val1",
+                "leaflist2": ["val2", "val3"]
+            }],
+            "yolo-leafref-extended:ref1": "val1"
+            }"""
+        self.ctx.destroy()
+        self.ctx = Context(YANG_DIR, leafref_extended=True, leafref_linking=True)
+        mod = self.ctx.load_module("yolo-leafref-extended")
+        self.assertIsInstance(mod, Module)
+        dnode1 = self.ctx.parse_data_mem(MAIN, "json", parse_only=True)
+        self.assertIsInstance(dnode1, DList)
+        dnode2 = next(dnode1.siblings(include_self=False))
+        self.assertIsInstance(dnode2, DLeaf)
+        dnode3 = next(dnode1.children())
+        self.assertIsInstance(dnode3, DLeaf)
+        self.assertIsNone(next(dnode3.leafref_nodes(), None))
+        dnode2.leafref_link_node_tree()
+        dnode4 = next(dnode3.leafref_nodes())
+        self.assertIsInstance(dnode4, DLeaf)
+        self.assertEqual(dnode4.cdata, dnode2.cdata)
+        dnode1.free()

@@ -1118,5 +1118,14 @@ struct lyd_attr {
 LY_ERR lyd_new_attr(struct lyd_node *, const char *, const char *, const char *, struct lyd_attr **);
 void lyd_free_attr_single(const struct ly_ctx *ctx, struct lyd_attr *attr);
 
+struct lyd_leafref_links_rec {
+    const struct lyd_node_term *node;
+    const struct lyd_node_term **leafref_nodes;
+    const struct lyd_node_term **target_nodes;
+};
+
+LY_ERR lyd_leafref_get_links(const struct lyd_node_term *e, const struct lyd_leafref_links_rec **);
+LY_ERR lyd_leafref_link_node_tree(struct lyd_node *);
+
 /* from libc, needed to free allocated strings */
 void free(void *);

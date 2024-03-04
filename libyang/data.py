@@ -1119,38 +1119,37 @@ class DLeaf(DNode):
             return None
 
         val = c2str(val)
-        term_node = ffi.cast("struct lyd_node_term *", cdata)
-        val_type = ffi.new("const struct lysc_type **", ffi.NULL)
 
-        # get real value type
-        ctx = context.cdata if context else ffi.NULL
-        ret = lib.lyd_value_validate(
-            ctx,
-            term_node.schema,
-            str2c(val),
-            len(val),
-            ffi.NULL,
-            val_type,
-            ffi.NULL,
-        )
-
-        if ret in (lib.LY_SUCCESS, lib.LY_EINCOMPLETE):
-            val_type = val_type[0].basetype
-            if val_type in Type.STR_TYPES:
-                return val
-            if val_type in Type.NUM_TYPES:
-                return int(val)
-            if val_type == Type.BOOL:
-                return val == "true"
-            if val_type == Type.DEC64:
-                return float(val)
-            if val_type == Type.LEAFREF:
-                return DLeaf.cdata_leaf_value(cdata.value.leafref, context)
-            if val_type == Type.EMPTY:
-                return None
+        if cdata.schema == ffi.NULL:
+            # opaq node
             return val
 
-        raise TypeError("value type validation error")
+        if cdata.schema.nodetype == SNode.LEAF:
+            snode = ffi.cast("struct lysc_node_leaf *", cdata.schema)
+        elif cdata.schema.nodetype == SNode.LEAFLIST:
+            snode = ffi.cast("struct lysc_node_leaflist *", cdata.schema)
+
+        # find the real type used
+        cdata = ffi.cast("struct lyd_node_term *", cdata)
+        curr_type = snode.type
+        while curr_type.basetype in (Type.LEAFREF, Type.UNION):
+            if curr_type.basetype == Type.LEAFREF:
+                curr_type = cdata.value.realtype
+            if curr_type.basetype == Type.UNION:
+                curr_type = cdata.value.subvalue.value.realtype
+
+        val_type = curr_type.basetype
+        if val_type in Type.STR_TYPES:
+            return val
+        if val_type in Type.NUM_TYPES:
+            return int(val)
+        if val_type == Type.BOOL:
+            return val == "true"
+        if val_type == Type.DEC64:
+            return float(val)
+        if val_type == Type.EMPTY:
+            return None
+        return val
 
 
 # -------------------------------------------------------------------------------------

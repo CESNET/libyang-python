@@ -900,9 +900,13 @@ struct lyd_value {
     ...;
 };
 
+struct lyd_value_union {
+    struct lyd_value value;
+    ...;
+};
+
 const char * lyd_get_value(const struct lyd_node *);
 struct lyd_node* lyd_child(const struct lyd_node *);
-LY_ERR lyd_value_validate(const struct ly_ctx *, const struct lysc_node *, const char *, size_t, const struct lyd_node *, const struct lysc_type **, const char **);
 LY_ERR lyd_find_path(const struct lyd_node *, const char *, ly_bool, struct lyd_node **);
 void lyd_free_siblings(struct lyd_node *);
 struct lyd_node* lyd_first_sibling(const struct lyd_node *);

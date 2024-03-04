@@ -1110,4 +1110,5 @@ class DataTest(unittest.TestCase):
         module = self.ctx.load_module("yolo-nodetypes")
         dnode = dict_to_dnode(MAIN, module, None, validate=False, store_only=True)
         self.assertIsInstance(dnode, DLeaf)
+        self.assertEqual(dnode.value(), "test")
         dnode.free()

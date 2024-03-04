@@ -1119,38 +1119,30 @@ class DLeaf(DNode):
             return None
 
         val = c2str(val)
-        term_node = ffi.cast("struct lyd_node_term *", cdata)
-        val_type = ffi.new("const struct lysc_type **", ffi.NULL)
-
-        # get real value type
-        ctx = context.cdata if context else ffi.NULL
-        ret = lib.lyd_value_validate(
-            ctx,
-            term_node.schema,
-            str2c(val),
-            len(val),
-            ffi.NULL,
-            val_type,
-            ffi.NULL,
-        )
-
-        if ret in (lib.LY_SUCCESS, lib.LY_EINCOMPLETE):
-            val_type = val_type[0].basetype
-            if val_type in Type.STR_TYPES:
-                return val
-            if val_type in Type.NUM_TYPES:
-                return int(val)
-            if val_type == Type.BOOL:
-                return val == "true"
-            if val_type == Type.DEC64:
-                return float(val)
-            if val_type == Type.LEAFREF:
-                return DLeaf.cdata_leaf_value(cdata.value.leafref, context)
-            if val_type == Type.EMPTY:
-                return None
+        if cdata.schema == ffi.NULL:
+            # opaq node
             return val
 
-        raise TypeError("value type validation error")
+        node_term = ffi.cast("struct lyd_node_term *", cdata)
+
+        # inspired from libyang lyd_value_validate
+        val_type = Type(context, node_term.value.realtype, None).base()
+        if val_type == Type.UNION:
+            val_type = Type(
+                context, node_term.value.subvalue.value.realtype, None
+            ).base()
+
+        if val_type in Type.STR_TYPES:
+            return val
+        if val_type in Type.NUM_TYPES:
+            return int(val)
+        if val_type == Type.BOOL:
+            return val == "true"
+        if val_type == Type.DEC64:
+            return float(val)
+        if val_type == Type.EMPTY:
+            return None
+        return val
 
 
 # -------------------------------------------------------------------------------------

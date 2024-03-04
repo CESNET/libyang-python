@@ -1,6 +1,7 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+import gc
 import json
 import os
 import unittest
@@ -134,15 +135,15 @@ class DataTest(unittest.TestCase):
       },
       {
         "proto": "http",
+        "host": "barfoo.com",
+        "path": "/barfoo/index.html"
+      },
+      {
+        "proto": "http",
         "host": "foobar.com",
         "port": 8080,
         "path": "/index.html",
         "enabled": true
-      },
-      {
-        "proto": "http",
-        "host": "barfoo.com",
-        "path": "/barfoo/index.html"
       }
     ],
     "number": [
@@ -282,7 +283,9 @@ class DataTest(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             'failed to parse data tree: Invalid boolean value "abcd".: '
-            'List instance is missing its key "host".',
+            "Data path: /yolo-system:conf/url[proto='https']/enabled (line 6): "
+            'List instance is missing its key "host".: '
+            "Data path: /yolo-system:conf/url[proto='https'] (line 7)",
         )
 
     XML_STATE = """<state xmlns="urn:yang:yolo:system">
@@ -808,7 +811,7 @@ class DataTest(unittest.TestCase):
     <host>foobar.com</host>
     <enabled yang:operation="replace" yang:orig-default="false" yang:orig-value="true">false</enabled>
   </url>
-  <url yang:operation="create">
+  <url yang:operation="create" yang:key="[proto='http'][host='foobar.com']">
     <proto>ftp</proto>
     <host>github.com</host>
     <path>/CESNET/libyang-python</path>
@@ -1034,3 +1037,14 @@ class DataTest(unittest.TestCase):
 
         attrs.remove("ietf-netconf:operation")
         self.assertEqual(len(attrs), 0)
+
+    def test_dnode_buildin_plugins_only(self):
+        MAIN = {"yolo-nodetypes:ip-address": "test"}
+        self.tearDown()
+        gc.collect()
+        self.ctx = Context(YANG_DIR, builtin_plugins_only=True)
+        module = self.ctx.load_module("yolo-nodetypes")
+        dnode = dict_to_dnode(MAIN, module, None, validate=False, store_only=True)
+        self.assertIsInstance(dnode, DLeaf)
+        self.assertEqual(dnode.value(), "test")
+        dnode.free()

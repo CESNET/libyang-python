@@ -11,8 +11,8 @@ from .data import (
     DNode,
     data_format,
     data_type,
+    new_path_flags,
     parser_flags,
-    path_flags,
     validation_flags,
 )
 from .schema import Module, SNode, schema_in_format
@@ -29,6 +29,7 @@ class Context:
         disable_searchdir_cwd: bool = True,
         explicit_compile: Optional[bool] = False,
         leafref_extended: bool = False,
+        builtin_plugins_only: bool = False,
         yanglib_path: Optional[str] = None,
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
@@ -44,6 +45,8 @@ class Context:
             options |= lib.LY_CTX_EXPLICIT_COMPILE
         if leafref_extended:
             options |= lib.LY_CTX_LEAFREF_EXTENDED
+        if builtin_plugins_only:
+            options |= lib.LY_CTX_BUILTIN_PLUGINS_ONLY
         # force priv parsed
         options |= lib.LY_CTX_SET_PRIV_PARSED
 
@@ -117,8 +120,12 @@ class Context:
             while err:
                 if err.msg:
                     msg += ": %s" % c2str(err.msg)
-                if err.path:
-                    msg += ": %s" % c2str(err.path)
+                if err.data_path:
+                    msg += ": Data path: %s" % c2str(err.data_path)
+                if err.schema_path:
+                    msg += ": Schema path: %s" % c2str(err.schema_path)
+                if err.line != 0:
+                    msg += " (line %u)" % err.line
                 err = err.next
             lib.ly_err_clean(self.cdata, ffi.NULL)
 
@@ -234,7 +241,7 @@ class Context:
         parent: Optional[DNode] = None,
         value: Any = None,
         update: bool = True,
-        no_parent_ret: bool = True,
+        store_only: bool = False,
         rpc_output: bool = False,
         force_return_value: bool = True,
     ) -> Optional[DNode]:
@@ -245,9 +252,7 @@ class Context:
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        flags = path_flags(
-            update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output
-        )
+        flags = new_path_flags(update=update, store_only=store_only, output=rpc_output)
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_path(
             parent.cdata if parent else ffi.NULL,
@@ -259,7 +264,8 @@ class Context:
         )
         dnode = dnode[0]
         if ret != lib.LY_SUCCESS:
-            if lib.ly_vecode(self.cdata) != lib.LYVE_SUCCESS:
+            err = lib.ly_err_last(self.cdata)
+            if err != ffi.NULL and err.vecode != lib.LYVE_SUCCESS:
                 raise self.error("cannot create data path: %s", path)
             lib.ly_err_clean(self.cdata, ffi.NULL)
         if not dnode and not force_return_value:
@@ -340,6 +346,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -350,6 +357,7 @@ class Context:
             opaq=opaq,
             ordered=ordered,
             strict=strict,
+            store_only=store_only,
         )
         validation_flgs = validation_flags(
             no_state=no_state,
@@ -407,6 +415,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -421,6 +430,7 @@ class Context:
             strict=strict,
             validate_present=validate_present,
             validate_multi_error=validate_multi_error,
+            store_only=store_only,
         )
 
     def parse_data_file(
@@ -436,6 +446,7 @@ class Context:
         strict: bool = False,
         validate_present: bool = False,
         validate_multi_error: bool = False,
+        store_only: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -450,6 +461,7 @@ class Context:
             strict=strict,
             validate_present=validate_present,
             validate_multi_error=validate_multi_error,
+            store_only=store_only,
         )
 
     def __iter__(self) -> Iterator[Module]:

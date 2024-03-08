@@ -1062,6 +1062,7 @@ LY_ERR lyd_merge_module(struct lyd_node **, const struct lyd_node *, const struc
 #define LYD_IMPLICIT_NO_DEFAULTS ...
 
 LY_ERR lyd_new_implicit_tree(struct lyd_node *, uint32_t, struct lyd_node **);
+LY_ERR lyd_new_implicit_module(struct lyd_node **, const struct lys_module *, uint32_t, struct lyd_node **);
 LY_ERR lyd_new_implicit_all(struct lyd_node **, const struct ly_ctx *, uint32_t, struct lyd_node **);
 
 LY_ERR lyd_new_meta(const struct ly_ctx *, struct lyd_node *, const struct lys_module *, const char *, const char *, uint32_t, struct lyd_meta **);

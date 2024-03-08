@@ -399,6 +399,7 @@ class DNode:
         no_state: bool = False,
         output: bool = False,
         only_node: bool = False,
+        module: Optional[Module] = None,
     ):
         flags = implicit_flags(
             no_config=no_config,
@@ -412,7 +413,13 @@ class DNode:
         else:
             node_p = ffi.new("struct lyd_node **")
             node_p[0] = self.cdata
-            ret = lib.lyd_new_implicit_all(node_p, self.context.cdata, flags, ffi.NULL)
+            if module is not None:
+                ret = lib.lyd_new_implicit_module(node_p, module.cdata, flags, ffi.NULL)
+            else:
+                ret = lib.lyd_new_implicit_all(
+                    node_p, self.context.cdata, flags, ffi.NULL
+                )
+
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get module")
 

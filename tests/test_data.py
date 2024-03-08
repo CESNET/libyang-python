@@ -134,15 +134,15 @@ class DataTest(unittest.TestCase):
       },
       {
         "proto": "http",
+        "host": "barfoo.com",
+        "path": "/barfoo/index.html"
+      },
+      {
+        "proto": "http",
         "host": "foobar.com",
         "port": 8080,
         "path": "/index.html",
         "enabled": true
-      },
-      {
-        "proto": "http",
-        "host": "barfoo.com",
-        "path": "/barfoo/index.html"
       }
     ],
     "number": [
@@ -282,7 +282,9 @@ class DataTest(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             'failed to parse data tree: Invalid boolean value "abcd".: '
-            'List instance is missing its key "host".',
+            "Data path: /yolo-system:conf/url[proto='https']/enabled (line 6): "
+            'List instance is missing its key "host".: '
+            "Data path: /yolo-system:conf/url[proto='https'] (line 7)",
         )
 
     XML_STATE = """<state xmlns="urn:yang:yolo:system">
@@ -808,7 +810,7 @@ class DataTest(unittest.TestCase):
     <host>foobar.com</host>
     <enabled yang:operation="replace" yang:orig-default="false" yang:orig-value="true">false</enabled>
   </url>
-  <url yang:operation="create">
+  <url yang:operation="create" yang:key="[proto='http'][host='foobar.com']">
     <proto>ftp</proto>
     <host>github.com</host>
     <path>/CESNET/libyang-python</path>
@@ -895,7 +897,8 @@ class DataTest(unittest.TestCase):
             dnode.free()
 
     def test_add_defaults(self):
-        JSON = '{"yolo-nodetypes:records": [{"id": "rec1"}]}'
+        JSON = """{"yolo-nodetypes:records": [{"id": "rec1"}],
+                "yolo-nodetypes:conf": {}}"""
         dnode = self.ctx.parse_data_mem(
             JSON, "json", validate_present=True, parse_only=True
         )
@@ -904,14 +907,27 @@ class DataTest(unittest.TestCase):
         self.assertIsInstance(node, DLeaf)
         node = dnode.find_one("name")
         self.assertIsNone(node)
+        node = dnode.find_one("/yolo-system:conf/speed")
+        self.assertIsNone(node)
+
         dnode.add_defaults(only_node=True)
         node = dnode.find_one("name")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), "ASD")
-        node = dnode.find_path("/yolo-nodetypes:conf/speed")
+        node = dnode.find_one("/yolo-nodetypes:conf/percentage")
         self.assertIsNone(node)
-        dnode.add_defaults(only_node=False)
-        node = dnode.find_path("/yolo-system:conf/speed")
+        node = dnode.find_one("/yolo-system:conf/speed")
+        self.assertIsNone(node)
+
+        dnode.add_defaults(module=dnode.module())
+        node = dnode.find_one("/yolo-nodetypes:conf/percentage")
+        self.assertIsInstance(node, DLeaf)
+        self.assertEqual(node.value(), 10.2)
+        node = dnode.find_one("/yolo-system:conf/speed")
+        self.assertIsNone(node)
+
+        dnode.add_defaults()
+        node = dnode.find_one("/yolo-system:conf/speed")
         self.assertIsInstance(node, DLeaf)
         self.assertEqual(node.value(), 4321)
 

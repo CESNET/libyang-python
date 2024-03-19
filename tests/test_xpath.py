@@ -41,6 +41,7 @@ class XPathTest(unittest.TestCase):
         )
         ly.xpath_set(d, "/lstnum[.='100']", 100)
         ly.xpath_set(d, "/lstnum[.='1']", 1, after="")
+        ly.xpath_set(d, "/lstnum[5]", 33, after="4")
         with self.assertRaises(ValueError):
             ly.xpath_set(d, "/lstnum[.='1000']", 1000, after="1000000")
         with self.assertRaises(ValueError):
@@ -101,7 +102,7 @@ class XPathTest(unittest.TestCase):
                     {"name": "eth3", "mtu": 1000},
                 ],
                 "lst2": ["a", "b", "c"],
-                "lstnum": [1, 10, 20, 30, 40, 100],
+                "lstnum": [1, 10, 20, 30, 33, 100],
                 "val": 43,
             },
         )

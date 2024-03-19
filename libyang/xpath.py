@@ -1,6 +1,7 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+import contextlib
 import fnmatch
 import re
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
@@ -56,17 +57,28 @@ def xpath_split(xpath: str) -> Iterator[Tuple[str, str, List[Tuple[str, str]]]]:
         while i < len(xpath) and xpath[i] == "[":
             i += 1  # skip opening '['
             j = xpath.find("=", i)  # find key name end
-            key_name = xpath[i:j]
-            quote = xpath[j + 1]  # record opening quote character
-            j = i = j + 2  # skip '=' and opening quote
-            while True:
-                if xpath[j] == quote and xpath[j - 1] != "\\":
-                    break
-                j += 1
-            # replace escaped chars by their non-escape version
-            key_value = xpath[i:j].replace(f"\\{quote}", f"{quote}")
-            keys.append((key_name, key_value))
-            i = j + 2  # skip closing quote and ']'
+
+            if j != -1:  # keyed specifier
+                key_name = xpath[i:j]
+                quote = xpath[j + 1]  # record opening quote character
+                j = i = j + 2  # skip '=' and opening quote
+                while True:
+                    if xpath[j] == quote and xpath[j - 1] != "\\":
+                        break
+                    j += 1
+                # replace escaped chars by their non-escape version
+                key_value = xpath[i:j].replace(f"\\{quote}", f"{quote}")
+                keys.append((key_name, key_value))
+                i = j + 2  # skip closing quote and ']'
+            else:  # index specifier
+                j = i
+                while True:
+                    if xpath[j] == "]":
+                        break
+                    j += 1
+                key_value = xpath[i:j]
+                keys.append(("", key_value))
+                i = j + 2
 
         yield prefix, name, keys
 
@@ -133,6 +145,12 @@ def _list_find_key_index(keys: List[Tuple[str, str]], lst: List) -> int:
         for i, elem in enumerate(lst):
             if py_to_yang(elem) == keys[0][1]:
                 return i
+
+    elif keys[0][0] == "":
+        # keys[0][1] is directly the index
+        index = int(keys[0][1]) - 1
+        if len(lst) > index:
+            return index
 
     else:
         for i, elem in enumerate(lst):
@@ -410,32 +428,47 @@ def xpath_set(
             lst.append(value)
         return lst[key_val]
 
-    if isinstance(lst, list):
-        # regular python list, need to iterate over it
-        try:
-            i = _list_find_key_index(keys, lst)
-            # found
-            if force:
-                lst[i] = value
-            return lst[i]
-        except ValueError:
-            # not found
-            if after is None:
-                lst.append(value)
-            elif after == "":
-                lst.insert(0, value)
-            else:
-                if after[0] != "[":
-                    after = "[.=%r]" % str(after)
-                _, _, after_keys = next(xpath_split("/*" + after))
-                insert_index = _list_find_key_index(after_keys, lst) + 1
-                if insert_index == len(lst):
-                    lst.append(value)
-                else:
-                    lst.insert(insert_index, value)
-            return value
+    # regular python list from now
+    if not isinstance(lst, list):
+        raise TypeError("expected a list")
 
-    raise TypeError("expected a list")
+    with contextlib.suppress(ValueError):
+        i = _list_find_key_index(keys, lst)
+        # found
+        if force:
+            lst[i] = value
+        return lst[i]
+
+    # value not found; handle insertion based on 'after'
+    if after is None:
+        lst.append(value)
+        return value
+
+    if after == "":
+        lst.insert(0, value)
+        return value
+
+    # first try to find the value in the leaf list
+    try:
+        _, _, after_keys = next(
+            xpath_split(f"/*{after}" if after[0] == "[" else f"/*[.={after!r}]")
+        )
+        insert_index = _list_find_key_index(after_keys, lst) + 1
+    except ValueError:
+        # handle 'after' as numeric index
+        if not after.isnumeric():
+            raise
+
+        insert_index = int(after)
+        if insert_index > len(lst):
+            raise
+
+    if insert_index == len(lst):
+        lst.append(value)
+    else:
+        lst.insert(insert_index, value)
+
+    return value
 
 
 # -------------------------------------------------------------------------------------

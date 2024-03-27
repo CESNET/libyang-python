@@ -21,13 +21,13 @@ indent_style = space
 indent_size = 3
 
 [Makefile]
-indent_style = tabs
+indent_style = tab
 indent_size = tab
 
 [*.sh]
-indent_style = tabs
+indent_style = tab
 indent_size = tab
 
 [*.{h,c}]
-indent_style = tabs
+indent_style = tab
 indent_size = tab

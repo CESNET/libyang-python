@@ -232,7 +232,7 @@ Here are the steps for submitting a change in the code base:
 
 #. Create a new branch named after what your are working on::
 
-      git checkout -b my-topic
+      git checkout -b my-topic -t origin/master
 
 #. Edit the code and call ``make format`` to ensure your modifications comply
    with the `coding style`__.
@@ -251,21 +251,60 @@ Here are the steps for submitting a change in the code base:
    your changes do not break anything. You can also run ``make`` which will run
    both.
 
-#. Create commits by following these simple guidelines:
+#. Once you are happy with your work, you can create a commit (or several
+   commits). Follow these general rules:
 
-   -  Solve only one problem per commit.
-   -  Use a short (less than 72 characters) title on the first line followed by
-      an blank line and a more thorough description body.
-   -  Wrap the body of the commit message should be wrapped at 72 characters too
-      unless it breaks long URLs or code examples.
-   -  If the commit fixes a Github issue, include the following line::
+   -  Address only one issue/topic per commit.
+   -  Describe your changes in imperative mood, e.g. *"make xyzzy do frotz"*
+      instead of *"[This patch] makes xyzzy do frotz"* or *"[I] changed xyzzy to
+      do frotz"*, as if you are giving orders to the codebase to change its
+      behaviour.
+   -  Limit the first line (title) of the commit message to 60 characters.
+   -  Use a short prefix for the commit title for readability with ``git log
+      --oneline``. Do not use the `fix:` nor `feature:` prefixes. See recent
+      commits for inspiration.
+   -  Only use lower case letters for the commit title except when quoting
+      symbols or known acronyms.
+   -  Use the body of the commit message to actually explain what your patch
+      does and why it is useful. Even if your patch is a one line fix, the
+      description is not limited in length and may span over multiple
+      paragraphs. Use proper English syntax, grammar and punctuation.
+   -  If you are fixing an issue, use appropriate ``Closes: <URL>`` or
+      ``Fixes: <URL>`` trailers.
+   -  If you are fixing a regression introduced by another commit, add a
+      ``Fixes: <COMMIT_ID> ("<TITLE>")`` trailer.
+   -  When in doubt, follow the format and layout of the recent existing
+      commits.
+   -  The following trailers are accepted in commits. If you are using multiple
+      trailers in a commit, it's preferred to also order them according to this
+      list.
 
-        Fixes: #NNNN
+      *  ``Closes: <URL>``: close the referenced issue or pull request.
+      *  ``Fixes: <SHA> ("<TITLE>")``: reference the commit that introduced
+         a regression.
+      *  ``Link: <URL>``: any useful link to provide context for your commit.
+      *  ``Suggested-by``
+      *  ``Requested-by``
+      *  ``Reported-by``
+      *  ``Co-authored-by``
+      *  ``Tested-by``
+      *  ``Reviewed-by``
+      *  ``Acked-by``
+      *  ``Signed-off-by``: Compulsory!
 
-   Inspirations:
+   There is a great reference for commit messages in the `Linux kernel
+   documentation`__.
 
-   https://chris.beams.io/posts/git-commit/
-   https://wiki.openstack.org/wiki/GitCommitMessages
+   __ https://www.kernel.org/doc/html/latest/process/submitting-patches.html#describe-your-changes
+
+   IMPORTANT: you must sign-off your work using ``git commit --signoff``. Follow
+   the `Linux kernel developer's certificate of origin`__ for more details. All
+   contributions are made under the MIT license. If you do not want to disclose
+   your real name, you may sign-off using a pseudonym. Here is an example::
+
+       Signed-off-by: Robin Jarry <robin@jarry.cc>
+
+   __ https://www.kernel.org/doc/html/latest/process/submitting-patches.html#sign-your-work-the-developer-s-certificate-of-origin
 
 #. Push your topic branch in your forked repository::
 

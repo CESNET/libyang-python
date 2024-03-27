@@ -12,4 +12,10 @@ tests:
 format:
 	tox -e format
 
-.PHONY: lint tests format
+LYPY_START_COMMIT ?= origin/master
+LYPY_END_COMMIT ?= HEAD
+
+check-commits:
+	./check-commits.sh $(LYPY_START_COMMIT)..$(LYPY_END_COMMIT)
+
+.PHONY: lint tests format check-commits

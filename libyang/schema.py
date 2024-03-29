@@ -366,7 +366,7 @@ class Extension:
 class ExtensionParsed(Extension):
     __slots__ = ("module_parent",)
 
-    def __init__(self, context: "libyang.Context", cdata, module_parent: Module = None):
+    def __init__(self, context: "libyang.Context", cdata, module_parent: Module):
         super().__init__(context, cdata)
         self.module_parent = module_parent
 
@@ -382,6 +382,14 @@ class ExtensionParsed(Extension):
 
     def module(self) -> Module:
         return self._module_from_parsed()
+
+    def parent_node(self) -> Optional["PNode"]:
+        if not bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
+            return None
+        try:
+            return PNode.new(self.context, self.cdata.parent, self.module_parent)
+        except LibyangError:
+            return None
 
 
 # -------------------------------------------------------------------------------------
@@ -399,6 +407,14 @@ class ExtensionCompiled(Extension):
         if not self.cdata_def.module:
             raise self.context.error("cannot get module")
         return Module(self.context, self.cdata_def.module)
+
+    def parent_node(self) -> Optional["SNode"]:
+        if not bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
+            return None
+        try:
+            return SNode.new(self.context, self.cdata.parent)
+        except LibyangError:
+            return None
 
 
 # -------------------------------------------------------------------------------------

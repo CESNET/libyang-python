@@ -10,6 +10,7 @@ from unittest.mock import patch
 from _libyang import lib
 from libyang import (
     Context,
+    DAnydata,
     DAnyxml,
     DataType,
     DContainer,
@@ -21,6 +22,7 @@ from libyang import (
     DRpc,
     IOType,
     LibyangError,
+    SNode,
 )
 from libyang.data import dict_to_dnode
 
@@ -1036,3 +1038,16 @@ class DataTest(unittest.TestCase):
 
         attrs.remove("ietf-netconf:operation")
         self.assertEqual(len(attrs), 0)
+
+    def test_dnode_anydata_dict_to_dnode(self):
+        anydata_json = """{
+            "yolo-nodetypes:any1": {
+                "key1": "val1"
+            }
+            }"""
+        data = json.loads(anydata_json)
+        module = self.ctx.load_module("yolo-nodetypes")
+        dnode = dict_to_dnode(
+            data, module, None, validate=False, types=(SNode.ANYDATA,)
+        )
+        self.assertIsInstance(dnode, DAnydata)

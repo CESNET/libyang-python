@@ -8,6 +8,7 @@ from libyang import (
     Context,
     Extension,
     ExtensionParsed,
+    Identity,
     IfFeature,
     IfOrFeatures,
     IOType,
@@ -23,6 +24,7 @@ from libyang import (
     PChoice,
     PContainer,
     PGrouping,
+    PIdentity,
     PLeaf,
     PLeafList,
     PList,
@@ -868,3 +870,52 @@ class NotificationTest(unittest.TestCase):
         self.assertIsNone(next(pnode.typedefs(), None))
         self.assertIsNone(next(pnode.groupings(), None))
         self.assertIsNotNone(next(iter(pnode)))
+
+
+# -------------------------------------------------------------------------------------
+class IdentityTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.module = self.ctx.load_module("yolo-nodetypes")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_identity_compiled(self):
+        sidentity = next(self.module.identities())
+        self.assertIsInstance(sidentity, Identity)
+        self.assertEqual(sidentity.name(), "base1")
+        self.assertEqual(sidentity.description(), "Base 1.")
+        self.assertEqual(sidentity.reference(), "Some reference.")
+        self.assertIsInstance(sidentity.module(), Module)
+        derived = list(sidentity.derived())
+        self.assertEqual(2, len(derived))
+        for i in derived:
+            self.assertIsInstance(i, Identity)
+        self.assertEqual(derived[0].name(), "derived1")
+        self.assertEqual(derived[1].name(), "derived2")
+        self.assertEqual(next(derived[1].extensions()).name(), "identity-name")
+        self.assertIsNone(next(sidentity.extensions(), None))
+        self.assertIsNone(sidentity.get_extension("ext1"))
+        self.assertFalse(sidentity.deprecated())
+        self.assertFalse(sidentity.obsolete())
+        self.assertEqual("current", sidentity.status())
+
+        snode = next(self.ctx.find_path("/yolo-nodetypes:identity_ref"))
+        identities = list(snode.type().identity_bases())
+        self.assertEqual(identities[0].name(), sidentity.name())
+        self.assertEqual(identities[1].name(), "base2")
+
+    def test_identity_parsed(self):
+        pidentity = next(self.module.parsed_identities())
+        self.assertIsInstance(pidentity, PIdentity)
+        self.assertEqual(pidentity.name(), "base1")
+        self.assertIsNone(next(pidentity.if_features(), None))
+        self.assertIsNone(next(pidentity.bases(), None))
+        self.assertEqual(pidentity.description(), "Base 1.")
+        self.assertEqual(pidentity.reference(), "Some reference.")
+        self.assertIsNone(next(pidentity.extensions(), None))
+        self.assertFalse(pidentity.deprecated())
+        self.assertFalse(pidentity.obsolete())
+        self.assertEqual("current", pidentity.status())

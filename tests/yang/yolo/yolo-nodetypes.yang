@@ -132,6 +132,39 @@ module yolo-nodetypes {
     when "../cont2";
   }
 
+  extension identity-name {
+    description
+      "Extend an identity to provide an alternative name.";
+    argument name;
+  }
+
+  identity base1 {
+    description
+      "Base 1.";
+    reference "Some reference.";
+  }
+  identity base2;
+
+  identity derived1 {
+    base base1;
+  }
+
+  identity derived2 {
+    base base1;
+    sys:identity-name "Derived2";
+  }
+
+  identity derived3 {
+    base derived1;
+  }
+
+  leaf identity_ref {
+    type identityref {
+      base base1;
+      base base2;
+    }
+  }
+
   leaf ip-address {
     type inet:ipv4-address;
   }

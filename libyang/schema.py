@@ -172,6 +172,14 @@ class Module:
         for n in ly_list_iter(self.cdata.parsed.notifs):
             yield PNotif(self.context, n, self)
 
+    def identities(self) -> Iterator["Identity"]:
+        for i in ly_array_iter(self.cdata.identities):
+            yield Identity(self.context, i)
+
+    def parsed_identities(self) -> Iterator["PIdentity"]:
+        for i in ly_array_iter(self.cdata.parsed.identities):
+            yield PIdentity(self.context, i, self)
+
     def __str__(self) -> str:
         return self.name()
 
@@ -415,13 +423,16 @@ class ExtensionParsed(Extension):
     def module(self) -> Module:
         return self._module_from_parsed()
 
-    def parent_node(self) -> Optional["PNode"]:
-        if not bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
-            return None
-        try:
-            return PNode.new(self.context, self.cdata.parent, self.module_parent)
-        except LibyangError:
-            return None
+    def parent_node(self) -> Optional[Union["PNode", "PIdentity"]]:
+        if self.cdata.parent_stmt == lib.LY_STMT_IDENTITY:
+            cdata = ffi.cast("struct lysp_ident *", self.cdata.parent)
+            return PIdentity(self.context, cdata, self.module_parent)
+        if bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
+            try:
+                return PNode.new(self.context, self.cdata.parent, self.module_parent)
+            except LibyangError:
+                return None
+        return None
 
 
 # -------------------------------------------------------------------------------------
@@ -440,13 +451,16 @@ class ExtensionCompiled(Extension):
             raise self.context.error("cannot get module")
         return Module(self.context, self.cdata_def.module)
 
-    def parent_node(self) -> Optional["SNode"]:
-        if not bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
-            return None
-        try:
-            return SNode.new(self.context, self.cdata.parent)
-        except LibyangError:
-            return None
+    def parent_node(self) -> Optional[Union["SNode", "Identity"]]:
+        if self.cdata.parent_stmt == lib.LY_STMT_IDENTITY:
+            cdata = ffi.cast("struct lysc_ident *", self.cdata.parent)
+            return Identity(self.context, cdata)
+        if bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
+            try:
+                return SNode.new(self.context, self.cdata.parent)
+            except LibyangError:
+                return None
+        return None
 
 
 # -------------------------------------------------------------------------------------
@@ -623,6 +637,13 @@ class Type:
             return None
         lr = ffi.cast("struct lysc_type_leafref *", self.cdata)
         return c2str(lib.lyxp_get_expr(lr.path))
+
+    def identity_bases(self) -> Iterator["Identity"]:
+        if self.cdata.basetype != lib.LY_TYPE_IDENT:
+            return
+        ident = ffi.cast("struct lysc_type_identityref *", self.cdata)
+        for b in ly_array_iter(ident.bases):
+            yield Identity(self.context, b)
 
     def typedef(self) -> "Typedef":
         if ":" in self.name():
@@ -865,6 +886,68 @@ class Typedef:
 
     def module(self) -> Module:
         return Module(self.context, self.cdata.module)
+
+    def __str__(self):
+        return self.name()
+
+
+# -------------------------------------------------------------------------------------
+class Identity:
+    __slots__ = ("context", "cdata")
+
+    def __init__(self, context: "libyang.Context", cdata):
+        self.context = context
+        self.cdata = cdata  # C type: "struct lysc_ident *"
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def module(self) -> Module:
+        return Module(self.context, self.cdata.module)
+
+    def derived(self) -> Iterator["Identity"]:
+        for i in ly_array_iter(self.cdata.derived):
+            yield Identity(self.context, i)
+
+    def extensions(self) -> Iterator[ExtensionCompiled]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionCompiled(self.context, ext)
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional[ExtensionCompiled]:
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
+        return None
+
+    def deprecated(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
+
+    def obsolete(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
+
+    def status(self) -> str:
+        if self.cdata.flags & lib.LYS_STATUS_OBSLT:
+            return "obsolete"
+        if self.cdata.flags & lib.LYS_STATUS_DEPRC:
+            return "deprecated"
+        return "current"
+
+    def __repr__(self):
+        cls = self.__class__
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
 
     def __str__(self):
         return self.name()
@@ -1888,6 +1971,57 @@ class PRefine:
     def extensions(self) -> Iterator["ExtensionParsed"]:
         for ext in ly_array_iter(self.cdata.exts):
             yield ExtensionParsed(self.context, ext, self.module)
+
+
+# -------------------------------------------------------------------------------------
+class PIdentity:
+    __slots__ = ("context", "cdata", "module")
+
+    def __init__(self, context: "libyang.Context", cdata, module: Module) -> None:
+        self.context = context
+        self.cdata = cdata  # C type: "struct lysp_ident *"
+        self.module = module
+
+    def name(self) -> str:
+        return c2str(self.cdata.name)
+
+    def if_features(self) -> Iterator[IfFeatureExpr]:
+        for f in ly_array_iter(self.cdata.iffeatures):
+            yield IfFeatureExpr(self.context, f, list(self.module.features()))
+
+    def bases(self) -> Iterator[str]:
+        for b in ly_array_iter(self.cdata.bases):
+            yield c2str(b)
+
+    def description(self) -> Optional[str]:
+        return c2str(self.cdata.dsc)
+
+    def reference(self) -> Optional[str]:
+        return c2str(self.cdata.ref)
+
+    def extensions(self) -> Iterator[ExtensionParsed]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module)
+
+    def deprecated(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
+
+    def obsolete(self) -> bool:
+        return bool(self.cdata.flags & lib.LYS_STATUS_OBSLT)
+
+    def status(self) -> str:
+        if self.cdata.flags & lib.LYS_STATUS_OBSLT:
+            return "obsolete"
+        if self.cdata.flags & lib.LYS_STATUS_DEPRC:
+            return "deprecated"
+        return "current"
+
+    def __repr__(self):
+        cls = self.__class__
+        return "<%s.%s: %s>" % (cls.__module__, cls.__name__, str(self))
+
+    def __str__(self):
+        return self.name()
 
 
 # -------------------------------------------------------------------------------------

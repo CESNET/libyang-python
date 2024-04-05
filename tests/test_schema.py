@@ -7,6 +7,7 @@ import unittest
 from libyang import (
     Context,
     Extension,
+    Identity,
     IfFeature,
     IfOrFeatures,
     IOType,
@@ -22,6 +23,7 @@ from libyang import (
     PChoice,
     PContainer,
     PGrouping,
+    PIdentity,
     PLeaf,
     PLeafList,
     PList,
@@ -854,3 +856,44 @@ class NotificationTest(unittest.TestCase):
         self.assertIsNone(next(pnode.typedefs(), None))
         self.assertIsNone(next(pnode.groupings(), None))
         self.assertIsNotNone(next(iter(pnode)))
+
+
+# -------------------------------------------------------------------------------------
+class IdentityTest(unittest.TestCase):
+    def setUp(self):
+        self.ctx = Context(YANG_DIR)
+        self.module = self.ctx.load_module("yolo-nodetypes")
+
+    def tearDown(self):
+        self.ctx.destroy()
+        self.ctx = None
+
+    def test_identity_compiled(self):
+        snode = next(self.module.identities(parsed=False))
+        self.assertIsInstance(snode, Identity)
+        self.assertEqual("<libyang.schema.Identity: base1>", repr(snode))
+        self.assertIsNone(snode.description())
+        self.assertIsNone(snode.reference())
+        self.assertIsInstance(snode.module(), Module)
+        derived = list(snode.derived())
+        self.assertEqual(2, len(derived))
+        for i in derived:
+            self.assertIsInstance(i, Identity)
+        self.assertIsNone(next(snode.extensions(), None))
+        self.assertIsNone(snode.get_extension("ext1"))
+        self.assertFalse(snode.deprecated())
+        self.assertFalse(snode.obsolete())
+        self.assertEqual("current", snode.status())
+
+    def test_identity_parsed(self):
+        pnode = next(self.module.identities(parsed=True))
+        self.assertIsInstance(pnode, PIdentity)
+        self.assertEqual("<libyang.schema.PIdentity: base1>", repr(pnode))
+        self.assertIsNone(next(pnode.if_features(), None))
+        self.assertIsNone(next(pnode.bases(), None))
+        self.assertIsNone(pnode.description())
+        self.assertIsNone(pnode.reference())
+        self.assertIsNone(next(pnode.extensions(), None))
+        self.assertFalse(pnode.deprecated())
+        self.assertFalse(pnode.obsolete())
+        self.assertEqual("current", pnode.status())

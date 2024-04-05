@@ -470,6 +470,16 @@ struct lysp_ext_instance {
     char rev[LY_REV_SIZE];
 };
 
+struct lysp_ident {
+    const char *name;
+    struct lysp_qname *iffeatures;
+    const char **bases;
+    const char *dsc;
+    const char *ref;
+    struct lysp_ext_instance *exts;
+    uint16_t flags;
+};
+
 struct lysp_feature {
     const char *name;
     struct lysp_qname *iffeatures;
@@ -937,6 +947,16 @@ struct lysp_restr {
     const char *dsc;
     const char *ref;
     struct lysp_ext_instance *exts;
+};
+
+struct lysc_ident {
+    const char *name;
+    const char *dsc;
+    const char *ref;
+    struct lys_module *module;
+    struct lysc_ident **derived;
+    struct lysc_ext_instance *exts;
+    uint16_t flags;
 };
 
 struct lysc_type_num {

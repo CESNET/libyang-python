@@ -112,4 +112,36 @@ module yolo-nodetypes {
   anydata any1 {
     when "../cont2";
   }
+
+  identity base1;
+  identity base2;
+
+  identity derived1 {
+    base base1;
+  }
+
+  identity derived2 {
+    base base1;
+  }
+
+  identity derived3 {
+    base derived1;
+  }
+
+  identity derived4 {
+    base base2;
+  }
+
+  leaf identity_ref1 {
+    type identityref {
+      base base1;
+    }
+  }
+
+  leaf identity_ref2 {
+    type identityref {
+      base base1;
+      base base2;
+    }
+  }
 }

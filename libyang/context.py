@@ -234,7 +234,6 @@ class Context:
         parent: Optional[DNode] = None,
         value: Any = None,
         update: bool = True,
-        no_parent_ret: bool = True,
         rpc_output: bool = False,
         force_return_value: bool = True,
     ) -> Optional[DNode]:
@@ -245,9 +244,7 @@ class Context:
                 value = str(value).lower()
             elif not isinstance(value, str):
                 value = str(value)
-        flags = path_flags(
-            update=update, no_parent_ret=no_parent_ret, rpc_output=rpc_output
-        )
+        flags = path_flags(update=update, rpc_output=rpc_output)
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_path(
             parent.cdata if parent else ffi.NULL,

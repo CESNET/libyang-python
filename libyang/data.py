@@ -77,9 +77,7 @@ def data_format(fmt_string: str) -> int:
 
 
 # -------------------------------------------------------------------------------------
-def path_flags(
-    update: bool = False, rpc_output: bool = False, no_parent_ret: bool = False
-) -> int:
+def path_flags(update: bool = False, rpc_output: bool = False) -> int:
     flags = 0
     if update:
         flags |= lib.LYD_NEW_PATH_UPDATE

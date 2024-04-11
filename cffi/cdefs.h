@@ -460,6 +460,17 @@ struct lysp_feature {
     uint16_t flags;
 };
 
+struct lysp_ident {
+    const char *name;
+    struct lysp_qname *iffeatures;
+    const char **bases;
+    const char *dsc;
+    const char *ref;
+    struct lysp_ext_instance *exts;
+    uint16_t flags;
+};
+
+LY_ERR lys_identity_iffeature_value(const struct lysc_ident *);
 LY_ERR lys_feature_value(const struct lys_module *, const char *);
 struct lysp_feature* lysp_feature_next(const struct lysp_feature *, const struct lysp_module *, uint32_t *);
 

@@ -63,10 +63,13 @@ from .diff import (
     UnitsRemoved,
     schema_diff,
 )
+from .extension import ExtensionPlugin, LibyangExtensionError
 from .keyed_list import KeyedList
 from .log import configure_logging
 from .schema import (
     Extension,
+    ExtensionCompiled,
+    ExtensionParsed,
     Feature,
     IfAndFeatures,
     IfFeature,
@@ -124,6 +127,9 @@ __all__ = (
     "EnumRemoved",
     "Extension",
     "ExtensionAdded",
+    "ExtensionCompiled",
+    "ExtensionParsed",
+    "ExtensionPlugin",
     "ExtensionRemoved",
     "Feature",
     "IfAndFeatures",

@@ -178,7 +178,7 @@ enum ly_stmt {
 int ly_log_options(int);
 
 LY_LOG_LEVEL ly_log_level(LY_LOG_LEVEL);
-extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *);
+extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *, const char *, uint64_t);
 void ly_set_log_clb(void (*)(LY_LOG_LEVEL, const char *, const char *, const char *, uint64_t));
 const struct ly_err_item *ly_err_first(const struct ly_ctx *);
 const struct ly_err_item *ly_err_last(const struct ly_ctx *);

@@ -1420,9 +1420,9 @@ class SLeafList(SNode):
                 yield None
             val = c2str(val)
             val_type = Type(self.context, dflt.realtype, None)
-            if val_type == Type.BOOL:
+            if val_type.base() == Type.BOOL:
                 yield val == "true"
-            elif val_type in Type.NUM_TYPES:
+            elif val_type.base() in Type.NUM_TYPES:
                 yield int(val)
             elif val_type.base() == Type.DEC64:
                 yield float(val)

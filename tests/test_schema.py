@@ -575,6 +575,12 @@ class LeafListTest(unittest.TestCase):
         leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/ratios"))
         for d in leaflist.defaults():
             self.assertIsInstance(d, float)
+        leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/bools"))
+        for d in leaflist.defaults():
+            self.assertIsInstance(d, bool)
+        leaflist = next(self.ctx.find_path("/yolo-nodetypes:conf/integers"))
+        for d in leaflist.defaults():
+            self.assertIsInstance(d, int)
 
     def test_leaf_list_min_max(self):
         leaflist1 = next(self.ctx.find_path("/yolo-nodetypes:conf/leaf-list1"))

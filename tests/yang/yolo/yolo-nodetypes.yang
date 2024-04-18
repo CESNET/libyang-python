@@ -44,6 +44,17 @@ module yolo-nodetypes {
       default 2.6;
     }
 
+    leaf-list bools {
+      type boolean;
+      default true;
+    }
+
+    leaf-list integers {
+      type uint32;
+      default 10;
+      default 20;
+    }
+
     list list1 {
       key leaf1;
       unique "leaf2 leaf3";

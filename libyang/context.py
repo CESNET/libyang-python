@@ -465,3 +465,13 @@ class Context:
         while mod:
             yield Module(self, mod)
             mod = lib.ly_ctx_get_module_iter(self.cdata, idx)
+
+    def add_to_dict(self, orig_str: str) -> Any:
+        cstr = ffi.new("char **")
+        ret = lib.lydict_insert(self.cdata, str2c(orig_str), 0, cstr)
+        if ret != lib.LY_SUCCESS:
+            raise LibyangError("Unable to insert string into context dictionary")
+        return cstr[0]
+
+    def remove_from_dict(self, orig_str: str) -> None:
+        lib.lydict_remove(self.cdata, str2c(orig_str))

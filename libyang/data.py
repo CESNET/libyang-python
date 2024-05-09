@@ -1147,6 +1147,8 @@ def dict_to_dnode(
     rpc: bool = False,
     rpcreply: bool = False,
     notification: bool = False,
+    store_only: bool = False,
+    ignore_none: bool = False,
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -1173,6 +1175,8 @@ def dict_to_dnode(
         Data represents RPC or action output parameters.
     :arg notification:
         Data represents notification parameters.
+    :arg ignore_none:
+        Whether to ignore None values in dict or not
     """
     if not dic:
         return None
@@ -1320,6 +1324,8 @@ def dict_to_dnode(
                 continue
 
             value = _dic[key]
+            if value is None and ignore_none:
+                continue
 
             if isinstance(s, SLeaf):
                 _create_leaf(_parent, module, name, value, in_rpc_output)

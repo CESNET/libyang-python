@@ -966,6 +966,23 @@ class DataTest(unittest.TestCase):
         self.assertIsInstance(sibling, DLeaf)
         self.assertEqual(sibling.cdata, dnode2.cdata)
 
+    def test_dnode_insert_sibling_before_after(self):
+        R1 = {"yolo-nodetypes:records": [{"id": "id1", "name": "name1"}]}
+        R2 = {"yolo-nodetypes:records": [{"id": "id2", "name": "name2"}]}
+        R3 = {"yolo-nodetypes:records": [{"id": "id3", "name": "name3"}]}
+        module = self.ctx.get_module("yolo-nodetypes")
+        dnode1 = dict_to_dnode(R1, module, None, validate=False)
+        dnode2 = dict_to_dnode(R2, module, None, validate=False)
+        dnode3 = dict_to_dnode(R3, module, None, validate=False)
+        self.assertEqual(dnode1.first_sibling().cdata, dnode1.cdata)
+        dnode1.insert_before(dnode2)
+        dnode1.insert_after(dnode3)
+        self.assertEqual(
+            [dnode2.cdata, dnode1.cdata, dnode3.cdata],
+            [s.cdata for s in dnode1.first_sibling().siblings()],
+        )
+        self.assertEqual(dnode1.first_sibling().cdata, dnode2.cdata)
+
     def _create_opaq_hostname(self):
         root = self.ctx.create_data_path(path="/yolo-system:conf")
         root.new_path(

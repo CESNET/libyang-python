@@ -415,6 +415,16 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot insert sibling")
 
+    def insert_after(self, node):
+        ret = lib.lyd_insert_after(self.cdata, node.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot insert sibling after")
+
+    def insert_before(self, node):
+        ret = lib.lyd_insert_before(self.cdata, node.cdata)
+        if ret != lib.LY_SUCCESS:
+            raise self.context.error("cannot insert sibling before")
+
     def name(self) -> str:
         return c2str(self.cdata.schema.name)
 

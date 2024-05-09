@@ -20,6 +20,7 @@ module yolo-nodetypes {
       type string;
       default "ASD";
     }
+    ordered-by user;
   }
 
   container conf {

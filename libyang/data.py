@@ -401,8 +401,13 @@ class DNode:
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot insert node")
 
-    def insert_sibling(self, node):
-        ret = lib.lyd_insert_sibling(self.cdata, node.cdata, ffi.NULL)
+    def insert_sibling(self, node, before: Optional[bool] = None):
+        if before is None:
+            ret = lib.lyd_insert_sibling(self.cdata, node.cdata, ffi.NULL)
+        elif before:
+            ret = lib.lyd_insert_before(self.cdata, node.cdata)
+        else:
+            ret = lib.lyd_insert_after(self.cdata, node.cdata)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot insert sibling")
 

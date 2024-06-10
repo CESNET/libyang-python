@@ -1647,6 +1647,8 @@ def iter_children(
         return False
 
     if ffi.typeof(parent) == ffi.typeof("struct lys_module *"):
+        if parent.compiled == ffi.NULL:
+            return
         module = parent.compiled
         parent = ffi.NULL
     else:

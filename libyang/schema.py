@@ -1382,7 +1382,7 @@ class SLeafList(SNode):
             else:
                 yield val
 
-    def max_elements(self) -> int:
+    def max_elements(self) -> Optional[int]:
         return (
             self.cdata_leaflist.max
             if self.cdata_leaflist.max != (2**32 - 1)
@@ -1506,7 +1506,7 @@ class SList(SNode):
                 nodes.append(SNode.new(self.context, node))
             yield nodes
 
-    def max_elements(self) -> int:
+    def max_elements(self) -> Optional[int]:
         return self.cdata_list.max if self.cdata_list.max != (2**32 - 1) else None
 
     def min_elements(self) -> int:

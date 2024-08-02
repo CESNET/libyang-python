@@ -16,6 +16,7 @@ from .util import (
     str2c,
 )
 
+
 # -------------------------------------------------------------------------------------
 def schema_in_format(fmt_string: str) -> int:
     if fmt_string == "yang":

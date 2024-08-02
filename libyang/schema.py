@@ -300,7 +300,7 @@ class Import:
 
     def __init__(self, context: "libyang.Context", cdata, module):
         self.context = context
-        self.cdata = cdata  # C type: "struct lysp_revision *"
+        self.cdata = cdata  # C type: "struct lysp_import *"
         self.module = module
 
     def name(self) -> str:

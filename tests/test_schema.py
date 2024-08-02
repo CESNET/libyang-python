@@ -383,7 +383,7 @@ class ListTest(unittest.TestCase):
     PATH = {
         "LOG": "/yolo-system:conf/url",
         "DATA": "/yolo-system:conf/url",
-        "DATA_PATTERN": "/yolo-system:conf/url[host='%s'][proto='%s']",
+        "DATA_PATTERN": "/yolo-system:conf/url[proto='%s'][host='%s']",
     }
 
     def setUp(self):

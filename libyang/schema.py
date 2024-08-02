@@ -1414,15 +1414,12 @@ class SLeafList(SNode):
     def defaults(self) -> Iterator[Union[None, bool, int, str, float]]:
         if self.cdata_leaflist.dflts == ffi.NULL:
             return
-        arr_length = ffi.cast("uint64_t *", self.cdata_leaflist.dflts)[-1]
-        for i in range(arr_length):
-            val = lib.lyd_value_get_canonical(
-                self.context.cdata, self.cdata_leaflist.dflts[i]
-            )
+        for dflt in ly_array_iter(self.cdata_leaflist.dflts):
+            val = lib.lyd_value_get_canonical(self.context.cdata, dflt)
             if not val:
                 yield None
             val = c2str(val)
-            val_type = Type(self.context, self.cdata_leaflist.dflts[i].realtype, None)
+            val_type = Type(self.context, dflt.realtype, None)
             if val_type == Type.BOOL:
                 yield val == "true"
             elif val_type in Type.NUM_TYPES:

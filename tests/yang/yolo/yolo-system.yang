@@ -83,6 +83,7 @@ module yolo-system {
         type types:protocol {
           ext:type-desc "<protocol>";
         }
+        ext:parse-validation;
       }
       leaf host {
         type string {
@@ -114,6 +115,7 @@ module yolo-system {
             type string;
           }
         }
+        ext:compile-validation;
       }
     }
 

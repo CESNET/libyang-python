@@ -19,6 +19,13 @@ LOG_LEVELS = {
 }
 
 
+def get_libyang_level(py_level):
+    for ly_lvl, py_lvl in LOG_LEVELS.items():
+        if py_lvl == py_level:
+            return ly_lvl
+    return None
+
+
 @ffi.def_extern(name="lypy_log_cb")
 def libyang_c_logging_callback(level, msg, data_path, schema_path, line):
     args = [c2str(msg)]
@@ -50,10 +57,9 @@ def configure_logging(enable_py_logger: bool, level: int = logging.ERROR) -> Non
     :arg level:
         Python logging level. By default only ERROR messages are stored/logged.
     """
-    for ly_lvl, py_lvl in LOG_LEVELS.items():
-        if py_lvl == level:
-            lib.ly_log_level(ly_lvl)
-            break
+    ly_level = get_libyang_level(level)
+    if ly_level is not None:
+        lib.ly_log_level(ly_level)
     if enable_py_logger:
         lib.ly_log_options(lib.LY_LOLOG | lib.LY_LOSTORE)
         lib.ly_set_log_clb(lib.lypy_log_cb)

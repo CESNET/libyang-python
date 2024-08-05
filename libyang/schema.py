@@ -372,7 +372,7 @@ class Import:
 class Extension:
     __slots__ = ("context", "cdata", "__dict__")
 
-    def __init__(self, context: "libyang.Context", cdata, module_parent: Module = None):
+    def __init__(self, context: "libyang.Context", cdata):
         self.context = context
         self.cdata = cdata
 
@@ -400,6 +400,8 @@ class ExtensionParsed(Extension):
 
     def _module_from_parsed(self) -> Module:
         prefix = c2str(self.cdata.name).split(":")[0]
+        if self.module_parent is None:
+            raise self.context.error("cannot get module")
         for cdata_imp_mod in ly_array_iter(self.module_parent.cdata.parsed.imports):
             if ffi.string(cdata_imp_mod.prefix).decode() == prefix:
                 return Module(self.context, cdata_imp_mod.module)
@@ -410,6 +412,14 @@ class ExtensionParsed(Extension):
 
     def module(self) -> Module:
         return self._module_from_parsed()
+
+    def parent_node(self) -> Optional["PNode"]:
+        if not bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
+            return None
+        try:
+            return PNode.new(self.context, self.cdata.parent, self.module())
+        except LibyangError:
+            return None
 
 
 # -------------------------------------------------------------------------------------
@@ -427,6 +437,14 @@ class ExtensionCompiled(Extension):
         if not self.cdata_def.module:
             raise self.context.error("cannot get module")
         return Module(self.context, self.cdata_def.module)
+
+    def parent_node(self) -> Optional["SNode"]:
+        if not bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
+            return None
+        try:
+            return SNode.new(self.context, self.cdata.parent)
+        except LibyangError:
+            return None
 
 
 # -------------------------------------------------------------------------------------

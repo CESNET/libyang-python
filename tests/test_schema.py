@@ -7,6 +7,7 @@ import unittest
 from libyang import (
     Context,
     Extension,
+    ExtensionParsed,
     IfFeature,
     IfOrFeatures,
     IOType,
@@ -496,6 +497,11 @@ class RpcTest(unittest.TestCase):
         self.assertEqual(len(ext), 1)
         ext = self.rpc.get_extension("require-admin", prefix="omg-extensions")
         self.assertIsInstance(ext, Extension)
+        self.assertIsInstance(ext.parent_node(), SRpc)
+        parsed = self.rpc.parsed()
+        ext = parsed.get_extension("require-admin", prefix="omg-extensions")
+        self.assertIsInstance(ext, ExtensionParsed)
+        self.assertIsInstance(ext.parent_node(), PAction)
 
     def test_rpc_params(self):
         leaf = next(self.rpc.children())
@@ -609,6 +615,7 @@ class LeafTypeTest(unittest.TestCase):
             "type-desc", prefix="omg-extensions", arg_value="<protocol>"
         )
         self.assertIsInstance(ext, Extension)
+        self.assertIsNone(ext.parent_node())
 
     def test_leaf_type_enum(self):
         leaf = next(

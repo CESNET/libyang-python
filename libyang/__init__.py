@@ -67,6 +67,7 @@ from .keyed_list import KeyedList
 from .log import configure_logging
 from .schema import (
     Extension,
+    ExtensionParsed,
     Feature,
     IfAndFeatures,
     IfFeature,

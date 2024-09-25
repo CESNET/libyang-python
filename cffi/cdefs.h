@@ -437,6 +437,7 @@ struct lysp_ext_instance {
     struct lysp_ext_substmt *substmts;
     void *parsed;
     struct lysp_stmt *child;
+    struct lysp_ext_instance *exts;
 };
 
  struct lysp_import {

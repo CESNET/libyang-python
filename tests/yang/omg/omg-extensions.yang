@@ -18,4 +18,14 @@ module omg-extensions {
       "Extend a type to add a desc.";
     argument name;
   }
+
+  extension parse-validation {
+    description
+      "Example of parse-validation extension which should be put only under leaf nodes.";
+  }
+
+  extension compile-validation {
+    description
+      "Example of compile-validation extension which should be put only under leaf nodes.";
+  }
 }

@@ -1112,3 +1112,22 @@ class DataTest(unittest.TestCase):
         self.assertIsInstance(dnode, DLeaf)
         self.assertEqual(dnode.value(), "test")
         dnode.free()
+
+    def test_merge_store_only(self):
+        MAIN = {"yolo-nodetypes:test1": 50}
+        module = self.ctx.load_module("yolo-nodetypes")
+        dnode = module.parse_data_dict(MAIN, validate=False, store_only=True)
+        self.assertIsInstance(dnode, DLeaf)
+        self.assertEqual(dnode.value(), 50)
+        dnode.free()
+
+    def test_merge_builtin_plugins_only(self):
+        MAIN = {"yolo-nodetypes:ip-address": "test"}
+        self.tearDown()
+        gc.collect()
+        self.ctx = Context(YANG_DIR, builtin_plugins_only=True)
+        module = self.ctx.load_module("yolo-nodetypes")
+        dnode = module.parse_data_dict(MAIN, validate=False, store_only=True)
+        self.assertIsInstance(dnode, DLeaf)
+        self.assertEqual(dnode.value(), "test")
+        dnode.free()

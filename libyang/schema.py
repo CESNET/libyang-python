@@ -241,6 +241,7 @@ class Module:
         rpc: bool = False,
         rpcreply: bool = False,
         notification: bool = False,
+        store_only: bool = False,
     ) -> "libyang.data.DNode":
         """
         Convert a python dictionary to a DNode object following the schema of this
@@ -276,6 +277,7 @@ class Module:
             rpc=rpc,
             rpcreply=rpcreply,
             notification=notification,
+            store_only=store_only,
         )
 
 

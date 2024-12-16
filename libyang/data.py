@@ -116,6 +116,7 @@ def parser_flags(
     ordered: bool = False,
     strict: bool = False,
     store_only: bool = False,
+    json_null: bool = False,
 ) -> int:
     flags = 0
     if lyb_mod_update:
@@ -132,6 +133,8 @@ def parser_flags(
         flags |= lib.LYD_PARSE_STRICT
     if store_only:
         flags |= lib.LYD_PARSE_STORE_ONLY
+    if json_null:
+        flags |= lib.LYD_PARSE_JSON_NULL
     return flags
 
 

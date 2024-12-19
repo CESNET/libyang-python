@@ -434,6 +434,10 @@ class ExtensionParsed(Extension):
                 return None
         return None
 
+    def extensions(self) -> Iterator["ExtensionParsed"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionParsed(self.context, ext, self.module_parent)
+
 
 # -------------------------------------------------------------------------------------
 class ExtensionCompiled(Extension):
@@ -461,6 +465,10 @@ class ExtensionCompiled(Extension):
             except LibyangError:
                 return None
         return None
+
+    def extensions(self) -> Iterator["ExtensionCompiled"]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionCompiled(self.context, ext)
 
 
 # -------------------------------------------------------------------------------------

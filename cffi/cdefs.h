@@ -1308,7 +1308,7 @@ struct lyd_leafref_links_rec {
     const struct lyd_node_term **target_nodes;
 };
 
-LY_ERR lyd_leafref_get_links(const struct lyd_node_term *e, const struct lyd_leafref_links_rec **);
+LY_ERR lyd_leafref_get_links(const struct lyd_node_term *, const struct lyd_leafref_links_rec **);
 LY_ERR lyd_leafref_link_node_tree(struct lyd_node *);
 const char *lyplg_ext_stmt2str(enum ly_stmt stmt);
 const struct lysp_module *lyplg_ext_parse_get_cur_pmod(const struct lysp_ctx *);

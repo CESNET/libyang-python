@@ -7,6 +7,7 @@ import unittest
 from libyang import (
     Context,
     Extension,
+    ExtensionCompiled,
     ExtensionParsed,
     Identity,
     IfFeature,
@@ -498,12 +499,14 @@ class RpcTest(unittest.TestCase):
         ext = list(self.rpc.extensions())
         self.assertEqual(len(ext), 1)
         ext = self.rpc.get_extension("require-admin", prefix="omg-extensions")
-        self.assertIsInstance(ext, Extension)
+        self.assertIsInstance(ext, ExtensionCompiled)
         self.assertIsInstance(ext.parent_node(), SRpc)
+        self.assertIsNone(next(ext.extensions(), None))
         parsed = self.rpc.parsed()
         ext = parsed.get_extension("require-admin", prefix="omg-extensions")
         self.assertIsInstance(ext, ExtensionParsed)
         self.assertIsInstance(ext.parent_node(), PAction)
+        self.assertIsNone(next(ext.extensions(), None))
 
     def test_rpc_params(self):
         leaf = next(self.rpc.children())

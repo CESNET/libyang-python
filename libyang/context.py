@@ -325,7 +325,9 @@ class Context:
 
         mod = ffi.new("struct lys_module **")
         fmt = schema_in_format(fmt)
-        if lib.lys_parse(self.cdata, data[0], fmt, feat, mod) != lib.LY_SUCCESS:
+        ret = lib.lys_parse(self.cdata, data[0], fmt, feat, mod)
+        lib.ly_in_free(data[0], 0)
+        if ret != lib.LY_SUCCESS:
             raise self.error("failed to parse module")
 
         return Module(self, mod[0])
@@ -489,6 +491,7 @@ class Context:
             par[0] = parent.cdata
 
         ret = lib.lyd_parse_op(self.cdata, par[0], data[0], fmt, dtype, tree, op)
+        lib.ly_in_free(data[0], 0)
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to parse input data")
 

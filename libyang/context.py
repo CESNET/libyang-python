@@ -259,6 +259,10 @@ class Context:
             raise self.error("cannot create context")
         self.external_module_loader = ContextExternalModuleLoader(self.cdata)
 
+
+    def __del__(self):
+        self.destroy()
+
     def compile_schema(self):
         ret = lib.ly_ctx_compile(self.cdata)
         if ret != lib.LY_SUCCESS:
@@ -269,7 +273,11 @@ class Context:
         ret = lib.ly_ctx_get_yanglib_data(self.cdata, dnode, str2c(content_id_format))
         if ret != lib.LY_SUCCESS:
             raise self.error("cannot get yanglib data")
-        return DNode.new(self, dnode[0])
+        # The refcnt_parent parameter here is Context rather than all other cases
+        # where it is DNode.  Its not entirely clear how else to do it, pretty
+        # sure this returns internal memory that can't be passed to
+        # lyd_free_all() or lyd_free_tree() though docs on this aren't great.
+        return DNode.new(self, dnode[0], self)
 
     def destroy(self):
         if self.cdata is not None:
@@ -466,7 +474,7 @@ class Context:
         if not dnode:
             raise self.error("cannot find created path")
 
-        return DNode.new(self, dnode)
+        return DNode.new(self, dnode, parent)
 
     def parse_op(
         self,
@@ -495,7 +503,7 @@ class Context:
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to parse input data")
 
-        return DNode.new(self, op[0])
+        return DNode.new(self, op[0], parent)
 
     def parse_op_mem(
         self,
@@ -578,7 +586,7 @@ class Context:
         dnode = dnode[0]
         if dnode == ffi.NULL:
             return None
-        return DNode.new(self, dnode)
+        return DNode.new(self, dnode, parent)
 
     def parse_data_mem(
         self,

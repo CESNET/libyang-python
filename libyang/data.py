@@ -279,17 +279,44 @@ class DNode:
 
     __slots__ = ("context", "cdata", "attributes", "free_func", "__dict__")
 
-    def __init__(self, context: "libyang.Context", cdata):
+    def __init__(self, context: "libyang.Context", cdata, refcnt_parent):
         """
         :arg context:
             The libyang.Context python object.
         :arg cdata:
             The pointer to the C structure allocated by libyang.so.
+        :arg refcnt_parent:
+            New nodes may be created with internal references to the internal
+            cdata tree.  By holding a reference to the parent node that created
+            us, we can force Python to keep proper reference counts so the
+            destructor doesn't get called.  The only time this may be set to
+            None is if we can guarantee we are the initial creator of the
+            cdata object.
         """
         self.context = context
         self.cdata = cdata  # C type: "struct lyd_node *"
         self.attributes = None
         self.free_func = None  # type: Callable[DNode]
+        self.refcnt_parent = refcnt_parent
+
+    def __del__(self):
+        # Don't auto-destroy the node unless we know we're allowed.  We can
+        # determine this if refcnt_parent is set or not.  If we have a parent
+        # they own the registered cdata.
+        # Functions that may create a DNode without a parent:
+        #   * Context.create_data_path() if parent is None
+        #   * Context.parse_op{_mem}() if parent is None
+        #   * Context.parse_data{_mem,_file}() if parent is None
+        #   * DNode.diff()
+        #   * DNode.duplicate() if parent is None
+        #   * dict_to_dnode() if parent is None
+        #   * DNode.merge_data_dict()
+        #   * DNode.iter_tree()
+        #   * DNode.leafref_nodes()
+        # Functions that might unset the refcnt_parent:
+        #   * DNode.merge{_module}()
+        if not self.refcnt_parent:
+            self.free()
 
     def meta(self):
         ret = {}
@@ -452,17 +479,17 @@ class DNode:
     def parent(self) -> Optional["DNode"]:
         if not self.cdata.parent:
             return None
-        return self.new(self.context, self.cdata.parent)
+        return self.new(self.context, self.cdata.parent, self)
 
     def next(self) -> Optional["DNode"]:
         if not self.cdata.next:
             return None
-        return self.new(self.context, self.cdata.next)
+        return self.new(self.context, self.cdata.next, self)
 
     def prev(self) -> Optional["DNode"]:
         if not self.cdata.prev:
             return None
-        return self.new(self.context, self.cdata.prev)
+        return self.new(self.context, self.cdata.prev, self)
 
     def root(self) -> "DNode":
         node = self
@@ -474,7 +501,7 @@ class DNode:
         n = lib.lyd_first_sibling(self.cdata)
         if n == self.cdata:
             return self
-        return self.new(self.context, n)
+        return self.new(self.context, n, self)
 
     def siblings(self, include_self: bool = True) -> Iterator["DNode"]:
         n = lib.lyd_first_sibling(self.cdata)
@@ -483,14 +510,14 @@ class DNode:
                 if include_self:
                     yield self
             else:
-                yield self.new(self.context, n)
+                yield self.new(self.context, n, self)
             n = n.next
 
     def find_path(self, path: str, output: bool = False):
         node = ffi.new("struct lyd_node **")
         ret = lib.lyd_find_path(self.cdata, str2c(path), output, node)
         if ret == lib.LY_SUCCESS:
-            return DNode.new(self.context, node[0])
+            return DNode.new(self.context, node[0], self)
         return None
 
     def find_one(self, xpath: str) -> Optional["DNode"]:
@@ -508,7 +535,7 @@ class DNode:
         node_set = node_set[0]
         try:
             for i in range(node_set.count):
-                n = DNode.new(self.context, node_set.dnodes[i])
+                n = DNode.new(self.context, node_set.dnodes[i], self)
                 yield n
         finally:
             lib.ly_set_free(node_set, ffi.NULL)
@@ -593,7 +620,8 @@ class DNode:
         if node_p[0] == ffi.NULL:
             return None
 
-        return self.new(self.context, node_p[0])
+        # New allocation, refcnt_parent is None
+        return self.new(self.context, node_p[0], None)
 
     def diff_apply(self, diff_node: "DNode") -> None:
         node_p = ffi.new("struct lyd_node **")
@@ -630,7 +658,7 @@ class DNode:
         else:
             lib.lyd_dup_single(self.cdata, parent, flags, node)
 
-        return DNode.new(self.context, node[0])
+        return DNode.new(self.context, node[0], parent)
 
     def merge_module(
         self,
@@ -647,6 +675,10 @@ class DNode:
         )
         if ret != lib.LY_SUCCESS:
             raise self.context.error("merge failed")
+
+        if destruct:
+            source.cdata = None
+            source.refcnt_parent = None
 
     def merge(
         self,
@@ -669,10 +701,14 @@ class DNode:
 
         self.cdata = node_p[0]
 
+        if destruct:
+            source.cdata = None
+            source.refcnt_parent = None
+
     def iter_tree(self) -> Iterator["DNode"]:
         n = next_n = self.cdata
         while n != ffi.NULL:
-            yield self.new(self.context, n)
+            yield self.new(self.context, n, self)
 
             next_n = lib.lyd_child(n)
             if next_n == ffi.NULL:
@@ -996,13 +1032,14 @@ class DNode:
             lib.lyd_free_tree(self.cdata)
 
     def free(self, with_siblings: bool = True) -> None:
-        try:
-            if self.free_func:
-                self.free_func(self)  # pylint: disable=not-callable
-            else:
-                self.free_internal(with_siblings)
-        finally:
-            self.cdata = ffi.NULL
+        if self.cdata is not None:
+            try:
+                if self.free_func:
+                    self.free_func(self)  # pylint: disable=not-callable
+                else:
+                    self.free_internal(with_siblings)
+            finally:
+                self.cdata = None
 
     def leafref_link_node_tree(self) -> None:
         """
@@ -1024,7 +1061,7 @@ class DNode:
         if lib.lyd_leafref_get_links(term_node, out) != lib.LY_SUCCESS:
             return
         for n in ly_array_iter(out[0].leafref_nodes):
-            yield DNode.new(self.context, n)
+            yield DNode.new(self.context, n, self)
 
     def __repr__(self):
         cls = self.__class__
@@ -1045,7 +1082,7 @@ class DNode:
         return _decorator
 
     @classmethod
-    def new(cls, context: "libyang.Context", cdata) -> "DNode":
+    def new(cls, context: "libyang.Context", cdata, refcnt_parent) -> "DNode":
         cdata = ffi.cast("struct lyd_node *", cdata)
         if not cdata.schema:
             schemas = list(context.find_path(cls._get_path(cdata)))
@@ -1056,7 +1093,7 @@ class DNode:
             nodecls = cls.NODETYPE_CLASS.get(cdata.schema.nodetype, None)
         if nodecls is None:
             raise TypeError("node type %s not implemented" % cdata.schema.nodetype)
-        return nodecls(context, cdata)
+        return nodecls(context, cdata, refcnt_parent)
 
     @staticmethod
     def _get_path(cdata) -> str:
@@ -1089,7 +1126,7 @@ class DContainer(DNode):
 
         while child:
             if child.schema != ffi.NULL:
-                yield DNode.new(self.context, child)
+                yield DNode.new(self.context, child, self)
             child = child.next
 
     def __iter__(self):
@@ -1236,7 +1273,7 @@ def dict_to_dnode(
 
     created = []
 
-    def _create_leaf(_parent, module, name, value, in_rpc_output=False):
+    def _create_leaf(_parent_cdata, module, name, value, in_rpc_output=False):
         if value is not None:
             if isinstance(value, bool):
                 value = str(value).lower()
@@ -1246,7 +1283,7 @@ def dict_to_dnode(
         n = ffi.new("struct lyd_node **")
         flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
         ret = lib.lyd_new_term(
-            _parent,
+            _parent_cdata,
             module.cdata,
             str2c(name),
             str2c(value),
@@ -1255,8 +1292,8 @@ def dict_to_dnode(
         )
 
         if ret != lib.LY_SUCCESS:
-            if _parent:
-                parent_path = repr(DNode.new(module.context, _parent).path())
+            if _parent_cdata:
+                parent_path = repr(DNode.new(module.context, _parent_cdata, parent).path())
             else:
                 parent_path = "module %r" % module.name()
             raise module.context.error(
@@ -1264,12 +1301,12 @@ def dict_to_dnode(
             )
         created.append(n[0])
 
-    def _create_container(_parent, module, name, in_rpc_output=False):
+    def _create_container(_parent_cdata, module, name, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
-        ret = lib.lyd_new_inner(_parent, module.cdata, str2c(name), in_rpc_output, n)
+        ret = lib.lyd_new_inner(_parent_cdata, module.cdata, str2c(name), in_rpc_output, n)
         if ret != lib.LY_SUCCESS:
-            if _parent:
-                parent_path = repr(DNode.new(module.context, _parent).path())
+            if _parent_cdata:
+                parent_path = repr(DNode.new(module.context, _parent_cdata, parent).path())
             else:
                 parent_path = "module %r" % module.name()
             raise module.context.error(
@@ -1280,11 +1317,11 @@ def dict_to_dnode(
         created.append(n[0])
         return n[0]
 
-    def _create_list(_parent, module, name, key_values, in_rpc_output=False):
+    def _create_list(_parent_cdata, module, name, key_values, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
         flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
         ret = lib.lyd_new_list(
-            _parent,
+            _parent_cdata,
             module.cdata,
             str2c(name),
             flags,
@@ -1292,8 +1329,8 @@ def dict_to_dnode(
             *[str2c(str(i)) for i in key_values],
         )
         if ret != lib.LY_SUCCESS:
-            if _parent:
-                parent_path = repr(DNode.new(module.context, _parent).path())
+            if _parent_cdata:
+                parent_path = repr(DNode.new(module.context, _parent_cdata, parent).path())
             else:
                 parent_path = "module %r" % module.name()
             raise module.context.error(
@@ -1349,7 +1386,7 @@ def dict_to_dnode(
             return keys
         return _dic.keys()
 
-    def _to_dnode(_dic, _schema, _parent=ffi.NULL, in_rpc_output=False):
+    def _to_dnode(_dic, _schema, _parent_cdata=ffi.NULL, in_rpc_output=False):
         for key in _dic_keys(_dic, _schema):
             if ":" in key:
                 prefix, name = key.split(":")
@@ -1372,7 +1409,7 @@ def dict_to_dnode(
             value = _dic[key]
 
             if isinstance(s, SLeaf):
-                _create_leaf(_parent, module, name, value, in_rpc_output)
+                _create_leaf(_parent_cdata, module, name, value, in_rpc_output)
 
             elif isinstance(s, SLeafList):
                 if not isinstance(value, (list, tuple)):
@@ -1381,14 +1418,14 @@ def dict_to_dnode(
                         % (s.schema_path(), value)
                     )
                 for v in value:
-                    _create_leaf(_parent, module, name, v, in_rpc_output)
+                    _create_leaf(_parent_cdata, module, name, v, in_rpc_output)
 
             elif isinstance(s, SRpc):
-                n = _create_container(_parent, module, name, in_rpc_output)
+                n = _create_container(_parent_cdata, module, name, in_rpc_output)
                 _to_dnode(value, s, n, rpcreply)
 
             elif isinstance(s, SContainer):
-                n = _create_container(_parent, module, name, in_rpc_output)
+                n = _create_container(_parent_cdata, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
 
             elif isinstance(s, SList):
@@ -1413,31 +1450,31 @@ def dict_to_dnode(
                         except KeyError as e:
                             raise ValueError("Missing key %s in the list" % (k)) from e
 
-                    n = _create_list(_parent, module, name, key_values, in_rpc_output)
+                    n = _create_list(_parent_cdata, module, name, key_values, in_rpc_output)
                     _to_dnode(val, s, n, in_rpc_output)
 
             elif isinstance(s, SNotif):
-                n = _create_container(_parent, module, name, in_rpc_output)
+                n = _create_container(_parent_cdata, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
 
     result = None
 
     try:
         if parent is not None:
-            _parent = parent.cdata
+            _parent_cdata = parent.cdata
             _schema_parent = parent.schema()
         else:
-            _parent = ffi.NULL
+            _parent_cdata = ffi.NULL
             _schema_parent = module
 
         _to_dnode(
             dic,
             _schema_parent,
-            _parent,
+            _parent_cdata,
             in_rpc_output=rpcreply and isinstance(parent, DRpc),
         )
         if created:
-            result = DNode.new(module.context, created[0])
+            result = DNode.new(module.context, created[0], parent)
             if validate:
                 result.root().validate(
                     no_state=no_state,

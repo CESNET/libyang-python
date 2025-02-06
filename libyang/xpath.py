@@ -85,7 +85,7 @@ def xpath_split(xpath: str) -> Iterator[Tuple[str, str, List[Tuple[str, str]]]]:
 
 # -------------------------------------------------------------------------------------
 def _xpath_keys_to_key_name(
-    keys: List[Tuple[str, str]]
+    keys: List[Tuple[str, str]],
 ) -> Optional[Union[str, Tuple[str, ...]]]:
     """
     Extract key name from parsed xpath keys returned by xpath_split. The return value

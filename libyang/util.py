@@ -121,4 +121,6 @@ def data_load(in_type, in_data, data, data_keepalive, encode=True):
         c_str = str2c(in_data, encode=encode)
         data_keepalive.append(c_str)
         ret = lib.ly_in_new_memory(c_str, data)
+    else:
+        raise ValueError("invalid input")
     return ret

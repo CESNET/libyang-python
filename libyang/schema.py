@@ -1542,9 +1542,7 @@ class SLeafList(SNode):
 
     def max_elements(self) -> Optional[int]:
         return (
-            self.cdata_leaflist.max
-            if self.cdata_leaflist.max != (2**32 - 1)
-            else None
+            self.cdata_leaflist.max if self.cdata_leaflist.max != (2**32 - 1) else None
         )
 
     def min_elements(self) -> int:

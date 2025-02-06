@@ -1273,7 +1273,7 @@ def dict_to_dnode(
 
     created = []
 
-    def _create_leaf(_parent_cdata, module, name, value, in_rpc_output=False):
+    def _create_leaf(refcnt_parent, _parent_cdata, module, name, value, in_rpc_output=False):
         if value is not None:
             if isinstance(value, bool):
                 value = str(value).lower()
@@ -1293,7 +1293,7 @@ def dict_to_dnode(
 
         if ret != lib.LY_SUCCESS:
             if _parent_cdata:
-                parent_path = repr(DNode.new(module.context, _parent_cdata, parent).path())
+                parent_path = repr(DNode.new(module.context, _parent_cdata, refcnt_parent).path())
             else:
                 parent_path = "module %r" % module.name()
             raise module.context.error(
@@ -1301,12 +1301,12 @@ def dict_to_dnode(
             )
         created.append(n[0])
 
-    def _create_container(_parent_cdata, module, name, in_rpc_output=False):
+    def _create_container(refcnt_parent, _parent_cdata, module, name, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
         ret = lib.lyd_new_inner(_parent_cdata, module.cdata, str2c(name), in_rpc_output, n)
         if ret != lib.LY_SUCCESS:
             if _parent_cdata:
-                parent_path = repr(DNode.new(module.context, _parent_cdata, parent).path())
+                parent_path = repr(DNode.new(module.context, _parent_cdata, refcnt_parent).path())
             else:
                 parent_path = "module %r" % module.name()
             raise module.context.error(
@@ -1317,7 +1317,7 @@ def dict_to_dnode(
         created.append(n[0])
         return n[0]
 
-    def _create_list(_parent_cdata, module, name, key_values, in_rpc_output=False):
+    def _create_list(refcnt_parent, _parent_cdata, module, name, key_values, in_rpc_output=False):
         n = ffi.new("struct lyd_node **")
         flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
         ret = lib.lyd_new_list(
@@ -1330,7 +1330,7 @@ def dict_to_dnode(
         )
         if ret != lib.LY_SUCCESS:
             if _parent_cdata:
-                parent_path = repr(DNode.new(module.context, _parent_cdata, parent).path())
+                parent_path = repr(DNode.new(module.context, _parent_cdata, refcnt_parent).path())
             else:
                 parent_path = "module %r" % module.name()
             raise module.context.error(
@@ -1386,7 +1386,7 @@ def dict_to_dnode(
             return keys
         return _dic.keys()
 
-    def _to_dnode(_dic, _schema, _parent_cdata=ffi.NULL, in_rpc_output=False):
+    def _to_dnode(refcnt_parent, _dic, _schema, _parent_cdata=ffi.NULL, in_rpc_output=False):
         for key in _dic_keys(_dic, _schema):
             if ":" in key:
                 prefix, name = key.split(":")
@@ -1409,7 +1409,7 @@ def dict_to_dnode(
             value = _dic[key]
 
             if isinstance(s, SLeaf):
-                _create_leaf(_parent_cdata, module, name, value, in_rpc_output)
+                _create_leaf(refcnt_parent, _parent_cdata, module, name, value, in_rpc_output)
 
             elif isinstance(s, SLeafList):
                 if not isinstance(value, (list, tuple)):
@@ -1418,14 +1418,14 @@ def dict_to_dnode(
                         % (s.schema_path(), value)
                     )
                 for v in value:
-                    _create_leaf(_parent_cdata, module, name, v, in_rpc_output)
+                    _create_leaf(refcnt_parent, _parent_cdata, module, name, v, in_rpc_output)
 
             elif isinstance(s, SRpc):
-                n = _create_container(_parent_cdata, module, name, in_rpc_output)
+                n = _create_container(refcnt_parent, _parent_cdata, module, name, in_rpc_output)
                 _to_dnode(value, s, n, rpcreply)
 
             elif isinstance(s, SContainer):
-                n = _create_container(_parent_cdata, module, name, in_rpc_output)
+                n = _create_container(refcnt_parent, _parent_cdata, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
 
             elif isinstance(s, SList):
@@ -1450,11 +1450,11 @@ def dict_to_dnode(
                         except KeyError as e:
                             raise ValueError("Missing key %s in the list" % (k)) from e
 
-                    n = _create_list(_parent_cdata, module, name, key_values, in_rpc_output)
+                    n = _create_list(refcnt_parent, _parent_cdata, module, name, key_values, in_rpc_output)
                     _to_dnode(val, s, n, in_rpc_output)
 
             elif isinstance(s, SNotif):
-                n = _create_container(_parent_cdata, module, name, in_rpc_output)
+                n = _create_container(refcnt_parent, _parent_cdata, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
 
     result = None
@@ -1468,6 +1468,7 @@ def dict_to_dnode(
             _schema_parent = module
 
         _to_dnode(
+            parent,
             dic,
             _schema_parent,
             _parent_cdata,

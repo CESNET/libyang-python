@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
-from typing import IO, Any, Callable, Iterator, Optional, Sequence, Tuple, Union
+from typing import IO, Any, Callable, Iterator, List, Optional, Sequence, Tuple, Union
 
 from _libyang import ffi, lib
 from .data import (
@@ -660,6 +660,114 @@ class Context:
             json_null=json_null,
             json_string_datatypes=json_string_datatypes,
         )
+
+    def find_leafref_path_target_paths(self, leafref_path: str) -> List[str]:
+        """
+        Fetch all leafref targets of the specified path
+
+        This is an enhanced version of lysc_node_lref_target() which will return
+        a set of leafref target paths retrieved from the specified schema path.
+        While lysc_node_lref_target() will only work on nodetype of LYS_LEAF and
+        LYS_LEAFLIST this function will also evaluate other datatypes that may
+        contain leafrefs such as LYS_UNION.  This does not, however, search for
+        children with leafref targets.
+
+        :arg self
+            This instance on context
+        :arg leafref_path:
+            Path to node to search for leafref targets
+        :returns List of target paths that the leafrefs of the specified node
+                 point to.
+        """
+        if self.cdata is None:
+            raise RuntimeError("context already destroyed")
+        if leafref_path is None:
+            raise RuntimeError("leafref_path must be defined")
+
+        out = []
+
+        node = lib.lys_find_path(self.cdata, ffi.NULL, str2c(leafref_path), 0)
+        if node == ffi.NULL:
+            raise self.error("leafref_path not found")
+
+        node_set = ffi.new("struct ly_set **")
+        if (
+            lib.lysc_node_lref_targets(node, node_set) != lib.LY_SUCCESS
+            or node_set[0] == ffi.NULL
+            or node_set[0].count == 0
+        ):
+            raise self.error("leafref_path does not contain any leafref targets")
+
+        node_set = node_set[0]
+        for i in range(node_set.count):
+            path = lib.lysc_path(node_set.snodes[i], lib.LYSC_PATH_DATA, ffi.NULL, 0)
+            out.append(c2str(path))
+            lib.free(path)
+
+        lib.ly_set_free(node_set, ffi.NULL)
+
+        return out
+
+    def find_backlinks_paths(
+        self, match_path: str = None, match_ancestors: bool = False
+    ) -> List[str]:
+        """
+        Search entire schema for nodes that contain leafrefs and return as a
+        list of schema node paths.
+
+        Perform a complete scan of the schema tree looking for nodes that
+        contain leafref entries. When a node contains a leafref entry, and
+        match_path is specified, determine if reference points to match_path,
+        if so add the node's path to returned list.  If no match_path is
+        specified, the node containing the leafref is always added to the
+        returned set.  When match_ancestors is true, will evaluate if match_path
+        is self or an ansestor of self.
+
+        This does not return the leafref targets, but the actual node that
+        contains a leafref.
+
+        :arg self
+            This instance on context
+        :arg match_path:
+            Target path to use for matching
+        :arg match_ancestors:
+            Whether match_path is a base ancestor or an exact node
+        :returns List of paths.  Exception of match_path is not found or if no
+                 backlinks are found.
+        """
+        if self.cdata is None:
+            raise RuntimeError("context already destroyed")
+        out = []
+
+        match_node = ffi.NULL
+        if match_path is not None and match_path == "/" or match_path == "":
+            match_path = None
+
+        if match_path:
+            match_node = lib.lys_find_path(self.cdata, ffi.NULL, str2c(match_path), 0)
+            if match_node == ffi.NULL:
+                raise self.error("match_path not found")
+
+        node_set = ffi.new("struct ly_set **")
+        if (
+            lib.lysc_node_lref_backlinks(
+                self.cdata, match_node, match_ancestors, node_set
+            )
+            != lib.LY_SUCCESS
+            or node_set[0] == ffi.NULL
+            or node_set[0].count == 0
+        ):
+            raise self.error("backlinks not found")
+
+        node_set = node_set[0]
+        for i in range(node_set.count):
+            path = lib.lysc_path(node_set.snodes[i], lib.LYSC_PATH_DATA, ffi.NULL, 0)
+            out.append(c2str(path))
+            lib.free(path)
+
+        lib.ly_set_free(node_set, ffi.NULL)
+
+        return out
 
     def __iter__(self) -> Iterator[Module]:
         """

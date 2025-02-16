@@ -1,0 +1,36 @@
+module yolo-leafref-search {
+  yang-version 1.1;
+  namespace "urn:yang:yolo:leafref-search";
+  prefix leafref-search;
+
+  import wtf-types { prefix types; }
+
+  revision 2025-02-11 {
+    description
+      "Initial version.";
+  }
+
+  list my_list {
+    key my_leaf_string;
+    leaf my_leaf_string {
+      type string;
+    }
+    leaf my_leaf_number {
+      description
+        "A number.";
+      type types:number;
+    }
+  }
+
+  leaf refstr {
+    type leafref {
+      path "../my_list/my_leaf_string";
+    }
+  }
+
+  leaf refnum {
+    type leafref {
+      path "../my_list/my_leaf_number";
+    }
+  }
+}

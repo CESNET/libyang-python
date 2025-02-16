@@ -524,6 +524,7 @@ class Context:
         validate_multi_error: bool = False,
         store_only: bool = False,
         json_null: bool = False,
+        json_string_datatypes: bool = False,
     ) -> Optional[DNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -536,6 +537,7 @@ class Context:
             strict=strict,
             store_only=store_only,
             json_null=json_null,
+            json_string_datatypes=json_string_datatypes,
         )
         validation_flgs = validation_flags(
             no_state=no_state,
@@ -595,6 +597,7 @@ class Context:
         validate_multi_error: bool = False,
         store_only: bool = False,
         json_null: bool = False,
+        json_string_datatypes: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -611,6 +614,7 @@ class Context:
             validate_multi_error=validate_multi_error,
             store_only=store_only,
             json_null=json_null,
+            json_string_datatypes=json_string_datatypes,
         )
 
     def parse_data_file(
@@ -628,6 +632,7 @@ class Context:
         validate_multi_error: bool = False,
         store_only: bool = False,
         json_null: bool = False,
+        json_string_datatypes: bool = False,
     ) -> Optional[DNode]:
         return self.parse_data(
             fmt,
@@ -644,6 +649,7 @@ class Context:
             validate_multi_error=validate_multi_error,
             store_only=store_only,
             json_null=json_null,
+            json_string_datatypes=json_string_datatypes,
         )
 
     def __iter__(self) -> Iterator[Module]:

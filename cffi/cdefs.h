@@ -861,6 +861,8 @@ const struct lysc_node* lys_find_child(const struct lysc_node *, const struct ly
 const struct lysc_node* lysc_node_child(const struct lysc_node *);
 const struct lysc_node_action* lysc_node_actions(const struct lysc_node *);
 const struct lysc_node_notif* lysc_node_notifs(const struct lysc_node *);
+LY_ERR lysc_node_lref_targets(const struct lysc_node *, struct ly_set **);
+LY_ERR lysc_node_lref_backlinks(const struct ly_ctx *, const struct lysc_node *, ly_bool, struct ly_set **);
 
 typedef enum {
     LYD_PATH_STD,

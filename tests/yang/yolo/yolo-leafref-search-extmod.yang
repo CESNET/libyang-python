@@ -1,0 +1,39 @@
+module yolo-leafref-search-extmod {
+  yang-version 1.1;
+  namespace "urn:yang:yolo:leafref-search-extmod";
+  prefix leafref-search-extmod;
+
+  import wtf-types { prefix types; }
+
+  import yolo-leafref-search {
+    prefix leafref-search;
+  }
+
+  revision 2025-02-11 {
+    description
+      "Initial version.";
+  }
+
+  list my_extref_list {
+    key my_leaf_string;
+    leaf my_leaf_string {
+      type string;
+    }
+    leaf my_extref {
+      type leafref {
+        path "/leafref-search:my_list/leafref-search:my_leaf_string";
+      }
+    }
+    leaf my_extref_union {
+      type union {
+        type leafref {
+          path "/leafref-search:my_list/leafref-search:my_leaf_string";
+        }
+        type leafref {
+          path "/leafref-search:my_list/leafref-search:my_leaf_number";
+        }
+        type types:number;
+      }
+    }
+  }
+}

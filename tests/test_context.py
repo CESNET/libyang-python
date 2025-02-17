@@ -63,6 +63,13 @@ class ContextTest(unittest.TestCase):
             mod = ctx.load_module("yolo-system")
             self.assertIsInstance(mod, Module)
 
+    def test_ctx_load_module_with_features(self):
+        with Context(YANG_DIR) as ctx:
+            mod = ctx.load_module("yolo-system", None, ["*"])
+            self.assertIsInstance(mod, Module)
+            for f in list(mod.features()):
+                self.assertTrue(f.state())
+
     def test_ctx_get_module(self):
         with Context(YANG_DIR) as ctx:
             ctx.load_module("yolo-system")

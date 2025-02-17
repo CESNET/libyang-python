@@ -42,11 +42,10 @@ err() {
 }
 
 check_issue() {
-	json=$(curl -f -X GET -L --no-progress-meter \
+	curl -f -X GET -L --no-progress-meter \
 		-H "Accept: application/vnd.github+json" \
 		-H "X-GitHub-Api-Version: 2022-11-28" \
-		"$api_url/issues/${1##*/}") || return 1
-	test $(echo "$json" | jq -r .state) = open
+		"$api_url/issues/${1##*/}" | jq -r .state | grep -Fx open
 }
 
 for rev in $revisions; do

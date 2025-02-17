@@ -30,11 +30,11 @@ jobs:
 
   check-commits:
     if: ${{ github.event.pull_request.commits }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       LYPY_COMMIT_RANGE: "HEAD~${{ github.event.pull_request.commits }}.."
     steps:
-      - run: sudo apt-get install git make
+      - run: sudo apt-get install git make jq curl
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0

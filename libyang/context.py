@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 import os
-from typing import IO, Any, Callable, Iterator, Optional, Tuple, Union
+from typing import IO, Any, Callable, Iterator, Optional, Sequence, Tuple, Union
 
 from _libyang import ffi, lib
 from .data import (
@@ -340,10 +340,19 @@ class Context:
     def parse_module_str(self, s: str, fmt: str = "yang", features=None) -> Module:
         return self.parse_module(s, IOType.MEMORY, fmt, features)
 
-    def load_module(self, name: str) -> Module:
+    def load_module(
+        self,
+        name: str,
+        revision: Optional[str] = None,
+        enabled_features: Sequence[str] = (),
+    ) -> Module:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
-        mod = lib.ly_ctx_load_module(self.cdata, str2c(name), ffi.NULL, ffi.NULL)
+        if enabled_features:
+            features = tuple([str2c(f) for f in enabled_features] + [ffi.NULL])
+        else:
+            features = ffi.NULL
+        mod = lib.ly_ctx_load_module(self.cdata, str2c(name), str2c(revision), features)
         if mod == ffi.NULL:
             raise self.error("cannot load module")
 

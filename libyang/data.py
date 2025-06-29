@@ -291,7 +291,7 @@ class DNode:
         self.attributes = None
         self.free_func = None  # type: Callable[DNode]
 
-    def meta(self):
+    def meta(self) -> Dict[str, str]:
         ret = {}
         item = self.cdata.meta
         while item != ffi.NULL:
@@ -303,7 +303,7 @@ class DNode:
             item = item.next
         return ret
 
-    def get_meta(self, name):
+    def get_meta(self, name: str) -> Optional[str]:
         item = self.cdata.meta
         while item != ffi.NULL:
             if c2str(item.name) == name:
@@ -315,7 +315,7 @@ class DNode:
             item = item.next
         return None
 
-    def meta_free(self, name):
+    def meta_free(self, name: str):
         item = self.cdata.meta
         while item != ffi.NULL:
             if c2str(item.name) == name:

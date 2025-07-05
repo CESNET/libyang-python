@@ -371,7 +371,7 @@ class Context:
         self,
         path: str,
         output: bool = False,
-        root_node: Optional["libyang.SNode"] = None,
+        root_node: Optional[SNode] = None,
     ) -> Iterator[SNode]:
         if self.cdata is None:
             raise RuntimeError("context already destroyed")
@@ -404,9 +404,9 @@ class Context:
     def find_jsonpath(
         self,
         path: str,
-        root_node: Optional["libyang.SNode"] = None,
+        root_node: Optional[SNode] = None,
         output: bool = False,
-    ) -> Optional["libyang.SNode"]:
+    ) -> Optional[SNode]:
         if root_node is not None:
             ctx_node = root_node.cdata
         else:

@@ -182,6 +182,7 @@ enum ly_stmt {
 #define LY_LOSTORE ...
 #define LY_LOSTORE_LAST ...
 int ly_log_options(int);
+uint32_t *ly_temp_log_options(uint32_t *);
 
 LY_LOG_LEVEL ly_log_level(LY_LOG_LEVEL);
 extern "Python" void lypy_log_cb(LY_LOG_LEVEL, const char *, const char *, const char *, uint64_t);

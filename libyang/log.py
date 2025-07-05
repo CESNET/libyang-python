@@ -38,7 +38,7 @@ def libyang_c_logging_callback(level, msg, data_path, schema_path, line):
         args.append(c2str(schema_path))
     if line != 0:
         fmt += " line %u"
-        args.append(str(line))
+        args.append(line)
     LOG.log(LOG_LEVELS.get(level, logging.NOTSET), fmt, *args)
 
 

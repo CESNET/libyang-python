@@ -2,7 +2,10 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+from contextlib import contextmanager
 import logging
+
+import cffi
 
 from _libyang import ffi, lib
 from .util import c2str
@@ -24,6 +27,16 @@ def get_libyang_level(py_level):
         if py_lvl == py_level:
             return ly_lvl
     return None
+
+
+@contextmanager
+def temp_log_options(opt: int = 0):
+    _ffi = cffi.FFI()
+    opts = _ffi.new("uint32_t *", opt)
+
+    lib.ly_temp_log_options(opts)
+    yield
+    lib.ly_temp_log_options(ffi.NULL)
 
 
 @ffi.def_extern(name="lypy_log_cb")

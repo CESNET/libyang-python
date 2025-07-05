@@ -65,7 +65,7 @@ from .diff import (
 )
 from .extension import ExtensionPlugin, LibyangExtensionError
 from .keyed_list import KeyedList
-from .log import configure_logging
+from .log import configure_logging, temp_log_options
 from .schema import (
     Extension,
     ExtensionCompiled,

@@ -197,18 +197,8 @@ class IfFeatureTest(unittest.TestCase):
                     continue
                 self.mod.feature_enable(f.name())
 
-        leaf_simple = next(self.ctx.find_path("/yolo-system:conf/yolo-system:speed"))
-
-        self.mod.feature_disable_all()
-        leaf_not = next(self.ctx.find_path("/yolo-system:conf/yolo-system:offline"))
-        self.mod.feature_enable_all()
-
-        leaf_and = next(self.ctx.find_path("/yolo-system:conf/yolo-system:full"))
-        leaf_or = next(
-            self.ctx.find_path("/yolo-system:conf/yolo-system:isolation-level")
-        )
-
         # if-feature is just a feature
+        leaf_simple = next(self.ctx.find_path("/yolo-system:conf/yolo-system:speed"))
         tree = next(leaf_simple.if_features()).tree()
         self.mod.feature_enable_all()
         self.assertEqual(tree.state(), True)
@@ -216,6 +206,8 @@ class IfFeatureTest(unittest.TestCase):
         self.assertEqual(tree.state(), False)
 
         # if-feature is "NOT networking"
+        self.mod.feature_disable_all()
+        leaf_not = next(self.ctx.find_path("/yolo-system:conf/yolo-system:offline"))
         tree = next(leaf_not.if_features()).tree()
         self.mod.feature_enable_all()
         self.assertEqual(tree.state(), False)
@@ -223,6 +215,8 @@ class IfFeatureTest(unittest.TestCase):
         self.assertEqual(tree.state(), True)
 
         # if-feature is "turbo-boost AND networking"
+        self.mod.feature_enable_all()
+        leaf_and = next(self.ctx.find_path("/yolo-system:conf/yolo-system:full"))
         tree = next(leaf_and.if_features()).tree()
         self.mod.feature_enable_all()
         self.assertEqual(tree.state(), True)
@@ -234,6 +228,9 @@ class IfFeatureTest(unittest.TestCase):
         self.assertEqual(tree.state(), False)
 
         # if-feature is "turbo-boost OR networking"
+        leaf_or = next(
+            self.ctx.find_path("/yolo-system:conf/yolo-system:isolation-level")
+        )
         tree = next(leaf_or.if_features()).tree()
         self.mod.feature_enable_all()
         self.assertEqual(tree.state(), True)

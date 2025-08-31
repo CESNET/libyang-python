@@ -387,6 +387,9 @@ class DNode:
             ret["new"] = True
         return ret
 
+    def is_default(self) -> bool:
+        return lib.lyd_is_default(self.cdata)
+
     def set_when(self, value: bool):
         if value:
             self.cdata.flags |= lib.LYD_WHEN_TRUE

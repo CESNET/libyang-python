@@ -941,6 +941,7 @@ struct lyd_value_union {
 
 const char * lyd_get_value(const struct lyd_node *);
 struct lyd_node* lyd_child(const struct lyd_node *);
+ly_bool lyd_is_default(const struct lyd_node *);
 LY_ERR lyd_find_path(const struct lyd_node *, const char *, ly_bool, struct lyd_node **);
 void lyd_free_siblings(struct lyd_node *);
 struct lyd_node* lyd_first_sibling(const struct lyd_node *);

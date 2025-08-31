@@ -174,22 +174,10 @@ def dup_flags(
 
 
 # -------------------------------------------------------------------------------------
-def data_type(dtype):
-    if dtype == DataType.DATA_YANG:
-        return lib.LYD_TYPE_DATA_YANG
-    if dtype == DataType.RPC_YANG:
-        return lib.LYD_TYPE_RPC_YANG
-    if dtype == DataType.NOTIF_YANG:
-        return lib.LYD_TYPE_NOTIF_YANG
-    if dtype == DataType.REPLY_YANG:
-        return lib.LYD_TYPE_REPLY_YANG
-    if dtype == DataType.RPC_NETCONF:
-        return lib.LYD_TYPE_RPC_NETCONF
-    if dtype == DataType.NOTIF_NETCONF:
-        return lib.LYD_TYPE_NOTIF_NETCONF
-    if dtype == DataType.REPLY_NETCONF:
-        return lib.LYD_TYPE_REPLY_NETCONF
-    raise ValueError("Unknown data type")
+def data_type(dtype: DataType) -> int:
+    if not isinstance(dtype, DataType):
+        dtype = DataType(dtype)
+    return dtype.value
 
 
 # -------------------------------------------------------------------------------------

@@ -77,13 +77,16 @@ class IOType(enum.Enum):
 
 # -------------------------------------------------------------------------------------
 class DataType(enum.Enum):
-    DATA_YANG = enum.auto()
-    RPC_YANG = enum.auto()
-    NOTIF_YANG = enum.auto()
-    REPLY_YANG = enum.auto()
-    RPC_NETCONF = enum.auto()
-    NOTIF_NETCONF = enum.auto()
-    REPLY_NETCONF = enum.auto()
+    DATA_YANG = lib.LYD_TYPE_DATA_YANG
+    RPC_YANG = lib.LYD_TYPE_RPC_YANG
+    NOTIF_YANG = lib.LYD_TYPE_NOTIF_YANG
+    REPLY_YANG = lib.LYD_TYPE_REPLY_YANG
+    RPC_NETCONF = lib.LYD_TYPE_RPC_NETCONF
+    NOTIF_NETCONF = lib.LYD_TYPE_NOTIF_NETCONF
+    REPLY_NETCONF = lib.LYD_TYPE_REPLY_NETCONF
+    RPC_RESTCONF = lib.LYD_TYPE_RPC_RESTCONF
+    NOTIF_RESTCONF = lib.LYD_TYPE_NOTIF_RESTCONF
+    REPLY_RESTCONF = lib.LYD_TYPE_REPLY_RESTCONF
 
 
 # -------------------------------------------------------------------------------------

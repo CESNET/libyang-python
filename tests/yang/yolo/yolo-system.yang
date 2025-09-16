@@ -191,7 +191,14 @@ module yolo-system {
         ext:human-name "Disk";
         type types:str;
       }
-      anyxml html-info;
+      choice xml-or-json {
+        case xml {
+          anyxml html-info;
+        }
+        case json {
+          anydata json-info;
+        }
+      }
     }
     output {
       leaf duration {

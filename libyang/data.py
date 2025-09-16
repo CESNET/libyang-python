@@ -532,6 +532,7 @@ class DNode:
         rpc: bool = False,
         rpcreply: bool = False,
         notification: bool = False,
+        dep_tree: Optional["DNode"] = None,
     ) -> None:
         dtype = None
         if rpc:
@@ -544,7 +545,7 @@ class DNode:
         if dtype is None:
             self.validate_all(no_state, validate_present)
         else:
-            self.validate_op(dtype)
+            self.validate_op(dtype, dep_tree)
 
     def validate_all(
         self,
@@ -566,11 +567,15 @@ class DNode:
     def validate_op(
         self,
         dtype: DataType,
+        dep_tree: Optional["DNode"] = None,
     ) -> None:
         dtype = data_type(dtype)
-        node_p = ffi.new("struct lyd_node **")
-        node_p[0] = self.cdata
-        ret = lib.lyd_validate_op(node_p[0], ffi.NULL, dtype, ffi.NULL)
+        ret = lib.lyd_validate_op(
+            self.cdata,
+            ffi.NULL if dep_tree is None else dep_tree.cdata,
+            dtype,
+            ffi.NULL,
+        )
         if ret != lib.LY_SUCCESS:
             raise self.context.error("validation failed")
 

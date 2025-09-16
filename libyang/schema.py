@@ -1440,12 +1440,22 @@ class SNode:
         return None
 
     def when_conditions(self):
-        wh = ffi.new("struct lysc_when **")
         wh = lib.lysc_node_when(self.cdata)
         if wh == ffi.NULL:
             return
         for cond in ly_array_iter(wh):
             yield c2str(lib.lyxp_get_expr(cond.cond))
+
+    def when_conditions_nodes(self) -> Iterator[Optional["SNode"]]:
+        wh = lib.lysc_node_when(self.cdata)
+        if wh == ffi.NULL:
+            return
+        for cond in ly_array_iter(wh):
+            yield (
+                None
+                if cond.context == ffi.NULL
+                else SNode.new(self.context, cond.context)
+            )
 
     def parsed(self) -> Optional["PNode"]:
         if self.cdata_parsed is None or self.cdata_parsed == ffi.NULL:

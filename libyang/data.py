@@ -1009,7 +1009,7 @@ class DNode:
 
     def leafref_nodes(self) -> Iterator["DNode"]:
         """
-        Gets the leafref links record for given node.
+        Gets the nodes that are referring to this node.
 
         Requires leafref_linking to be set on the libyang context.
         """
@@ -1018,6 +1018,19 @@ class DNode:
         if lib.lyd_leafref_get_links(term_node, out) != lib.LY_SUCCESS:
             return
         for n in ly_array_iter(out[0].leafref_nodes):
+            yield DNode.new(self.context, n)
+
+    def target_nodes(self) -> Iterator["DNode"]:
+        """
+        Gets the target nodes that are referred by this node.
+
+        Requires leafref_linking to be set on the libyang context.
+        """
+        term_node = ffi.cast("struct lyd_node_term *", self.cdata)
+        out = ffi.new("const struct lyd_leafref_links_rec **")
+        if lib.lyd_leafref_get_links(term_node, out) != lib.LY_SUCCESS:
+            return
+        for n in ly_array_iter(out[0].target_nodes):
             yield DNode.new(self.context, n)
 
     def __repr__(self):

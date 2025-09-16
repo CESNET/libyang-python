@@ -1092,6 +1092,9 @@ class DataTest(unittest.TestCase):
         dnode4 = next(dnode3.leafref_nodes())
         self.assertIsInstance(dnode4, DLeaf)
         self.assertEqual(dnode4.cdata, dnode2.cdata)
+        dnode5 = next(dnode4.target_nodes())
+        self.assertIsInstance(dnode5, DLeaf)
+        self.assertEqual(dnode5.cdata, dnode3.cdata)
         dnode1.free()
 
     def test_dnode_store_only(self):

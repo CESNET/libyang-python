@@ -843,6 +843,14 @@ class AnydataTest(unittest.TestCase):
         self.ctx.destroy()
         self.ctx = None
 
+    def test_anydata(self):
+        snode = next(self.ctx.find_path("/yolo-nodetypes:any1"))
+        self.assertIsInstance(snode, SAnydata)
+        assert next(snode.when_conditions()) is not None
+        snode2 = next(snode.when_conditions_nodes())
+        assert isinstance(snode2, SAnydata)
+        assert snode2.cdata == snode.cdata
+
     def test_anydata_parsed(self):
         snode = next(self.ctx.find_path("/yolo-nodetypes:any1"))
         self.assertIsInstance(snode, SAnydata)

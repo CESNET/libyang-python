@@ -1679,8 +1679,12 @@ class SRpcInOut(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choice: bool = False
+    ) -> Iterator[SNode]:
+        return iter_children(
+            self.context, self.cdata, types=types, with_choice=with_choice
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -1710,11 +1714,17 @@ class SRpc(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        yield from iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choice: bool = False
+    ) -> Iterator[SNode]:
+        yield from iter_children(
+            self.context, self.cdata, types=types, with_choice=with_choice
+        )
         # With libyang2, you can get only input or output
         # To keep behavior, we iter 2 times witt output options
-        yield from iter_children(self.context, self.cdata, types=types, output=True)
+        yield from iter_children(
+            self.context, self.cdata, types=types, output=True, with_choice=with_choice
+        )
 
 
 # -------------------------------------------------------------------------------------
@@ -1723,8 +1733,12 @@ class SNotif(SNode):
     def __iter__(self) -> Iterator[SNode]:
         return self.children()
 
-    def children(self, types: Optional[Tuple[int, ...]] = None) -> Iterator[SNode]:
-        return iter_children(self.context, self.cdata, types=types)
+    def children(
+        self, types: Optional[Tuple[int, ...]] = None, with_choice: bool = False
+    ) -> Iterator[SNode]:
+        return iter_children(
+            self.context, self.cdata, types=types, with_choice=with_choice
+        )
 
 
 # -------------------------------------------------------------------------------------

@@ -491,6 +491,8 @@ class RpcTest(unittest.TestCase):
         self.assertEqual(self.rpc.nodetype(), SNode.RPC)
         self.assertEqual(self.rpc.keyword(), "rpc")
         self.assertEqual(self.rpc.schema_path(), "/yolo-system:format-disk")
+        choice = next(self.rpc.input().children((SNode.CHOICE,), with_choice=True))
+        self.assertIsInstance(choice, SChoice)
 
     def test_rpc_extensions(self):
         ext = list(self.rpc.extensions())

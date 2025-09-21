@@ -423,10 +423,21 @@ class ExtensionParsed(Extension):
     def module(self) -> Module:
         return self._module_from_parsed()
 
-    def parent_node(self) -> Optional[Union["PNode", "PIdentity"]]:
+    def parent_node(
+        self,
+    ) -> Optional[Union["PNode", "PIdentity", "PRefine", "PType", "PEnum"]]:
         if self.cdata.parent_stmt == lib.LY_STMT_IDENTITY:
             cdata = ffi.cast("struct lysp_ident *", self.cdata.parent)
             return PIdentity(self.context, cdata, self.module_parent)
+        if self.cdata.parent_stmt == lib.LY_STMT_REFINE:
+            cdata = ffi.cast("struct lysp_refine *", self.cdata.parent)
+            return PRefine(self.context, cdata, self.module_parent)
+        if self.cdata.parent_stmt == lib.LY_STMT_TYPE:
+            cdata = ffi.cast("struct lysp_type *", self.cdata.parent)
+            return PType(self.context, cdata, self.module_parent)
+        if self.cdata.parent_stmt == lib.LY_STMT_ENUM:
+            cdata = ffi.cast("struct lysp_type_enum *", self.cdata.parent)
+            return PEnum(self.context, cdata, self.module_parent)
         if bool(self.cdata.parent_stmt & lib.LY_STMT_NODE_MASK):
             try:
                 return PNode.new(self.context, self.cdata.parent, self.module_parent)

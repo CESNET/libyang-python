@@ -289,6 +289,18 @@ class DataTest(unittest.TestCase):
             "Data path: /yolo-system:conf/url[proto='https'] (line 7)",
         )
 
+        first = cm.exception.errors[0]
+        self.assertEqual(first.msg, 'Invalid boolean value "abcd".')
+        self.assertEqual(
+            first.data_path, "/yolo-system:conf/url[proto='https']/enabled"
+        )
+        self.assertEqual(first.line, 6)
+
+        second = cm.exception.errors[1]
+        self.assertEqual(second.msg, 'List instance is missing its key "host".')
+        self.assertEqual(second.data_path, "/yolo-system:conf/url[proto='https']")
+        self.assertEqual(second.line, 7)
+
     XML_STATE = """<state xmlns="urn:yang:yolo:system">
   <hostname>foo</hostname>
   <url>

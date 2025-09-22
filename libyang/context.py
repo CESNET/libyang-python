@@ -16,7 +16,15 @@ from .data import (
     validation_flags,
 )
 from .schema import Module, SNode, schema_in_format
-from .util import DataType, IOType, LibyangError, c2str, data_load, str2c
+from .util import (
+    DataType,
+    IOType,
+    LibyangError,
+    LibyangErrorItem,
+    c2str,
+    data_load,
+    str2c,
+)
 
 
 # -------------------------------------------------------------------------------------
@@ -284,23 +292,35 @@ class Context:
         self.destroy()
 
     def error(self, msg: str, *args) -> LibyangError:
-        msg %= args
+        if args:
+            msg = msg % args
+
+        parts = [msg]
+        errors = []
 
         if self.cdata:
             err = lib.ly_err_first(self.cdata)
             while err:
-                if err.msg:
-                    msg += ": %s" % c2str(err.msg)
-                if err.data_path:
-                    msg += ": Data path: %s" % c2str(err.data_path)
-                if err.schema_path:
-                    msg += ": Schema path: %s" % c2str(err.schema_path)
-                if err.line != 0:
-                    msg += " (line %u)" % err.line
+                m = c2str(err.msg) if err.msg else None
+                dp = c2str(err.data_path) if err.data_path else None
+                sp = c2str(err.schema_path) if err.schema_path else None
+                ln = int(err.line) if err.line else None
+                parts.extend(
+                    tmpl.format(val)
+                    for val, tmpl in [
+                        (m, ": {}"),
+                        (dp, ": Data path: {}"),
+                        (sp, ": Schema path: {}"),
+                        (ln, " (line {})"),
+                    ]
+                    if val is not None
+                )
+                errors.append(LibyangErrorItem(m, dp, sp, ln))
                 err = err.next
             lib.ly_err_clean(self.cdata, ffi.NULL)
 
-        return LibyangError(msg)
+        msg = "".join(parts)
+        return LibyangError(msg, errors=errors)
 
     def parse_module(
         self,

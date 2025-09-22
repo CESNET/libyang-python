@@ -2,16 +2,34 @@
 # Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
+from dataclasses import dataclass
 import enum
-from typing import Optional
+from typing import Iterable, Optional
 import warnings
 
 from _libyang import ffi, lib
 
 
 # -------------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class LibyangErrorItem:
+    msg: Optional[str]
+    data_path: Optional[str]
+    schema_path: Optional[str]
+    line: Optional[int]
+
+
+# -------------------------------------------------------------------------------------
 class LibyangError(Exception):
-    pass
+    def __init__(
+        self, message: str, *args, errors: Optional[Iterable[LibyangErrorItem]] = None
+    ):
+        super().__init__(message, *args)
+        self.message = message
+        self.errors = tuple(errors or ())
+
+    def __str__(self):
+        return self.message
 
 
 # -------------------------------------------------------------------------------------

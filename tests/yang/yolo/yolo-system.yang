@@ -155,6 +155,10 @@ module yolo-system {
     }
   }
 
+  ext:compile-validation "module-level" {
+    ext:compile-validation "module-sub-level";
+  }
+
   container conf {
     description
       "Configuration.";

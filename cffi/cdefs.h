@@ -365,6 +365,14 @@ LY_ERR lys_print_module(struct ly_out *, const struct lys_module *, LYS_OUTFORMA
 #define LYS_PRINT_NO_SUBSTMT ...
 #define LYS_PRINT_SHRINK ...
 
+struct lysc_module {
+	struct lys_module *mod;
+	struct lysc_node *data;
+	struct lysc_node_action *rpcs;
+	struct lysc_node_notif *notifs;
+	struct lysc_ext_instance *exts;
+};
+
 struct lys_module {
     struct ly_ctx *ctx;
     const char *name;

@@ -180,6 +180,29 @@ class Module:
         for i in ly_array_iter(self.cdata.parsed.identities):
             yield PIdentity(self.context, i, self)
 
+    def extensions(self) -> Iterator["ExtensionCompiled"]:
+        compiled = ffi.cast("struct lysc_module *", self.cdata.compiled)
+        if compiled == ffi.NULL:
+            return
+        exts = ffi.cast("struct lysc_ext_instance *", self.cdata.compiled.exts)
+        if exts == ffi.NULL:
+            return
+        for extension in ly_array_iter(exts):
+            yield ExtensionCompiled(self.context, extension)
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional["ExtensionCompiled"]:
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
+        return None
+
     def __str__(self) -> str:
         return self.name()
 

@@ -129,6 +129,19 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(revisions[0].date(), "1999-04-01")
         self.assertEqual(revisions[1].date(), "1990-04-01")
 
+    def test_mod_extensions(self):
+        assert self.module is not None  # pyright doesn't understand assertIsNotNone()
+        exts = list(self.module.extensions())
+        self.assertEqual(len(exts), 1)
+        ext = self.module.get_extension("compile-validation", prefix="omg-extensions")
+        self.assertEqual(ext.argument(), "module-level")
+        sub_exts = list(ext.extensions())
+        self.assertEqual(len(sub_exts), 1)
+        ext = sub_exts[0]
+        self.assertEqual(ext.name(), "compile-validation")
+        self.assertEqual(ext.module().name(), "omg-extensions")
+        self.assertEqual(ext.argument(), "module-sub-level")
+
 
 # -------------------------------------------------------------------------------------
 class RevisionTest(unittest.TestCase):

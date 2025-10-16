@@ -67,6 +67,7 @@ from .extension import ExtensionPlugin, LibyangExtensionError
 from .keyed_list import KeyedList
 from .log import configure_logging
 from .schema import (
+    Enum,
     Extension,
     ExtensionCompiled,
     ExtensionParsed,
@@ -144,6 +145,7 @@ __all__ = (
     "DefaultRemoved",
     "DescriptionAdded",
     "DescriptionRemoved",
+    "Enum",
     "EnumAdded",
     "EnumRemoved",
     "Extension",

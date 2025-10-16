@@ -2,6 +2,7 @@
 # Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
+import json
 import logging
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
@@ -9,6 +10,7 @@ from _libyang import ffi, lib
 from .keyed_list import KeyedList
 from .schema import (
     Module,
+    SAnydata,
     SContainer,
     SLeaf,
     SLeafList,
@@ -105,6 +107,21 @@ def newval_flags(
     if opaq:
         flags |= lib.LYD_NEW_PATH_OPAQ
     return flags
+
+
+# -------------------------------------------------------------------------------------
+def anydata_format(fmt_string: str) -> int:
+    if fmt_string == "datatree":
+        return lib.LYD_ANYDATA_DATATREE
+    if fmt_string == "string":
+        return lib.LYD_ANYDATA_STRING
+    if fmt_string == "xml":
+        return lib.LYD_ANYDATA_XML
+    if fmt_string == "json":
+        return lib.LYD_ANYDATA_JSON
+    if fmt_string == "lyb":
+        return lib.LYD_ANYDATA_LYB
+    raise ValueError("unknown anydata format: %r" % fmt_string)
 
 
 # -------------------------------------------------------------------------------------
@@ -1207,6 +1224,8 @@ def dict_to_dnode(
     rpcreply: bool = False,
     notification: bool = False,
     store_only: bool = False,
+    types: Optional[Tuple[int, ...]] = None,
+    anydata_fmt: str = "json",
 ) -> Optional[DNode]:
     """
     Convert a python dictionary to a DNode object given a YANG module object. The return
@@ -1316,6 +1335,34 @@ def dict_to_dnode(
         created.append(n[0])
         return n[0]
 
+    def _create_anydata(_parent, module, name, value, in_rpc_output=False):
+        if value is not None:
+            if isinstance(value, dict) and anydata_fmt == "json":
+                value = json.dumps(value)
+            elif not isinstance(value, str):
+                value = str(value)
+
+        n = ffi.new("struct lyd_node **")
+        flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
+        ret = lib.lyd_new_any(
+            _parent,
+            module.cdata,
+            str2c(name),
+            str2c(value),
+            anydata_format(anydata_fmt),
+            flags,
+            n,
+        )
+        if ret != lib.LY_SUCCESS:
+            if _parent:
+                parent_path = repr(DNode.new(module.context, _parent).path())
+            else:
+                parent_path = "module %r" % module.name()
+            raise module.context.error(
+                "failed to create leaf %r as a child of %s", name, parent_path
+            )
+        created.append(n[0])
+
     schema_cache = {}
 
     def _find_schema(schema_parent, name, prefix):
@@ -1332,7 +1379,7 @@ def dict_to_dnode(
             if schema_parent is None:
                 # there may not be any input or any output node in the rpc
                 return None, None
-        for s in schema_parent:
+        for s in schema_parent.children(types=types):
             if s.name() != name:
                 continue
             mod = s.module()
@@ -1431,6 +1478,9 @@ def dict_to_dnode(
             elif isinstance(s, SNotif):
                 n = _create_container(_parent, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
+
+            elif isinstance(s, SAnydata):
+                _create_anydata(_parent, module, name, value, in_rpc_output)
 
     result = None
 

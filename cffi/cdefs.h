@@ -215,6 +215,7 @@ struct lys_module* ly_ctx_get_module_latest(const struct ly_ctx *, const char *)
 LY_ERR ly_ctx_compile(struct ly_ctx *);
 
 LY_ERR lys_find_xpath(const struct ly_ctx *, const struct lysc_node *, const char *, uint32_t, struct ly_set **);
+LY_ERR lys_find_xpath_atoms(const struct ly_ctx *, const struct lysc_node *, const char *, uint32_t, struct ly_set **);
 void ly_set_free(struct ly_set *, void(*)(void *obj));
 
 struct ly_set {

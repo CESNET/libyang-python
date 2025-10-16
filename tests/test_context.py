@@ -4,7 +4,7 @@
 import os
 import unittest
 
-from libyang import Context, LibyangError, Module, SLeaf, SLeafList
+from libyang import Context, LibyangError, Module, SContainer, SLeaf, SLeafList
 from libyang.util import c2str
 
 
@@ -94,6 +94,22 @@ class ContextTest(unittest.TestCase):
             self.assertIsInstance(node, SLeaf)
             node2 = next(ctx.find_path("../number", root_node=node))
             self.assertIsInstance(node2, SLeafList)
+
+    def test_ctx_find_xpath_atoms(self):
+        with Context(YANG_DIR) as ctx:
+            ctx.load_module("yolo-system")
+            node_iter = ctx.find_xpath_atoms("/yolo-system:conf/offline")
+            node = next(node_iter)
+            self.assertIsInstance(node, SContainer)
+            node = next(node_iter)
+            self.assertIsInstance(node, SLeaf)
+            node_iter = ctx.find_xpath_atoms("../number", root_node=node)
+            node = next(node_iter)
+            self.assertIsInstance(node, SLeaf)
+            node = next(node_iter)
+            self.assertIsInstance(node, SContainer)
+            node = next(node_iter)
+            self.assertIsInstance(node, SLeafList)
 
     def test_ctx_iter_modules(self):
         with Context(YANG_DIR) as ctx:

@@ -421,6 +421,38 @@ class Context:
         finally:
             lib.ly_set_free(node_set, ffi.NULL)
 
+    def find_xpath_atoms(
+        self,
+        path: str,
+        output: bool = False,
+        root_node: Optional["libyang.SNode"] = None,
+    ) -> Iterator[SNode]:
+        if self.cdata is None:
+            raise RuntimeError("context already destroyed")
+
+        if root_node is not None:
+            ctx_node = root_node.cdata
+        else:
+            ctx_node = ffi.NULL
+
+        flags = lib.LYS_FIND_XP_OUTPUT if output else 0
+
+        node_set = ffi.new("struct ly_set **")
+        if (
+            lib.lys_find_xpath_atoms(self.cdata, ctx_node, str2c(path), flags, node_set)
+            != lib.LY_SUCCESS
+        ):
+            raise self.error("cannot find path")
+
+        node_set = node_set[0]
+        if node_set.count == 0:
+            raise self.error("cannot find path")
+        try:
+            for i in range(node_set.count):
+                yield SNode.new(self, node_set.snodes[i])
+        finally:
+            lib.ly_set_free(node_set, ffi.NULL)
+
     def find_jsonpath(
         self,
         path: str,

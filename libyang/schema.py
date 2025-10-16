@@ -491,6 +491,23 @@ class _EnumBit:
     def description(self) -> str:
         return c2str(self.cdata.dsc)
 
+    def extensions(self) -> Iterator[ExtensionCompiled]:
+        for ext in ly_array_iter(self.cdata.exts):
+            yield ExtensionCompiled(self.context, ext)
+
+    def get_extension(
+        self, name: str, prefix: Optional[str] = None, arg_value: Optional[str] = None
+    ) -> Optional[ExtensionCompiled]:
+        for ext in self.extensions():
+            if ext.name() != name:
+                continue
+            if prefix is not None and ext.module().name() != prefix:
+                continue
+            if arg_value is not None and ext.argument() != arg_value:
+                continue
+            return ext
+        return None
+
     def deprecated(self) -> bool:
         return bool(self.cdata.flags & lib.LYS_STATUS_DEPRC)
 

@@ -633,6 +633,9 @@ class LeafTypeTest(unittest.TestCase):
         self.assertEqual(t.base(), Type.ENUM)
         enums = [e.name() for e in t.enums()]
         self.assertEqual(enums, ["http", "https", "ftp", "sftp"])
+        enum = next(t.enums())
+        self.assertIsNone(next(enum.extensions(), None))
+        self.assertIsNone(enum.get_extension("test", prefix="test"))
 
     def test_leaf_type_bits(self):
         leaf = next(self.ctx.find_path("/yolo-system:chmod/yolo-system:perms"))

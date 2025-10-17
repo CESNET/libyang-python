@@ -195,6 +195,8 @@ class Context:
         leafref_extended: bool = False,
         leafref_linking: bool = False,
         builtin_plugins_only: bool = False,
+        all_implemented: bool = False,
+        enable_imp_features: bool = False,
         yanglib_path: Optional[str] = None,
         yanglib_fmt: str = "json",
         cdata=None,  # C type: "struct ly_ctx *"
@@ -217,6 +219,10 @@ class Context:
             options |= lib.LY_CTX_LEAFREF_LINKING
         if builtin_plugins_only:
             options |= lib.LY_CTX_BUILTIN_PLUGINS_ONLY
+        if all_implemented:
+            options |= lib.LY_CTX_ALL_IMPLEMENTED
+        if enable_imp_features:
+            options |= lib.LY_CTX_ENABLE_IMP_FEATURES
         # force priv parsed
         options |= lib.LY_CTX_SET_PRIV_PARSED
 

@@ -2,7 +2,10 @@
 # Copyright (c) 2020 6WIND S.A.
 # SPDX-License-Identifier: MIT
 
+from contextlib import contextmanager
 import logging
+
+import cffi
 
 from _libyang import ffi, lib
 from .util import c2str
@@ -26,6 +29,16 @@ def get_libyang_level(py_level):
     return None
 
 
+@contextmanager
+def temp_log_options(opt: int = 0):
+    _ffi = cffi.FFI()
+    opts = _ffi.new("uint32_t *", opt)
+
+    lib.ly_temp_log_options(opts)
+    yield
+    lib.ly_temp_log_options(ffi.NULL)
+
+
 @ffi.def_extern(name="lypy_log_cb")
 def libyang_c_logging_callback(level, msg, data_path, schema_path, line):
     args = [c2str(msg)]
@@ -38,7 +51,7 @@ def libyang_c_logging_callback(level, msg, data_path, schema_path, line):
         args.append(c2str(schema_path))
     if line != 0:
         fmt += " line %u"
-        args.append(str(line))
+        args.append(line)
     LOG.log(LOG_LEVELS.get(level, logging.NOTSET), fmt, *args)
 
 

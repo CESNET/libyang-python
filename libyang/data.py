@@ -109,7 +109,6 @@ def newval_flags(
 
 # -------------------------------------------------------------------------------------
 def parser_flags(
-    lyb_mod_update: bool = False,
     no_state: bool = False,
     parse_only: bool = False,
     opaq: bool = False,
@@ -120,8 +119,6 @@ def parser_flags(
     json_string_datatypes: bool = False,
 ) -> int:
     flags = 0
-    if lyb_mod_update:
-        flags |= lib.LYD_PARSE_LYB_MOD_UPDATE
     if no_state:
         flags |= lib.LYD_PARSE_NO_STATE
     if parse_only:

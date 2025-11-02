@@ -8,7 +8,7 @@ from typing import Callable, Optional
 from _libyang import ffi, lib
 from .context import Context
 from .log import get_libyang_level
-from .schema import ExtensionCompiled, ExtensionParsed, Module
+from .schema import ExtensionCompiled, ExtensionParsed, Module, SNode
 from .util import LibyangError, c2str, str2c
 
 
@@ -25,7 +25,7 @@ class LibyangExtensionError(LibyangError):
 
 @ffi.def_extern(name="lypy_lyplg_ext_parse_clb")
 def libyang_c_lyplg_ext_parse_clb(pctx, pext):
-    plugin = extensions_plugins[pext.record.plugin]
+    plugin = extensions_plugins[lib.lysc_get_ext_plugin(pext.plugin_ref)]
     module_cdata = lib.lyplg_ext_parse_get_cur_pmod(pctx).mod
     context = Context(cdata=module_cdata.ctx)
     module = Module(context, module_cdata)
@@ -46,7 +46,7 @@ def libyang_c_lyplg_ext_parse_clb(pctx, pext):
 
 @ffi.def_extern(name="lypy_lyplg_ext_compile_clb")
 def libyang_c_lyplg_ext_compile_clb(cctx, pext, cext):
-    plugin = extensions_plugins[pext.record.plugin]
+    plugin = extensions_plugins[lib.lysc_get_ext_plugin(pext.plugin_ref)]
     context = Context(cdata=lib.lyplg_ext_compile_get_ctx(cctx))
     module = Module(context, cext.module)
     parsed_ext = ExtensionParsed(context, pext, module)
@@ -67,7 +67,7 @@ def libyang_c_lyplg_ext_compile_clb(cctx, pext, cext):
 
 @ffi.def_extern(name="lypy_lyplg_ext_parse_free_clb")
 def libyang_c_lyplg_ext_parse_free_clb(ctx, pext):
-    plugin = extensions_plugins[pext.record.plugin]
+    plugin = extensions_plugins[lib.lysc_get_ext_plugin(pext.plugin_ref)]
     context = Context(cdata=ctx)
     parsed_ext = ExtensionParsed(context, pext, None)
     plugin.parse_free_clb(parsed_ext)
@@ -75,7 +75,9 @@ def libyang_c_lyplg_ext_parse_free_clb(ctx, pext):
 
 @ffi.def_extern(name="lypy_lyplg_ext_compile_free_clb")
 def libyang_c_lyplg_ext_compile_free_clb(ctx, cext):
-    plugin = extensions_plugins[getattr(cext, "def").plugin]
+    plugin = extensions_plugins[
+        lib.lysc_get_ext_plugin(getattr(cext, "def").plugin_ref)
+    ]
     context = Context(cdata=ctx)
     compiled_ext = ExtensionCompiled(context, cext)
     plugin.compile_free_clb(compiled_ext)
@@ -200,9 +202,17 @@ class ExtensionPlugin:
     def parse_substmts(self, ext: ExtensionParsed) -> int:
         return lib.lyplg_ext_parse_extension_instance(self._pctx, ext.cdata)
 
-    def compile_substmts(self, pext: ExtensionParsed, cext: ExtensionCompiled) -> int:
+    def compile_substmts(
+        self,
+        pext: ExtensionParsed,
+        cext: ExtensionCompiled,
+        parent: Optional[SNode] = None,
+    ) -> int:
         return lib.lyplg_ext_compile_extension_instance(
-            self._cctx, pext.cdata, cext.cdata
+            self._cctx,
+            pext.cdata,
+            cext.cdata,
+            ffi.NULL if parent is None else parent.cdata,
         )
 
     def free_parse_substmts(self, ext: ExtensionParsed) -> None:

@@ -33,7 +33,7 @@ YANG_DIR = os.path.join(os.path.dirname(__file__), "yang")
 # -------------------------------------------------------------------------------------
 class DataTest(unittest.TestCase):
     def setUp(self):
-        self.ctx = Context(YANG_DIR)
+        self.ctx = Context(YANG_DIR, compile_obsolete=True)
         modules = [
             self.ctx.load_module("ietf-netconf"),
             self.ctx.load_module("yolo-system"),
@@ -52,17 +52,17 @@ class DataTest(unittest.TestCase):
     "hostname": "foo",
     "url": [
       {
-        "proto": "https",
-        "host": "github.com",
-        "path": "/CESNET/libyang-python",
-        "enabled": false
-      },
-      {
         "proto": "http",
         "host": "foobar.com",
         "port": 8080,
         "path": "/index.html",
         "enabled": true
+      },
+      {
+        "proto": "https",
+        "host": "github.com",
+        "path": "/CESNET/libyang-python",
+        "enabled": false
       }
     ],
     "number": [
@@ -76,7 +76,9 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_json(self):
-        dnode = self.ctx.parse_data_mem(self.JSON_CONFIG, "json", no_state=True)
+        dnode = self.ctx.parse_data_mem(
+            self.JSON_CONFIG, "json", no_state=True, ordered=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             j = dnode.print_mem("json", with_siblings=True)
@@ -92,17 +94,17 @@ class DataTest(unittest.TestCase):
     "hostname": "foo",
     "url": [
       {
-        "proto": "https",
-        "host": "github.com",
-        "path": "/CESNET/libyang-python",
-        "enabled": false
-      },
-      {
         "proto": "http",
         "host": "foobar.com",
         "port": 8080,
         "path": "/index.html",
         "enabled": true
+      },
+      {
+        "proto": "https",
+        "host": "github.com",
+        "path": "/CESNET/libyang-python",
+        "enabled": false
       }
     ],
     "number": [
@@ -129,12 +131,6 @@ class DataTest(unittest.TestCase):
     "hostname": "foo",
     "url": [
       {
-        "proto": "https",
-        "host": "github.com",
-        "path": "/CESNET/libyang-python",
-        "enabled": false
-      },
-      {
         "proto": "http",
         "host": "barfoo.com",
         "path": "/barfoo/index.html"
@@ -145,6 +141,12 @@ class DataTest(unittest.TestCase):
         "port": 8080,
         "path": "/index.html",
         "enabled": true
+      },
+      {
+        "proto": "https",
+        "host": "github.com",
+        "path": "/CESNET/libyang-python",
+        "enabled": false
       }
     ],
     "number": [
@@ -254,7 +256,9 @@ class DataTest(unittest.TestCase):
 """
 
     def test_data_parse_config_xml(self):
-        dnode = self.ctx.parse_data_mem(self.XML_CONFIG, "xml", validate_present=True)
+        dnode = self.ctx.parse_data_mem(
+            self.XML_CONFIG, "xml", validate_present=True, ordered=True
+        )
         self.assertIsInstance(dnode, DContainer)
         try:
             xml = dnode.print_mem("xml", with_siblings=True, trim_default_values=True)
@@ -509,6 +513,7 @@ class DataTest(unittest.TestCase):
     }
 
     def test_data_from_dict_module_with_prefix(self):
+        self.maxDiff = None
         module = self.ctx.get_module("yolo-system")
         dnode = module.parse_data_dict(
             self.DICT_CONFIG_WITH_PREFIX, strict=True, validate_present=True
@@ -853,17 +858,17 @@ class DataTest(unittest.TestCase):
     TREE = [
         "/yolo-system:conf",
         "/yolo-system:conf/hostname",
-        "/yolo-system:conf/url[proto='https'][host='github.com']",
-        "/yolo-system:conf/url[proto='https'][host='github.com']/proto",
-        "/yolo-system:conf/url[proto='https'][host='github.com']/host",
-        "/yolo-system:conf/url[proto='https'][host='github.com']/path",
-        "/yolo-system:conf/url[proto='https'][host='github.com']/enabled",
         "/yolo-system:conf/url[proto='http'][host='foobar.com']",
         "/yolo-system:conf/url[proto='http'][host='foobar.com']/proto",
         "/yolo-system:conf/url[proto='http'][host='foobar.com']/host",
         "/yolo-system:conf/url[proto='http'][host='foobar.com']/port",
         "/yolo-system:conf/url[proto='http'][host='foobar.com']/path",
         "/yolo-system:conf/url[proto='http'][host='foobar.com']/enabled",
+        "/yolo-system:conf/url[proto='https'][host='github.com']",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/proto",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/host",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/path",
+        "/yolo-system:conf/url[proto='https'][host='github.com']/enabled",
         "/yolo-system:conf/number[.='1000']",
         "/yolo-system:conf/number[.='2000']",
         "/yolo-system:conf/number[.='3000']",
@@ -906,7 +911,7 @@ class DataTest(unittest.TestCase):
                     }
                 ]
             }
-            self.assertEqual(urls[0].print_dict(absolute=False), expected_url)
+            self.assertEqual(urls[1].print_dict(absolute=False), expected_url)
         finally:
             dnode.free()
 
@@ -1090,7 +1095,9 @@ class DataTest(unittest.TestCase):
             "yolo-leafref-extended:ref1": "val1"
             }"""
         self.ctx.destroy()
-        self.ctx = Context(YANG_DIR, leafref_extended=True, leafref_linking=True)
+        self.ctx = Context(
+            YANG_DIR, leafref_extended=True, leafref_linking=True, compile_obsolete=True
+        )
         mod = self.ctx.load_module("yolo-leafref-extended")
         self.assertIsInstance(mod, Module)
         dnode1 = self.ctx.parse_data_mem(MAIN, "json", parse_only=True)
@@ -1121,7 +1128,7 @@ class DataTest(unittest.TestCase):
         MAIN = {"yolo-nodetypes:ip-address": "test"}
         self.tearDown()
         gc.collect()
-        self.ctx = Context(YANG_DIR, builtin_plugins_only=True)
+        self.ctx = Context(YANG_DIR, builtin_plugins_only=True, compile_obsolete=True)
         module = self.ctx.load_module("yolo-nodetypes")
         dnode = dict_to_dnode(MAIN, module, None, validate=False, store_only=True)
         self.assertIsInstance(dnode, DLeaf)
@@ -1140,7 +1147,7 @@ class DataTest(unittest.TestCase):
         MAIN = {"yolo-nodetypes:ip-address": "test"}
         self.tearDown()
         gc.collect()
-        self.ctx = Context(YANG_DIR, builtin_plugins_only=True)
+        self.ctx = Context(YANG_DIR, builtin_plugins_only=True, compile_obsolete=True)
         module = self.ctx.load_module("yolo-nodetypes")
         dnode = module.parse_data_dict(MAIN, validate=False, store_only=True)
         self.assertIsInstance(dnode, DLeaf)

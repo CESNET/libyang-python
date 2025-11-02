@@ -53,11 +53,11 @@ def printer_flags(
 ) -> int:
     flags = 0
     if with_siblings:
-        flags |= lib.LYD_PRINT_WITHSIBLINGS
+        flags |= lib.LYD_PRINT_SIBLINGS
     if not pretty:
         flags |= lib.LYD_PRINT_SHRINK
     if keep_empty_containers:
-        flags |= lib.LYD_PRINT_KEEPEMPTYCONT
+        flags |= lib.LYD_PRINT_EMPTY_CONT
     if trim_default_values:
         flags |= lib.LYD_PRINT_WD_TRIM
     if include_implicit_defaults:
@@ -109,7 +109,6 @@ def newval_flags(
 
 # -------------------------------------------------------------------------------------
 def parser_flags(
-    lyb_mod_update: bool = False,
     no_state: bool = False,
     parse_only: bool = False,
     opaq: bool = False,
@@ -120,8 +119,6 @@ def parser_flags(
     json_string_datatypes: bool = False,
 ) -> int:
     flags = 0
-    if lyb_mod_update:
-        flags |= lib.LYD_PARSE_LYB_MOD_UPDATE
     if no_state:
         flags |= lib.LYD_PARSE_NO_STATE
     if parse_only:

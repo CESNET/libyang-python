@@ -97,7 +97,9 @@ class DiffTest(unittest.TestCase):
     )
 
     def test_diff(self):
-        with Context(OLD_YANG_DIR) as ctx_old, Context(NEW_YANG_DIR) as ctx_new:
+        with Context(OLD_YANG_DIR, compile_obsolete=True) as ctx_old, Context(
+            NEW_YANG_DIR, compile_obsolete=True
+        ) as ctx_new:
             mod = ctx_old.load_module("yolo-system")
             mod.feature_enable_all()
             mod = ctx_new.load_module("yolo-system")

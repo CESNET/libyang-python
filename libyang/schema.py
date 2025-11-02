@@ -1522,21 +1522,35 @@ class SNode:
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.LEAF)
 class SLeaf(SNode):
-    __slots__ = ("cdata_leaf", "cdata_leaf_parsed")
+    __slots__ = ("cdata_leaf", "cdata_leaf_parsed", "cdata_default_realtype")
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
         self.cdata_leaf = ffi.cast("struct lysc_node_leaf *", cdata)
         self.cdata_leaf_parsed = ffi.cast("struct lysp_node_leaf *", self.cdata_parsed)
+        self.cdata_default_realtype = None
 
     def default(self) -> Union[None, bool, int, str, float]:
-        if not self.cdata_leaf.dflt:
+        if not self.cdata_leaf.dflt.str:
             return None
-        val = lib.lyd_value_get_canonical(self.context.cdata, self.cdata_leaf.dflt)
-        if not val:
-            return None
-        val = c2str(val)
-        val_type = Type(self.context, self.cdata_leaf.dflt.realtype, None)
+
+        if self.cdata_default_realtype is None:
+            # calculate real type of default value just once
+            val_type_cdata = ffi.new("struct lysc_type **", ffi.NULL)
+            ret = lib.lyd_value_validate_dflt(
+                self.cdata,
+                self.cdata_leaf.dflt.str,
+                self.cdata_leaf.dflt.prefixes,
+                ffi.NULL,
+                val_type_cdata,
+                ffi.NULL,
+            )
+            if ret != lib.LY_SUCCESS:
+                raise self.context.error("Unable to get real type of default value")
+            self.cdata_default_realtype = Type(self.context, val_type_cdata[0], None)
+
+        val = c2str(self.cdata_leaf.dflt.str)
+        val_type = self.cdata_default_realtype
         if val_type.base() == Type.BOOL:
             return val == "true"
         if val_type.base() in Type.NUM_TYPES:
@@ -1563,7 +1577,7 @@ class SLeaf(SNode):
 # -------------------------------------------------------------------------------------
 @SNode.register(SNode.LEAFLIST)
 class SLeafList(SNode):
-    __slots__ = ("cdata_leaflist", "cdata_leaflist_parsed")
+    __slots__ = ("cdata_leaflist", "cdata_leaflist_parsed", "cdata_default_realtypes")
 
     def __init__(self, context: "libyang.Context", cdata):
         super().__init__(context, cdata)
@@ -1571,6 +1585,7 @@ class SLeafList(SNode):
         self.cdata_leaflist_parsed = ffi.cast(
             "struct lysp_node_leaflist *", self.cdata_parsed
         )
+        self.cdata_default_realtypes = None
 
     def ordered(self) -> bool:
         return bool(self.cdata_parsed.flags & lib.LYS_ORDBY_USER)
@@ -1586,12 +1601,37 @@ class SLeafList(SNode):
     def defaults(self) -> Iterator[Union[None, bool, int, str, float]]:
         if self.cdata_leaflist.dflts == ffi.NULL:
             return
-        for dflt in ly_array_iter(self.cdata_leaflist.dflts):
-            val = lib.lyd_value_get_canonical(self.context.cdata, dflt)
-            if not val:
+
+        if self.cdata_default_realtypes is None:
+            # calculate real types of default values just once
+            val_type_cdata = ffi.new("struct lysc_type **", ffi.NULL)
+            self.cdata_default_realtypes = []
+            for dflt in ly_array_iter(self.cdata_leaflist.dflts):
+                if not dflt.str:
+                    self.cdata_default_realtypes.append(None)
+                    continue
+                val_type_cdata[0] = ffi.NULL
+                ret = lib.lyd_value_validate_dflt(
+                    self.cdata,
+                    dflt.str,
+                    dflt.prefixes,
+                    ffi.NULL,
+                    val_type_cdata,
+                    ffi.NULL,
+                )
+                if ret != lib.LY_SUCCESS:
+                    raise self.context.error("Unable to get real type of default value")
+                self.cdata_default_realtypes.append(
+                    Type(self.context, val_type_cdata[0], None)
+                )
+
+        for dflt, val_type in zip(
+            ly_array_iter(self.cdata_leaflist.dflts), self.cdata_default_realtypes
+        ):
+            if not dflt.str:
                 yield None
-            val = c2str(val)
-            val_type = Type(self.context, dflt.realtype, None)
+                continue
+            val = c2str(dflt.str)
             if val_type.base() == Type.BOOL:
                 yield val == "true"
             elif val_type.base() in Type.NUM_TYPES:

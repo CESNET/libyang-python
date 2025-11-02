@@ -20,7 +20,11 @@ class ContextTest(unittest.TestCase):
             self.assertIsNot(ctx, None)
 
     def test_ctx_yanglib(self):
-        ctx = Context(YANG_DIR, yanglib_path=YANG_DIR + "/yang-library.json")
+        ctx = Context(
+            YANG_DIR,
+            yanglib_path=YANG_DIR + "/yang-library.json",
+            compile_obsolete=True,
+        )
         ctx.load_module("yolo-system")
         dnode = ctx.get_yanglib_data()
         j = dnode.print_mem("json", with_siblings=True)

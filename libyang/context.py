@@ -615,24 +615,10 @@ class Context:
         if ret != lib.LY_SUCCESS:
             raise self.error("failed to read input data")
 
-        if parent is not None:
-            ret = lib.lyd_parse_data(
-                self.cdata,
-                parent.cdata,
-                data[0],
-                fmt,
-                parser_flgs,
-                validation_flgs,
-                ffi.NULL,
-            )
-            lib.ly_in_free(data[0], 0)
-            if ret != lib.LY_SUCCESS:
-                raise self.error("failed to parse data tree")
-            return None
-
+        parent_cdata = parent.cdata if parent is not None else ffi.NULL
         dnode = ffi.new("struct lyd_node **")
         ret = lib.lyd_parse_data(
-            self.cdata, ffi.NULL, data[0], fmt, parser_flgs, validation_flgs, dnode
+            self.cdata, parent_cdata, data[0], fmt, parser_flgs, validation_flgs, dnode
         )
         lib.ly_in_free(data[0], 0)
         if ret != lib.LY_SUCCESS:

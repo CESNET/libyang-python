@@ -1190,6 +1190,7 @@ struct lyd_node_any {
 };
 
 LY_ERR lyd_any_value_str(const struct lyd_node *, char **);
+LY_ERR lyd_new_any(struct lyd_node *, const struct lys_module *, const char *, const void *, LYD_ANYDATA_VALUETYPE, uint32_t, struct lyd_node **);
 
 #define LYD_MERGE_DEFAULTS ...
 #define LYD_MERGE_DESTRUCT ...

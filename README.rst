@@ -43,12 +43,14 @@ On a Debian/Ubuntu system::
 Compatibility
 -------------
 
-The current version requires at least C `libyang 2.25`__.
+- This version requires at least `libyang 3.1.0`__ (`libyang.so 3.2.0`__) and
+  does not work with libyang v4 or later.
+- The last version of this package that works with libyang 2.x is `v2.8.4`__.
+- The last version of this package that works with libyang 1.x is `v1.7.0`__.
 
-The last version of the bindings that works with C `libyang 1.x`__ is v1.7.0__.
-
-__ https://github.com/CESNET/libyang/commit/d2f1608b348f
-__ https://github.com/CESNET/libyang/tree/libyang1
+__ https://github.com/CESNET/libyang/releases/tag/v3.1.0
+__ https://github.com/CESNET/libyang/commit/5109b8149cfc
+__ https://pypi.org/project/libyang/2.8.4/
 __ https://pypi.org/project/libyang/1.7.0/
 
 Compilation Flags
@@ -321,3 +323,22 @@ Here are the steps for submitting a change in the code base:
    your topic branch.
 
 Thank you in advance for your contributions!
+
+Libyang v3 Compatibility Branch
+-------------------------------
+
+Libyang v3 compatibility is being maintained for now using the `b_3.x`__ branch.
+
+For contributors, v3 specific changes should be made with a PR against the
+`b_3.x`__ branch; however, if the change is valid for more recent libyang releases
+as well (e.g., v4) then the change should first be made with a PR against the
+`master`__ branch.
+
+For maintainers, in order to create new v3 releases on pypi.org, a git push of a
+signed/annotated tag on that branch following the pattern v3.x.y where x and y
+are positive integers. Semantic versions should be used where it makes sense.
+The CI will take care of the rest.
+
+__ https://github.com/CESNET/libyang-python/tree/b_3.x
+__ https://github.com/CESNET/libyang-python/tree/b_3.x
+__ https://github.com/CESNET/libyang-python

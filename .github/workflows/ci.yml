@@ -6,9 +6,11 @@ name: CI
 on:
   pull_request:
     branches:
+      - master
       - b_3.x
   push:
     branches:
+      - master
       - b_3.x
     tags:
       - v*

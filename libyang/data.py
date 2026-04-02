@@ -94,8 +94,6 @@ def newval_flags(
         flags |= lib.LYD_NEW_VAL_OUTPUT
     if store_only:
         flags |= lib.LYD_NEW_VAL_STORE_ONLY
-    if bin_value:
-        flags |= lib.LYD_NEW_VAL_BIN
     if canon_value:
         flags |= lib.LYD_NEW_VAL_CANON
     if meta_clear_default:
@@ -1174,7 +1172,7 @@ class DNotif(DContainer):
 class DAnyxml(DNode):
     def value(self, fmt: str = "xml"):
         anystr = ffi.new("char **", ffi.NULL)
-        ret = lib.lyd_any_value_str(self.cdata, anystr)
+        ret = lib.lyd_any_value_str(self.cdata, data_format(fmt), anystr)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get data")
         return c2str(anystr[0])
@@ -1185,7 +1183,7 @@ class DAnyxml(DNode):
 class DAnydata(DNode):
     def value(self, fmt: str = "xml"):
         anystr = ffi.new("char **", ffi.NULL)
-        ret = lib.lyd_any_value_str(self.cdata, anystr)
+        ret = lib.lyd_any_value_str(self.cdata, data_format(fmt), anystr)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get data")
         return c2str(anystr[0])

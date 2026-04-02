@@ -154,9 +154,14 @@ class ContextTest(unittest.TestCase):
 
     def test_ctx_using_clb(self):
         def get_module_valid_clb(mod_name, *_):
-            YOLO_NODETYPES_MOD_PATH = os.path.join(YANG_DIR, "yolo/yolo-nodetypes.yang")
-            self.assertEqual(mod_name, "yolo-nodetypes")
-            with open(YOLO_NODETYPES_MOD_PATH, encoding="utf-8") as f:
+            MOD_PATHS = {
+                "yolo-nodetypes": os.path.join(YANG_DIR, "yolo/yolo-nodetypes.yang"),
+                "ietf-inet-types": os.path.join(
+                    YANG_DIR, "ietf/ietf-inet-types@2013-07-15.yang"
+                ),
+            }
+            self.assertIn(mod_name, MOD_PATHS)
+            with open(MOD_PATHS[mod_name], encoding="utf-8") as f:
                 mod_str = f.read()
             return "yang", mod_str
 

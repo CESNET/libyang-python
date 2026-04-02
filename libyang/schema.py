@@ -1885,8 +1885,6 @@ def iter_children_options(
         options |= lib.LYS_GETNEXT_INTONPCONT
     if output:
         options |= lib.LYS_GETNEXT_OUTPUT
-    if with_schema_mount:
-        options |= lib.LYS_GETNEXT_WITHSCHEMAMOUNT
     return options
 
 

@@ -1,9 +1,11 @@
 # Copyright (c) 2018-2019 Robin Jarry
 # SPDX-License-Identifier: MIT
 
+import glob
 import os
 import unittest
 
+from _libyang import lib
 from libyang import Context, LibyangError, Module, SContainer, SLeaf, SLeafList
 from libyang.util import c2str
 
@@ -153,12 +155,23 @@ class ContextTest(unittest.TestCase):
                 ctx.load_module("yolo-nodetypes")
 
     def test_ctx_using_clb(self):
-        def get_module_valid_clb(mod_name, *_):
+        def get_module_valid_clb(mod_name, mod_rev, *_):
             YOLO_NODETYPES_MOD_PATH = os.path.join(YANG_DIR, "yolo/yolo-nodetypes.yang")
-            self.assertEqual(mod_name, "yolo-nodetypes")
-            with open(YOLO_NODETYPES_MOD_PATH, encoding="utf-8") as f:
-                mod_str = f.read()
-            return "yang", mod_str
+            if mod_name == "yolo-nodetypes":
+                with open(YOLO_NODETYPES_MOD_PATH, encoding="utf-8") as f:
+                    return "yang", f.read()
+            # libyang 5.x calls the callback also for imports (e.g. ietf-inet-types)
+            # since internal modules are no longer embedded; serve them from the
+            # yang module dir if available.
+            yang_dir = c2str(lib.ly_yang_module_dir())
+            if yang_dir:
+                rev_suffix = f"@{mod_rev}" if mod_rev else ""
+                for path in glob.glob(
+                    os.path.join(yang_dir, f"{mod_name}{rev_suffix}*.yang")
+                ):
+                    with open(path, encoding="utf-8") as f:
+                        return "yang", f.read()
+            return None
 
         def get_module_invalid_clb(mod_name, *_):
             return None

@@ -1872,7 +1872,6 @@ def iter_children_options(
     with_case: bool = False,
     into_non_presence_container: bool = False,
     output: bool = False,
-    with_schema_mount: bool = False,
 ) -> int:
     options = 0
     if with_choice:
@@ -1885,8 +1884,6 @@ def iter_children_options(
         options |= lib.LYS_GETNEXT_INTONPCONT
     if output:
         options |= lib.LYS_GETNEXT_OUTPUT
-    if with_schema_mount:
-        options |= lib.LYS_GETNEXT_WITHSCHEMAMOUNT
     return options
 
 
@@ -1901,7 +1898,6 @@ def iter_children(
     with_case: bool = False,
     into_non_presence_container: bool = False,
     output: bool = False,
-    with_schema_mount: bool = False,
 ) -> Iterator[SNode]:
     if types is None:
         types = (
@@ -1942,7 +1938,6 @@ def iter_children(
         with_case=with_case,
         into_non_presence_container=into_non_presence_container,
         output=output,
-        with_schema_mount=with_schema_mount,
     )
     child = lib.lys_getnext(ffi.NULL, parent, module, options)
     while child:

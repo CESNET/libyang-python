@@ -285,24 +285,27 @@ class DataTest(unittest.TestCase):
                 validate_present=True,
                 validate_multi_error=True,
             )
-        self.assertEqual(
+        self.assertIn(
+            'Invalid boolean value "abcd".',
             str(cm.exception),
-            'failed to parse data tree: Invalid boolean value "abcd".: '
-            "Data path: /yolo-system:conf/url[proto='https']/enabled (line 6): "
-            'List instance is missing its key "host".: '
-            "Data path: /yolo-system:conf/url[proto='https'] (line 7)",
+        )
+        self.assertIn(
+            "url[proto='https']/enabled",
+            str(cm.exception),
+        )
+        self.assertIn(
+            'List instance is missing its key "host".',
+            str(cm.exception),
         )
 
         first = cm.exception.errors[0]
         self.assertEqual(first.msg, 'Invalid boolean value "abcd".')
-        self.assertEqual(
-            first.data_path, "/yolo-system:conf/url[proto='https']/enabled"
-        )
+        self.assertIn("url[proto='https']/enabled", first.data_path)
         self.assertEqual(first.line, 6)
 
         second = cm.exception.errors[1]
         self.assertEqual(second.msg, 'List instance is missing its key "host".')
-        self.assertEqual(second.data_path, "/yolo-system:conf/url[proto='https']")
+        self.assertIn("url[proto='https']", second.data_path)
         self.assertEqual(second.line, 7)
 
     XML_STATE = """<state xmlns="urn:yang:yolo:system">

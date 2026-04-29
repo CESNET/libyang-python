@@ -216,8 +216,6 @@ class Context:
             return  # already initialized
 
         options = 0
-        if disable_searchdirs:
-            options |= lib.LY_CTX_DISABLE_SEARCHDIRS
         if disable_searchdir_cwd:
             options |= lib.LY_CTX_DISABLE_SEARCHDIR_CWD
         if explicit_compile:
@@ -241,6 +239,9 @@ class Context:
         ctx = ffi.new("struct ly_ctx **")
 
         search_paths = []
+        yang_module_dir = c2str(lib.ly_yang_module_dir())
+        if yang_module_dir:
+            search_paths.append(yang_module_dir)
         if "YANGPATH" in os.environ:
             search_paths.extend(os.environ["YANGPATH"].strip(": \t\r\n'\"").split(":"))
         elif "YANG_MODPATH" in os.environ:
@@ -274,6 +275,8 @@ class Context:
         )
         if not self.cdata:
             raise self.error("cannot create context")
+        if disable_searchdirs:
+            lib.ly_ctx_set_options(self.cdata, lib.LY_CTX_DISABLE_SEARCHDIRS)
         self.external_module_loader = ContextExternalModuleLoader(self.cdata)
 
     def compile_schema(self):

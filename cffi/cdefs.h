@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 struct ly_ctx;
+struct ly_ht;
 
 #define	LY_CTX_ALL_IMPLEMENTED ...
 #define LY_CTX_REF_IMPLEMENTED ...
@@ -40,6 +41,8 @@ typedef enum {
 LY_ERR ly_ctx_new(const char *, uint16_t, struct ly_ctx **);
 void ly_ctx_destroy(struct ly_ctx *);
 int ly_ctx_set_searchdir(struct ly_ctx *, const char *);
+const char *ly_yang_module_dir(void);
+LY_ERR ly_ctx_set_options(struct ly_ctx *, uint32_t);
 
 typedef enum
 {
@@ -182,7 +185,7 @@ enum ly_stmt {
 #define LY_LOLOG ...
 #define LY_LOSTORE ...
 #define LY_LOSTORE_LAST ...
-int ly_log_options(int);
+uint32_t ly_log_options(uint32_t);
 uint32_t *ly_temp_log_options(uint32_t *);
 
 LY_LOG_LEVEL ly_log_level(LY_LOG_LEVEL);
@@ -262,7 +265,7 @@ struct lyd_node {
     uint32_t hash;
     uint32_t flags;
     const struct lysc_node *schema;
-    struct lyd_node_inner *parent;
+    struct lyd_node *parent;
     struct lyd_node *next;
     struct lyd_node *prev;
     struct lyd_meta *meta;
@@ -273,7 +276,6 @@ LY_ERR lys_set_implemented(struct lys_module *,	const char **);
 
 #define LYD_NEW_VAL_OUTPUT ...
 #define LYD_NEW_VAL_STORE_ONLY ...
-#define LYD_NEW_VAL_BIN ...
 #define LYD_NEW_VAL_CANON ...
 #define LYD_NEW_META_CLEAR_DFLT ...
 #define LYD_NEW_PATH_UPDATE ...
@@ -876,9 +878,8 @@ struct lysc_ext {
 #define LYS_GETNEXT_WITHCASE ...
 #define LYS_GETNEXT_INTONPCONT ...
 #define LYS_GETNEXT_OUTPUT ...
-#define LYS_GETNEXT_WITHSCHEMAMOUNT ...
 
-const struct lysc_node* lys_find_child(const struct lysc_node *, const struct lys_module *, const char *, size_t, uint16_t, uint32_t);
+const struct lysc_node* lys_find_child(const struct ly_ctx *, const struct lysc_node *, const struct lys_module *, const char *, uint32_t, const char *, uint32_t, uint32_t);
 const struct lysc_node* lysc_node_child(const struct lysc_node *);
 const struct lysc_node_action* lysc_node_actions(const struct lysc_node *);
 const struct lysc_node_notif* lysc_node_notifs(const struct lysc_node *);
@@ -902,7 +903,7 @@ struct lyd_node_inner {
             uint32_t hash;
             uint32_t flags;
             const struct lysc_node *schema;
-            struct lyd_node_inner *parent;
+            struct lyd_node *parent;
             struct lyd_node *next;
             struct lyd_node *prev;
             struct lyd_meta *meta;
@@ -924,7 +925,7 @@ struct lyd_node_term {
             uint32_t hash;
             uint32_t flags;
             const struct lysc_node *schema;
-            struct lyd_node_inner *parent;
+            struct lyd_node *parent;
             struct lyd_node *next;
             struct lyd_node *prev;
             struct lyd_meta *meta;
@@ -1161,20 +1162,6 @@ struct lyd_meta {
     struct lyd_value value;
 };
 
-typedef enum {
-   LYD_ANYDATA_DATATREE,
-   LYD_ANYDATA_STRING,
-   LYD_ANYDATA_XML,
-   LYD_ANYDATA_JSON
-} LYD_ANYDATA_VALUETYPE;
-
-union lyd_any_value {
-    struct lyd_node *tree;
-    const char *str;
-    const char *xml;
-    const char *json;
-};
-
 struct lyd_node_any {
     union {
         struct lyd_node node;
@@ -1182,18 +1169,20 @@ struct lyd_node_any {
             uint32_t hash;
             uint32_t flags;
             const struct lysc_node *schema;
-            struct lyd_node_inner *parent;
+            struct lyd_node *parent;
             struct lyd_node *next;
             struct lyd_node *prev;
             struct lyd_meta *meta;
             void *priv;
         };
     };
-    union lyd_any_value value;
-    LYD_ANYDATA_VALUETYPE value_type;
+    struct lyd_node *child;
+    struct ly_ht *children_ht;
+    const char *value;
+    uint32_t hints;
 };
 
-LY_ERR lyd_any_value_str(const struct lyd_node *, char **);
+LY_ERR lyd_any_value_str(const struct lyd_node *, LYD_FORMAT, char **);
 
 #define LYD_MERGE_DEFAULTS ...
 #define LYD_MERGE_DESTRUCT ...
@@ -1212,8 +1201,8 @@ LY_ERR lyd_diff_apply_all(struct lyd_node **, const struct lyd_node *);
 #define LYD_DUP_WITH_FLAGS  ...
 #define LYD_DUP_WITH_PARENTS  ...
 
-LY_ERR lyd_dup_siblings(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
-LY_ERR lyd_dup_single(const struct lyd_node *, struct lyd_node_inner *, uint32_t, struct lyd_node **);
+LY_ERR lyd_dup_siblings(const struct lyd_node *, struct lyd_node *, uint32_t, struct lyd_node **);
+LY_ERR lyd_dup_single(const struct lyd_node *, struct lyd_node *, uint32_t, struct lyd_node **);
 void lyd_free_meta_single(struct lyd_meta *);
 
 struct lysp_tpdf {
@@ -1291,7 +1280,7 @@ struct lyd_node_opaq {
             uint32_t hash;
             uint32_t flags;
             const struct lysc_node *schema;
-            struct lyd_node_inner *parent;
+            struct lyd_node *parent;
             struct lyd_node *next;
             struct lyd_node *prev;
             struct lyd_meta *meta;

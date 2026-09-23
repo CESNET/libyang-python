@@ -1097,8 +1097,25 @@ class IfFeatureExpr:
         }
 
         def get_feature(name):
-            for feature in self.module_features:
-                if feature.name() == name:
+            prefix, _, local_name = name.rpartition(":")
+            candidates = self.module_features
+            pmod = self.cdata.mod
+            if prefix and pmod and pmod.mod and prefix != c2str(pmod.mod.prefix):
+                imp = next(
+                    (
+                        i
+                        for i in ly_array_iter(pmod.imports)
+                        if c2str(i.prefix) == prefix
+                    ),
+                    None,
+                )
+                if imp is None:
+                    raise LibyangError(
+                        "Unknown prefix %r in if-feature %r" % (prefix, name)
+                    )
+                candidates = Module(self.context, imp.module).features()
+            for feature in candidates:
+                if feature.name() == local_name:
                     return feature.cdata
             raise LibyangError("No feature %s in module" % name)
 

@@ -263,6 +263,13 @@ class IfFeatureTest(unittest.TestCase):
         iff = next(self.leaf.if_features())
         self.assertEqual(str(iff), "turbo-boost OR networking")
 
+    def test_iffeature_str_cross_module(self):
+        self.ctx.load_module("yolo-featdep", None, ["*"])
+        self.ctx.load_module("yolo-featuser")
+        leaf = next(self.ctx.find_path("/yolo-featuser:gated"))
+        iff = next(leaf.if_features())
+        self.assertEqual(str(iff), "remote-feature")
+
     def test_iffeature_dump(self):
         iff = next(self.leaf.if_features())
         self.assertEqual(

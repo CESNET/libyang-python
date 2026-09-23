@@ -6,6 +6,6 @@
 #include <libyang/libyang.h>
 #include <libyang/version.h>
 
-#if LY_VERSION_MAJOR * 10000 + LY_VERSION_MINOR * 100 + LY_VERSION_MICRO < 50000
-#error "This version of libyang bindings only works with libyang soversion 5.0.0+"
+#if LY_VERSION_MAJOR * 10000 + LY_VERSION_MINOR * 100 + LY_VERSION_MICRO < 50304
+#error "This version of libyang bindings only works with libyang soversion 5.3.4+"
 #endif

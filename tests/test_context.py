@@ -174,7 +174,7 @@ class ContextTest(unittest.TestCase):
 
             ctx.external_module_loader.set_module_data_clb(get_module_invalid_clb)
             with self.assertRaises(LibyangError):
-                mod = ctx.load_module("yolo-nodetypes")
+                ctx.load_module("yolo-nodetypes")
 
             ctx.external_module_loader.set_module_data_clb(get_module_valid_clb)
             mod = ctx.load_module("yolo-nodetypes")

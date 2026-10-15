@@ -251,6 +251,11 @@ class Context:
             search_paths.extend(search_path.strip(": \t\r\n'\"").split(":"))
 
         search_paths = [path for path in search_paths if os.path.isdir(path)]
+
+        module_dir = c2str(lib.ly_yang_module_dir())
+        if module_dir:
+            search_paths.insert(0, module_dir)
+
         search_path = ":".join(search_paths) if search_paths else None
 
         if yanglib_path is None:

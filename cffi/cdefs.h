@@ -40,6 +40,7 @@ typedef enum {
 LY_ERR ly_ctx_new(const char *, uint16_t, struct ly_ctx **);
 void ly_ctx_destroy(struct ly_ctx *);
 int ly_ctx_set_searchdir(struct ly_ctx *, const char *);
+const char *ly_yang_module_dir(void);
 LY_ERR ly_ctx_set_options(struct ly_ctx *, uint32_t);
 
 typedef enum

@@ -247,6 +247,8 @@ class Context:
             )
         if search_path:
             search_paths.extend(search_path.strip(": \t\r\n'\"").split(":"))
+        # libyang loads its internal modules from the search dirs
+        search_paths.append(c2str(lib.ly_yang_module_dir()))
 
         search_paths = [path for path in search_paths if os.path.isdir(path)]
         search_path = ":".join(search_paths) if search_paths else None

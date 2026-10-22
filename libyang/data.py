@@ -723,10 +723,12 @@ class DNode:
             ret = lib.lyd_print_tree(out_data[0], self.cdata, fmt, flags)
 
         lib.ly_out_free(out_data[0], ffi.NULL, 0)
-        if ret != lib.LY_SUCCESS:
-            raise self.context.error("failed to write data")
-
-        return c2str(buf[0], decode=True)
+        try:
+            if ret != lib.LY_SUCCESS:
+                raise self.context.error("failed to write data")
+            return c2str(buf[0], decode=True)
+        finally:
+            lib.free(buf[0])
 
     def print_mem(
         self,

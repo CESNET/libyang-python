@@ -1175,7 +1175,10 @@ class DAnyxml(DNode):
         ret = lib.lyd_any_value_str(self.cdata, data_format(fmt), anystr)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get data")
-        return c2str(anystr[0])
+        try:
+            return c2str(anystr[0])
+        finally:
+            lib.free(anystr[0])
 
 
 # -------------------------------------------------------------------------------------
@@ -1186,7 +1189,10 @@ class DAnydata(DNode):
         ret = lib.lyd_any_value_str(self.cdata, data_format(fmt), anystr)
         if ret != lib.LY_SUCCESS:
             raise self.context.error("cannot get data")
-        return c2str(anystr[0])
+        try:
+            return c2str(anystr[0])
+        finally:
+            lib.free(anystr[0])
 
 
 # -------------------------------------------------------------------------------------

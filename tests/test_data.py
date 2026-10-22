@@ -1209,3 +1209,30 @@ class DataTest(unittest.TestCase):
         module = self.ctx.load_module("yolo-nodetypes")
         with self.assertRaises(TypeError):
             dict_to_dnode({"yolo-nodetypes:any1": 42}, module, validate=False)
+
+    def test_print_dict_anydata(self):
+        module = self.ctx.load_module("yolo-nodetypes")
+        for value in ({"key1": "val1", "l": [1, 2], "c": {"x": True}}, {}):
+            dic = {"any1": value}
+            dnode = dict_to_dnode(
+                {"yolo-nodetypes:any1": value}, module, validate=False
+            )
+            try:
+                self.assertEqual(dnode.print_dict(), dic)
+            finally:
+                dnode.free()
+
+    def test_print_dict_anyxml(self):
+        module = self.ctx.get_module("yolo-system")
+        for value, expected in (
+            ("<p>text</p>", {"p": "text"}),
+            ("plain text", "plain text"),
+        ):
+            dic = {"format-disk": {"html-info": value}}
+            dnode = dict_to_dnode(dic, module, rpc=True)
+            try:
+                self.assertEqual(
+                    dnode.print_dict(), {"format-disk": {"html-info": expected}}
+                )
+            finally:
+                dnode.free()

@@ -900,6 +900,16 @@ class DNode:
 
             return KeyedList(key_name=list_keys_cache[snode])
 
+        def _any_value(node):
+            # same as the libyang JSON printer: a tree is an object, a string
+            # value stays a string, and no content is an empty object
+            any_node = ffi.cast("struct lyd_node_any *", node)
+            if any_node.child:
+                return json.loads(DNode.new(self.context, node).value("json"))
+            if any_node.value:
+                return c2str(any_node.value)
+            return {}
+
         def _to_dict(node, parent_dic):
             if not lib.lyd_node_should_print(node, flags):
                 return
@@ -929,6 +939,8 @@ class DNode:
                 parent_dic[name].append(DLeaf.cdata_leaf_value(node, self.context))
             elif node.schema.nodetype == SNode.LEAF:
                 parent_dic[name] = DLeaf.cdata_leaf_value(node, self.context)
+            elif node.schema.nodetype & (SNode.ANYDATA | SNode.ANYXML):
+                parent_dic[name] = _any_value(node)
 
         dic = {}
         dnode = self

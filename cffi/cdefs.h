@@ -1174,6 +1174,7 @@ struct lyd_node_any {
         };
     };
     struct lyd_node *child;
+    const char *value;
     ...;
 };
 

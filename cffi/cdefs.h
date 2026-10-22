@@ -894,6 +894,7 @@ LY_ERR lyd_new_term(struct lyd_node *, const struct lys_module *, const char *, 
 char* lyd_path(const struct lyd_node *, LYD_PATH_TYPE, char *, size_t);
 LY_ERR lyd_new_inner(struct lyd_node *, const struct lys_module *, const char *, ly_bool, struct lyd_node **);
 LY_ERR lyd_new_list(struct lyd_node *, const struct lys_module *, const char *, uint32_t, struct lyd_node **node, ...);
+LY_ERR lyd_new_any(struct lyd_node *, const struct lys_module *, const char *, const struct lyd_node *, const char *, uint32_t, uint32_t, struct lyd_node **);
 
 struct lyd_node_inner {
     union {

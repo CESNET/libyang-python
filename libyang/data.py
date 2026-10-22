@@ -2,6 +2,7 @@
 # Copyright (c) 2021 RACOM s.r.o.
 # SPDX-License-Identifier: MIT
 
+import json
 import logging
 from typing import IO, Any, Dict, Iterator, Optional, Tuple, Union
 
@@ -9,6 +10,8 @@ from _libyang import ffi, lib
 from .keyed_list import KeyedList
 from .schema import (
     Module,
+    SAnydata,
+    SAnyxml,
     SContainer,
     SLeaf,
     SLeafList,
@@ -1319,6 +1322,55 @@ def dict_to_dnode(
         created.append(n[0])
         return n[0]
 
+    def _create_any(_parent, module, name, value, in_rpc_output=False):
+        # libyang parses a JSON or XML string into the anydata/anyxml content
+        if isinstance(value, str) and value.lstrip().startswith("{"):
+            value = json.loads(value)
+        if isinstance(value, dict):
+            # libyang keeps our buffer as the node value when the parsed
+            # tree is empty, so create an empty node instead
+            value = json.dumps(value) if value else None
+        elif not isinstance(value, str):
+            raise TypeError("%s: python value is not a dict/str: %r" % (name, value))
+
+        n = ffi.new("struct lyd_node **")
+        flags = newval_flags(rpc_output=in_rpc_output, store_only=store_only)
+        ret = lib.lyd_new_any(
+            _parent,
+            module.cdata,
+            str2c(name),
+            ffi.NULL,
+            str2c(value),
+            0,
+            flags,
+            n,
+        )
+        if ret != lib.LY_SUCCESS:
+            if _parent:
+                parent_path = repr(DNode.new(module.context, _parent).path())
+            else:
+                parent_path = "module %r" % module.name()
+            raise module.context.error(
+                "failed to create anydata/anyxml %r as a child of %s",
+                name,
+                parent_path,
+            )
+        created.append(n[0])
+
+    # same as the iter_children() defaults, plus anydata and anyxml
+    schema_types = (
+        SNode.ACTION,
+        SNode.CONTAINER,
+        SNode.LIST,
+        SNode.RPC,
+        SNode.LEAF,
+        SNode.LEAFLIST,
+        SNode.NOTIF,
+        SNode.CHOICE,
+        SNode.CASE,
+        SNode.ANYDATA,
+        SNode.ANYXML,
+    )
     schema_cache = {}
 
     def _find_schema(schema_parent, name, prefix):
@@ -1335,7 +1387,7 @@ def dict_to_dnode(
             if schema_parent is None:
                 # there may not be any input or any output node in the rpc
                 return None, None
-        for s in schema_parent:
+        for s in schema_parent.children(types=schema_types):
             if s.name() != name:
                 continue
             mod = s.module()
@@ -1434,6 +1486,9 @@ def dict_to_dnode(
             elif isinstance(s, SNotif):
                 n = _create_container(_parent, module, name, in_rpc_output)
                 _to_dnode(value, s, n, in_rpc_output)
+
+            elif isinstance(s, (SAnydata, SAnyxml)):
+                _create_any(_parent, module, name, value, in_rpc_output)
 
     result = None
 

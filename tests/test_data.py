@@ -11,6 +11,7 @@ from unittest.mock import patch
 from _libyang import lib
 from libyang import (
     Context,
+    DAnydata,
     DAnyxml,
     DataType,
     DContainer,
@@ -1159,3 +1160,52 @@ class DataTest(unittest.TestCase):
         dnode = self.ctx.parse_data_mem(JSON, "json", json_null=True)
         dnode_names = [d.name() for d in dnode.siblings()]
         self.assertFalse("ip-address" in dnode_names)
+
+    def test_dict_to_dnode_anydata(self):
+        module = self.ctx.load_module("yolo-nodetypes")
+        dic = {"yolo-nodetypes:any1": {"key1": "val1"}}
+        dnode = dict_to_dnode(dic, module, validate=False)
+        try:
+            self.assertIsInstance(dnode, DAnydata)
+            self.assertEqual(json.loads(dnode.value("json")), {"key1": "val1"})
+        finally:
+            dnode.free()
+
+    def test_dict_to_dnode_anydata_empty(self):
+        module = self.ctx.load_module("yolo-nodetypes")
+        for value in ({}, "{ }"):
+            dnode = dict_to_dnode(
+                {"yolo-nodetypes:any1": value}, module, validate=False
+            )
+            try:
+                self.assertIsInstance(dnode, DAnydata)
+                self.assertEqual(dnode.value("json"), None)
+            finally:
+                dnode.free()
+
+    def test_dict_to_dnode_anydata_rpc(self):
+        module = self.ctx.get_module("yolo-system")
+        dic = {"format-disk": {"disk": "sda", "json-info": {"key1": "val1"}}}
+        dnode = dict_to_dnode(dic, module, rpc=True)
+        try:
+            anydata = dnode.find_path("/yolo-system:format-disk/json-info")
+            self.assertIsInstance(anydata, DAnydata)
+            self.assertEqual(json.loads(anydata.value("json")), {"key1": "val1"})
+        finally:
+            dnode.free()
+
+    def test_dict_to_dnode_anyxml(self):
+        module = self.ctx.get_module("yolo-system")
+        dic = {"format-disk": {"html-info": "<p>text</p>"}}
+        dnode = dict_to_dnode(dic, module, rpc=True)
+        try:
+            anyxml = dnode.find_path("/yolo-system:format-disk/html-info")
+            self.assertIsInstance(anyxml, DAnyxml)
+            self.assertEqual(anyxml.value("xml").strip(), "<p>text</p>")
+        finally:
+            dnode.free()
+
+    def test_dict_to_dnode_anydata_bad_type(self):
+        module = self.ctx.load_module("yolo-nodetypes")
+        with self.assertRaises(TypeError):
+            dict_to_dnode({"yolo-nodetypes:any1": 42}, module, validate=False)

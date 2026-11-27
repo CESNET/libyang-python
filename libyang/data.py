@@ -1490,8 +1490,10 @@ def dict_to_dnode(
                         try:
                             key_values.append(val.pop(k))
                         except KeyError as e:
-                            raise ValueError("Missing key %s in the list" % (k)) from e
-
+                            raise ValueError(
+                                "%s: missing key %r in list element: %r"
+                                % (s.schema_path(), k, v)
+                            ) from e
                     n = _create_list(_parent, module, name, key_values, in_rpc_output)
                     _to_dnode(val, s, n, in_rpc_output)
 
